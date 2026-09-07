@@ -16,6 +16,7 @@ import com.fablab503.velotrack.model.TrackPoint
 class RideStats(private val elevation: ElevationAccumulator = ElevationAccumulator()) {
 
     private var startedAtMs: Long = 0L
+    private var started: Boolean = false
     private var distanceM: Double = 0.0
     private var movingMs: Long = 0L
     private var maxSpeedMps: Double = 0.0
@@ -25,6 +26,7 @@ class RideStats(private val elevation: ElevationAccumulator = ElevationAccumulat
     /** Resets everything and records the ride start time. */
     fun start(startedAtMs: Long) {
         this.startedAtMs = startedAtMs
+        started = true
         distanceM = 0.0
         movingMs = 0L
         maxSpeedMps = 0.0
@@ -54,7 +56,7 @@ class RideStats(private val elevation: ElevationAccumulator = ElevationAccumulat
     }
 
     fun snapshot(nowMs: Long): RideStatsSnapshot {
-        val elapsed = if (startedAtMs > 0L) (nowMs - startedAtMs).coerceAtLeast(0L) else 0L
+        val elapsed = if (started) (nowMs - startedAtMs).coerceAtLeast(0L) else 0L
         val avg = if (movingMs > 0L) distanceM / (movingMs / 1000.0) else 0.0
         return RideStatsSnapshot(
             distanceM = distanceM,
