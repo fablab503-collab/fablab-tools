@@ -55,6 +55,7 @@ toolchain and wants interactive iteration.
 | GPS | `LocationManagerCompat` + `LocationRequestCompat(1000)` GPS_PROVIDER only; FGS type `location`; fine location granted *before* `startForeground` | Battery Saver modes 1/2 kill GPS with screen off. No A-GPS offline → slow first fix. |
 | Signing | PKCS12 from `openssl req … && openssl pkcs12 -export`, committed for a private repo, env-overridable | Key password must equal store password. |
 | Release | Rolling pre-release `<app>-latest` + immutable `<app>-v<run>`; `gh release view || create`, `upload --clobber`; `permissions: contents: write` | Force-move the `latest` tag with `git tag -f && git push -f`. |
+| Triggers | Build workflow: `push` to `main` filtered by `paths: [<app>/**, .github/workflows/<file>]` plus `workflow_dispatch`; map extract: `workflow_dispatch` with inputs | Tag pushes do not re-trigger a `branches: [main]` filter. `concurrency` group per workflow. |
 
 ## Workflow-script gotchas
 

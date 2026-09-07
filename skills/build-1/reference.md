@@ -47,6 +47,11 @@ android {
 }
 ```
 
+Signing override: the build script reads `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` from the
+environment and falls back to the committed `keystore/<app>.p12` (alias/password documented in the
+spec). To move to secrets later: store the p12 as base64 in `KEYSTORE_P12_BASE64`, decode it in CI to
+`$RUNNER_TEMP`, and export those three variables in the Gradle step.
+
 PKCS12 key without Java:
 ```bash
 openssl req -x509 -newkey rsa:2048 -sha256 -days 10950 -nodes -keyout key.pem -out cert.pem -subj "/CN=App"
