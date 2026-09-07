@@ -18,6 +18,16 @@ area you ride in. The app is built to be as cheap on battery as possible so a bi
 multi-day ride. Everything is built and published by GitHub Actions: every push to `main`
 produces an installable APK.
 
+## Screenshots
+
+| Riding | Riding mode above 5 km/h | Guidance to Home |
+|---|---|---|
+| ![Dark map with the street name under the ride statistics](docs/screenshots/map-dark.png) | ![Only the HUD stays while riding fast](docs/screenshots/riding-mode.png) | ![Dashed line and distance to Home](docs/screenshots/guidance.png) |
+
+| After a ride | Statistics | Light theme |
+|---|---|---|
+| ![Ride summary with the Home pin on the map](docs/screenshots/ride-done.png) | ![All-time, year, month and week totals](docs/screenshots/statistics.png) | ![Daylight style of the map](docs/screenshots/map-light.png) |
+
 Requirements: Android 8.0 (API 26) or newer, a GPS receiver, and free storage for the map data
 (16-50 MB for 10 km of streets, about 100 MB for France, 45 MB for the world overview).
 
