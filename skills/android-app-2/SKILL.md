@@ -45,6 +45,12 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 | UI | Material You dynamic colour (Google-blue baseline), HUD card + status chip, left column of 56 dp surface FABs, primary Extended FAB bottom-right, M3 two-line lists, edge-to-edge insets |
 | Privacy | INTERNET only for the Download screen; `MapLibre.setConnected(false)`; CI greps for it |
 | Favourites | Home / Work / Favourites FABs at the top of the left column; `favorites` table (TrackDatabase v3) with kinds home/work/person/restaurant/theater/place, name + description; bottom sheet add/edit/delete; straight-line guidance = target marker + dashed line + HUD row "→ name · distance · direction" (relative sectors when heading known, compass point otherwise) |
+| Riding mode | `ui/RidingModeController` (pure Kotlin): the whole `controls` container fades out above 5 km/h for 3 s, back below 5 km/h for 2 s or on any touch (`Activity.onUserInteraction`), re-hides 8 s after a touch; stale speed (> 5 s old) counts as slow |
+| Theme | `theme_mode` Dark / Light / Auto; Auto = `geo/SolarTimes` sunrise/sunset from `Prefs.lastPosition` (07–19 fallback) applied by `ui/NightModeManager` via `AppCompatDelegate.setDefaultNightMode` in `VeloTrackApp` and re-checked on resume/at the next transition; `Theme.Material3.DayNight`, light palette in `values/colors.xml`, dark in `values-night/`; map picks `style_light.json` (Protomaps light flavour with darker casings/labels) via `MapController.lightMap` |
+| Font | Interstate Comp Regular OTF in `res/font/interstate_comp.otf` + `interstate.xml`; theme `android:fontFamily` + all 15 `textAppearance*` overridden in `values/type.xml` (letterSpacing 0) |
+| 3D icons | 105 "color" style icons converted with `cwebp -q 82 -alpha_q 100 -resize 320 0` into `assets/icons3d/` (~5 KB each); app subset `res/drawable-nodpi/img3d_*.webp` used as illustrations only (stats cards, empty states, no-map overlay) |
+| Auto-record + totals | `ui/AutoRecordDetector` (≥ 3 fixes above 5 km/h spanning 10 s, 2-min cooldown after a stop, no dialogs/permission prompts on the auto path) starts the FGS from the resumed activity; `storage/StatsRepository` SUM/COUNT/MAX over finished tracks with java.time period starts; `StatsActivity` all-time / year / month / week cards |
+| Idle speed | `location/IdleSpeedEstimator` derives speed from displacement when the receiver reports 0 (same noise gate as PointFilter) so riding mode / auto-record also work idle |
 | Where am I | `MapController.placeNameAt(latLon)` = `queryRenderedFeatures` in an 18 px box around the puck on `roads_*_b3..b1`; then the rendered green polygon → park-like POI point inside it (`VectorSource.querySourceFeatures("pois", kind filter)` + point-in-polygon) or a generic kind label; then named water / locality. Throttled to every 2 s and > 10 m; shown under the stats with a 16 dp pin; hidden when null or after a style reload |
 
 ## Gotchas discovered on device
@@ -70,6 +76,16 @@ templates and sandbox workarounds. This skill adds the product and process knowl
   camera jump projects off-screen, so expect nulls until the ease finishes.
 - Unresolved reference in CI after a fixer/agent adds a call: check the import block first
   (`Geo` used in MapController without `import …geo.Geo`).
+- Emulator fixes carry ±5 m accuracy, and derived speed only counts when the per-second displacement
+  exceeds the accuracy: simulate ≥ 20 km/h (5.5 m/s) to trigger speed-based features; 6 km/h reads
+  as standing still. Helper: `speed.sh <kmh> <seconds> [lat] [lon]` (one fix per second, eastwards).
+- Auto theme on the emulator follows the *simulated* position (California) with the *host* clock
+  (Paris): 23:00 local shows light because it is afternoon in California. Expected, not a bug.
+- A ListPreference dialog / popup menu shifts when items are added: screenshot before tapping.
+- Round-3 recipe worked first-try on CI again: research workflow (3 agents, verified facts to
+  files) → brief with per-module file ownership and exact signatures → 5 implementers → 3 reviewers →
+  apply the "minor" findings yourself (they were real behaviour bugs: toast-before-start, stale
+  speed, dialog races) → push.
 
 ## Where things are
 

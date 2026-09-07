@@ -92,6 +92,8 @@ toolchain and wants interactive iteration.
 ## Workflow-script gotchas
 
 - Shell text like `${GITHUB_RUN_NUMBER}` inside a JS template prompt is interpolated: write `\${…}`.
+- No backticks inside template-literal prompts (a `` `when` `` in prose breaks the script parse);
+  write 'when' or when-expressions instead.
 - Spread results null-safely: `.then(r => r ? {key, ...r} : null)` then `.filter(Boolean)`.
 - "You've hit your session limit" kills agents; resume with `resumeFromRunId` after the reset.
 - Agents share the filesystem: point them at absolute paths for plan, spec, research, scaffold.
