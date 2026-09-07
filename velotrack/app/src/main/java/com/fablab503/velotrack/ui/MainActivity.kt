@@ -188,14 +188,11 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     /**
      * Download map / Map data screens report RESULT_OK when the band files changed under MapLibre's
      * feet. This activity is stopped while they are on top, so [downloadReceiver] misses the
-     * service's `done` broadcast; the result is the reliable signal to reload the style.
+     * service's `done` broadcast; the result is the reliable signal to rebuild the map.
      */
     private val mapDataLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                refreshNoMapOverlay()
-                reloadStyle()
-            }
+            if (result.resultCode == RESULT_OK) onMapDataChanged()
         }
 
     private val clockRunnable = object : Runnable {
@@ -230,10 +227,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != MapDownloadService.ACTION_PROGRESS) return
-            if (intent.getStringExtra(MapDownloadService.EXTRA_PHASE) == PHASE_DONE) {
-                refreshNoMapOverlay()
-                reloadStyle()
-            }
+            if (intent.getStringExtra(MapDownloadService.EXTRA_PHASE) == PHASE_DONE) onMapDataChanged()
         }
     }
 
@@ -1033,6 +1027,18 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             reloadStyle()
             refreshNoMapOverlay()
         }
+    }
+
+    /**
+     * Map tiles were added or removed. MapLibre keeps one read-only SQLite connection per band file
+     * and remembers tiles it already answered as "no content"; reloading the style (even through a
+     * blank one) is not enough to make a viewport that was empty before the download fill in, so the
+     * whole activity is recreated. Downloads are rare and the recreate takes about two seconds; a
+     * running recording lives in its service and is unaffected.
+     */
+    private fun onMapDataChanged() {
+        if (isFinishing || isDestroyed) return
+        recreate()
     }
 
     /** (Re)loads the style with all four band sources; a no-op until the band files are known. */
