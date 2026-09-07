@@ -309,6 +309,7 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
         }
 
         val decision = f.offer(fix)
+        lastSpeedMps = decision.speedMps
         if (decision.accepted) {
             val newStatus = when {
                 manualPaused -> RecordingStatus.PAUSED
@@ -339,6 +340,9 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
         RideSession.update { it.copy(gps = status) }
     }
 
+    /** Effective speed of the last fix as decided by [PointFilter]; shown by the HUD instead of the raw receiver speed. */
+    private var lastSpeedMps: Float? = null
+
     private fun publishState(lastFix: GpsFix?) {
         val snapshot = stats.snapshot(System.currentTimeMillis())
         val currentStatus = status
@@ -346,6 +350,7 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
         val headingDeg = heading.headingDeg
         val gpsNow = gpsStatus
         val error = lastError
+        val speed = lastSpeedMps
         RideSession.update {
             RideState(
                 status = currentStatus,
@@ -355,6 +360,7 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
                 headingDeg = headingDeg ?: it.headingDeg,
                 gps = gpsNow,
                 error = error,
+                speedMps = speed ?: it.speedMps,
             )
         }
     }

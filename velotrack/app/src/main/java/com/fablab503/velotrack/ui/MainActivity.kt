@@ -591,7 +591,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     private fun renderLiveHud(fix: GpsFix?, gps: GpsStatus) {
         val units = prefs.units
         binding.speedUnit.text = Format.speedUnit(units)
-        val speed = fix?.speedMps
+        val speed = state.speedMps ?: fix?.speedMps
         binding.speedText.text = if (speed != null) {
             Format.speedValue(speed.toDouble(), units)
         } else {

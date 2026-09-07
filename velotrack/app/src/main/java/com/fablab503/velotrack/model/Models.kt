@@ -64,6 +64,8 @@ data class RideState(
     val headingDeg: Float? = null,
     val gps: GpsStatus = GpsStatus(),
     val error: String? = null,
+    /** Effective speed after filtering (receiver speed, or derived from displacement when the receiver reports 0). */
+    val speedMps: Float? = null,
 )
 
 data class TrackSummary(

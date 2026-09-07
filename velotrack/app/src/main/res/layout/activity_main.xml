@@ -120,7 +120,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:paddingEnd="6dp">
 
                         <TextView
                             android:id="@+id/distanceText"
@@ -143,7 +144,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:paddingEnd="6dp">
 
                         <TextView
                             android:id="@+id/movingTimeText"
@@ -166,7 +168,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:paddingEnd="6dp">
 
                         <TextView
                             android:id="@+id/avgSpeedText"
@@ -189,7 +192,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:paddingEnd="6dp">
 
                         <TextView
                             android:id="@+id/elevationText"
