@@ -1,0 +1,88 @@
+plugins {
+    alias(libs.plugins.android.application) // built-in Kotlin (AGP 9); no org.jetbrains.kotlin.android
+}
+
+// Signing: defaults point at the committed PKCS12 keystore (private personal repo).
+// Override with KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS env vars to use a secret key instead.
+val keystoreFile: File = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+    ?: rootProject.file("keystore/velotrack.p12")
+val keystorePassword: String = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "velotrack-local"
+val keystoreAlias: String = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "velotrack"
+val hasReleaseKey = keystoreFile.exists()
+
+// versionCode comes from the GitHub Actions run number so every CI build is installable over the previous one.
+val ciRunNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+
+android {
+    namespace = "com.fablab503.velotrack"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.fablab503.velotrack"
+        minSdk = 26
+        targetSdk = 36
+        versionCode = ciRunNumber
+        versionName = "1.0.$ciRunNumber"
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = keystorePassword
+                keyAlias = keystoreAlias
+                keyPassword = keystorePassword // PKCS12: key password must equal store password
+                storeType = "pkcs12"
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = if (hasReleaseKey) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+        }
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        viewBinding = true
+    }
+
+    packaging {
+        // The glyph PBF files are already compressed; keep them stored to speed up asset reads.
+        resources.excludes += setOf("META-INF/*.version", "META-INF/LICENSE*", "META-INF/NOTICE*")
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.lifecycle.service)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.preference.ktx)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.maplibre.opengl)
+
+    testImplementation(libs.junit)
+}
