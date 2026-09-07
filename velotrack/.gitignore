@@ -1,0 +1,13 @@
+# Gradle / Android build output
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+# Generated at build time by tools/build-assets.sh
+app/src/main/assets/fonts/
+app/src/main/assets/sprites/
+app/src/main/assets/style.json
+tools/node_modules/
+tools/package-lock.json
