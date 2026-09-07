@@ -57,6 +57,24 @@ toolchain and wants interactive iteration.
 | Release | Rolling pre-release `<app>-latest` + immutable `<app>-v<run>`; `gh release view || create`, `upload --clobber`; `permissions: contents: write` | Force-move the `latest` tag with `git tag -f && git push -f`. |
 | Triggers | Build workflow: `push` to `main` filtered by `paths: [<app>/**, .github/workflows/<file>]` plus `workflow_dispatch`; map extract: `workflow_dispatch` with inputs | Tag pushes do not re-trigger a `branches: [main]` filter. `concurrency` group per workflow. |
 
+## Testing on the Android emulator from this Mac
+
+- The sandbox blocks `adb` from starting its server ("could not install smartsocket listener") and
+  from connecting to one. Run adb through the `Control your Mac` osascript tool instead:
+  `do shell script "…/platform-tools/adb devices"`. Each call must finish in under ~30 s and exit 0
+  (append `; exit 0`); put longer sequences in a script under `/tmp/claude-501/…` and start it with
+  `nohup … &`, then wait on its log with a background `until grep` loop.
+- The user creates the AVD in Android Studio (Device Manager); no system images or cmdline-tools are
+  installed otherwise. Emulator default position is Mountain View (37.422, -122.084); extract a
+  test map around it. `adb push file.mbtiles /sdcard/Android/data/<pkg>/files/maps/` works and the
+  app lists it without the picker.
+- `adb emu geo fix <lon> <lat> <alt>` fixes report speed 0 and no bearing: speed must be derived
+  from displacement or the ride auto-pauses; the course-up camera will not rotate.
+- `adb install -r` kills a running recording: expect the recovery dialog on next launch.
+- The user may be tapping the emulator at the same time; check logcat (`GrantPermissionsViewModel`,
+  `ActivityTaskManager START`) before blaming the app for unexpected screens or duplicate rides.
+- Android 15+ is edge-to-edge: pad HUD/controls with `ViewCompat.setOnApplyWindowInsetsListener`.
+
 ## Workflow-script gotchas
 
 - Shell text like `${GITHUB_RUN_NUMBER}` inside a JS template prompt is interpolated: write `\${…}`.
