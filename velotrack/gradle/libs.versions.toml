@@ -1,6 +1,9 @@
 [versions]
 agp = "9.4.0"
-coreKtx = "1.19.0"
+# core 1.19.0 declares minCompileSdk=37 in its AAR metadata and fails checkReleaseAarMetadata
+# against compileSdk 36; 1.18.0 (minCompileSdk=36) is the newest core compatible with the plan's
+# compileSdk 36 and is what activity 1.13.0 already pulls transitively.
+coreKtx = "1.18.0"
 appcompat = "1.8.0"
 material = "1.14.0"
 activity = "1.13.0"

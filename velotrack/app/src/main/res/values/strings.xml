@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VeloTrack</string>
+
+    <!-- Notification (used by recording.RecordingService) -->
+    <string name="notif_channel_recording">Ride recording</string>
+    <string name="notif_recording_title">Recording ride</string>
+    <string name="notif_paused_title">Recording paused</string>
+    <string name="notif_action_pause">Pause</string>
+    <string name="notif_action_resume">Resume</string>
+    <string name="notif_action_stop">Stop</string>
+    <string name="notif_storage_error">Storage error: retrying</string>
+
+    <!-- Activity titles -->
+    <string name="title_tracks">Tracks</string>
+    <string name="title_map_files">Map files</string>
+    <string name="title_settings">Settings</string>
+
+    <!-- Overflow menu -->
+    <string name="menu_tracks">Tracks</string>
+    <string name="menu_import_route">Import route (GPX)</string>
+    <string name="menu_clear_route">Clear route</string>
+    <string name="menu_map_files">Map files</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_about">About</string>
+    <string name="menu_more">More</string>
+
+    <!-- HUD -->
+    <string name="hud_distance">Distance</string>
+    <string name="hud_moving_time">Moving</string>
+    <string name="hud_avg_speed">Avg</string>
+    <string name="hud_elevation_gain">Climb</string>
+    <string name="hud_gps_searching">GPS: searching…</string>
+    <string name="hud_gps_status">GPS %1$d/%2$d · ±%3$d m</string>
+    <string name="hud_gps_status_no_accuracy">GPS %1$d/%2$d</string>
+    <string name="hud_battery">%1$d%%</string>
+    <string name="hud_status_recording">Recording</string>
+    <string name="hud_status_auto_paused">Auto-paused</string>
+    <string name="hud_status_paused">Paused</string>
+    <string name="hud_speed_placeholder">0.0</string>
+    <string name="hud_no_value">–</string>
+
+    <!-- Route -->
+    <string name="route_remaining">Route: %1$s left</string>
+    <string name="route_off_route">OFF ROUTE · %1$s away</string>
+    <string name="route_imported">Route loaded: %1$s (%2$s)</string>
+    <string name="route_import_failed">Could not import route: %1$s</string>
+    <string name="route_cleared">Route cleared</string>
+    <string name="route_none_active">No route is active</string>
+
+    <!-- Buttons -->
+    <string name="btn_record">Start recording</string>
+    <string name="btn_pause">Pause recording</string>
+    <string name="btn_resume">Resume recording</string>
+    <string name="btn_stop">Stop recording</string>
+    <string name="btn_recenter">Recenter</string>
+    <string name="btn_mode_3d">3D</string>
+    <string name="btn_mode_2d">2D</string>
+    <string name="btn_open_map_files">Map files</string>
+    <string name="btn_import">Import</string>
+    <string name="btn_location_settings">Location settings</string>
+
+    <!-- Banners and overlays -->
+    <string name="gps_off_banner">Location is turned off</string>
+    <string name="no_map_title">No map file loaded</string>
+    <string name="no_map_body">Import a .mbtiles region file to see the map. The position, heading and ride statistics work without a map. Create a region with the velotrack-map-extract workflow on GitHub and copy the file to this phone.</string>
+    <string name="map_load_failed">Map file could not be loaded and was deactivated: %1$s</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_continue">Continue</string>
+    <string name="dialog_delete">Delete</string>
+    <string name="dialog_close">Close</string>
+    <string name="stop_confirm_title">Stop recording?</string>
+    <string name="stop_confirm_body">The ride will be saved and can be exported from Tracks.</string>
+    <string name="recovery_title">Unfinished ride found</string>
+    <string name="recovery_body">%1$s (%2$s) was still recording when the app was closed.</string>
+    <string name="recovery_resume">Resume</string>
+    <string name="recovery_finish">Finish</string>
+    <string name="battery_saver_title">Battery Saver will stop GPS</string>
+    <string name="battery_saver_body">Battery Saver is on and its location mode turns GPS off while the screen is off. Recording will lose points. Turn Battery Saver off or exclude VeloTrack from battery restrictions.</string>
+    <string name="battery_saver_settings">Battery settings</string>
+    <string name="permission_denied_title">Location permission needed</string>
+    <string name="permission_denied_body">VeloTrack needs precise location to show your position and record rides. Grant it in the app settings.</string>
+    <string name="permission_app_settings">App settings</string>
+    <string name="error_prefix">Error: %1$s</string>
+
+    <!-- Tracks -->
+    <string name="tracks_empty">No recorded rides yet</string>
+    <string name="track_item">%1$s\n%2$s · %3$s · %4$s · ↑ %5$s</string>
+    <string name="track_recording_suffix">(recording)</string>
+    <string name="track_action_rename">Rename</string>
+    <string name="track_action_share">Export: share GPX</string>
+    <string name="track_action_save">Export: save GPX as…</string>
+    <string name="track_action_delete">Delete</string>
+    <string name="track_rename_title">Rename track</string>
+    <string name="track_delete_title">Delete track?</string>
+    <string name="track_delete_body">%1$s will be deleted permanently.</string>
+    <string name="track_exporting">Exporting GPX…</string>
+    <string name="track_export_failed">Export failed: %1$s</string>
+    <string name="track_saved">GPX saved</string>
+    <string name="track_share_title">Share GPX</string>
+
+    <!-- Map files -->
+    <string name="map_files_empty">No map files. Tap Import to copy a .mbtiles or .pmtiles file into the app.</string>
+    <string name="map_file_item">%1$s\n%2$s</string>
+    <string name="map_file_active_marker">● </string>
+    <string name="map_file_size_mb">%1$s MB</string>
+    <string name="map_file_activated">Active map: %1$s</string>
+    <string name="map_file_delete_title">Delete map file?</string>
+    <string name="map_file_delete_body">%1$s will be removed from this phone.</string>
+    <string name="map_import_progress">Copying… %1$s</string>
+    <string name="map_import_progress_total">Copying… %1$s of %2$s</string>
+    <string name="map_import_failed">Import failed: %1$s</string>
+    <string name="map_import_done">Imported %1$s</string>
+
+    <!-- Settings -->
+    <string name="pref_cat_recording">Recording</string>
+    <string name="pref_cat_display">Display and map</string>
+    <string name="pref_cat_route">Route</string>
+    <string name="pref_accuracy_title">Ignore fixes less accurate than</string>
+    <string name="pref_auto_pause_title">Auto-pause</string>
+    <string name="pref_auto_pause_summary">Pause moving time and point storage when stopped</string>
+    <string name="pref_screen_mode_title">Screen while map is visible</string>
+    <string name="pref_dim_level_title">Dim brightness (%)</string>
+    <string name="pref_dim_level_summary">Used when screen mode is Dim</string>
+    <string name="pref_units_title">Units</string>
+    <string name="pref_pitch_title">3D tilt (degrees)</string>
+    <string name="pref_pitch_summary">Camera pitch in Follow 3D mode</string>
+    <string name="pref_off_route_title">Off-route distance</string>
+    <string name="screen_mode_keep_on">Keep on</string>
+    <string name="screen_mode_dim">Keep on, dimmed</string>
+    <string name="screen_mode_system">System default</string>
+    <string name="units_metric">Metric (km, m)</string>
+    <string name="units_imperial">Imperial (mi, ft)</string>
+
+    <!-- About -->
+    <string name="about_title">About VeloTrack</string>
+    <string name="about_body">Version %1$s\n\nMap data © OpenStreetMap contributors (ODbL) — https://www.openstreetmap.org/copyright. Style: Protomaps (BSD-3). Renderer: MapLibre Native (BSD-2). Fonts: Noto Sans (OFL 1.1).\n\nVeloTrack has no network permission: it uses only the GPS receiver and stores everything on this phone.</string>
+</resources>

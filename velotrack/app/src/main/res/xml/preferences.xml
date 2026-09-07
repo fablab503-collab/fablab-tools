@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="@string/pref_cat_recording">
+
+        <ListPreference
+            android:key="accuracy_cutoff_m"
+            android:title="@string/pref_accuracy_title"
+            android:entries="@array/accuracy_entries"
+            android:entryValues="@array/accuracy_values"
+            android:defaultValue="50"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            android:key="auto_pause"
+            android:title="@string/pref_auto_pause_title"
+            android:summary="@string/pref_auto_pause_summary"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_display">
+
+        <ListPreference
+            android:key="screen_mode"
+            android:title="@string/pref_screen_mode_title"
+            android:entries="@array/screen_mode_entries"
+            android:entryValues="@array/screen_mode_values"
+            android:defaultValue="KEEP_ON"
+            app:useSimpleSummaryProvider="true" />
+
+        <SeekBarPreference
+            android:key="dim_level"
+            android:title="@string/pref_dim_level_title"
+            android:summary="@string/pref_dim_level_summary"
+            android:max="100"
+            app:min="5"
+            android:defaultValue="20"
+            app:showSeekBarValue="true" />
+
+        <ListPreference
+            android:key="units"
+            android:title="@string/pref_units_title"
+            android:entries="@array/units_entries"
+            android:entryValues="@array/units_values"
+            android:defaultValue="METRIC"
+            app:useSimpleSummaryProvider="true" />
+
+        <SeekBarPreference
+            android:key="pitch_deg"
+            android:title="@string/pref_pitch_title"
+            android:summary="@string/pref_pitch_summary"
+            android:max="60"
+            app:min="0"
+            android:defaultValue="55"
+            app:showSeekBarValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_route">
+
+        <ListPreference
+            android:key="off_route_m"
+            android:title="@string/pref_off_route_title"
+            android:entries="@array/off_route_entries"
+            android:entryValues="@array/off_route_values"
+            android:defaultValue="50"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

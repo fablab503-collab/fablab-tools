@@ -1,0 +1,221 @@
+name: velotrack-map-extract
+
+# Cuts an offline map region out of the Protomaps daily planet build and publishes it as
+# <name>.mbtiles (primary, for the app) and <name>.pmtiles (secondary) on the release "map-<name>".
+# Map data: (c) OpenStreetMap contributors, ODbL. Style/tiles schema: Protomaps basemaps v4.
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Region name: lowercase letters, digits and hyphens, 1-40 chars (e.g. portland). Becomes the release map-<name>."
+        required: true
+        type: string
+      bbox:
+        description: "Bounding box minLon,minLat,maxLon,maxLat in WGS84 decimal degrees (e.g. -122.85,45.40,-122.45,45.65). Get it from bboxfinder.com."
+        required: true
+        type: string
+      maxzoom:
+        description: "Maximum zoom level 0-15. 15 = full street detail; 14 roughly halves the file size."
+        required: false
+        default: "15"
+        type: string
+      build:
+        description: "Planet build date YYYYMMDD (e.g. 20260907). Empty = newest build from build-metadata.protomaps.dev."
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write # gh release create/upload and pushing the map-<name> tag
+
+concurrency:
+  group: velotrack-map-extract-${{ inputs.name }}
+  cancel-in-progress: false
+
+env:
+  PMTILES_VERSION: "1.31.2"
+  PMTILES_PY_VERSION: "3.7.0"
+  MAX_ASSET_BYTES: "2000000000" # GitHub Releases: 2 GB per file
+
+jobs:
+  extract:
+    name: Extract ${{ inputs.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Validate inputs
+        env:
+          IN_NAME: ${{ inputs.name }}
+          IN_BBOX: ${{ inputs.bbox }}
+          IN_MAXZOOM: ${{ inputs.maxzoom }}
+          IN_BUILD: ${{ inputs.build }}
+        run: |
+          set -euo pipefail
+          NAME="$(printf '%s' "$IN_NAME" | tr -d '[:space:]')"
+          if ! printf '%s' "$NAME" | grep -Eq '^[a-z0-9][a-z0-9-]{0,39}$'; then
+            echo "::error::name must be 1-40 lowercase letters, digits or hyphens, starting with a letter or digit (got '$IN_NAME')"
+            exit 1
+          fi
+          BBOX="$(printf '%s' "$IN_BBOX" | tr -d '[:space:]')"
+          if ! printf '%s' "$BBOX" | grep -Eq '^-?[0-9]+(\.[0-9]+)?(,-?[0-9]+(\.[0-9]+)?){3}$'; then
+            echo "::error::bbox must be minLon,minLat,maxLon,maxLat (got '$IN_BBOX')"
+            exit 1
+          fi
+          if ! printf '%s' "$BBOX" | awk -F, '{
+              if ($1 < -180 || $3 > 180 || $2 < -90 || $4 > 90) exit 1;
+              if ($1 >= $3 || $2 >= $4) exit 1;
+              exit 0 }'; then
+            echo "::error::bbox out of range or min >= max: '$BBOX' (order is minLon,minLat,maxLon,maxLat)"
+            exit 1
+          fi
+          MAXZOOM="$(printf '%s' "${IN_MAXZOOM:-15}" | tr -d '[:space:]')"
+          if ! printf '%s' "$MAXZOOM" | grep -Eq '^[0-9]{1,2}$' || [ "$MAXZOOM" -gt 15 ]; then
+            echo "::error::maxzoom must be an integer between 0 and 15 (got '$IN_MAXZOOM')"
+            exit 1
+          fi
+          BUILD_IN="$(printf '%s' "$IN_BUILD" | tr -d '[:space:]')"
+          BUILD_IN="${BUILD_IN%.pmtiles}"
+          if [ -n "$BUILD_IN" ] && ! printf '%s' "$BUILD_IN" | grep -Eq '^[0-9]{8}$'; then
+            echo "::error::build must be a date YYYYMMDD or empty (got '$IN_BUILD')"
+            exit 1
+          fi
+          {
+            echo "NAME=$NAME"
+            echo "BBOX=$BBOX"
+            echo "MAXZOOM=$MAXZOOM"
+            echo "BUILD_IN=$BUILD_IN"
+          } >> "$GITHUB_ENV"
+          echo "name=$NAME bbox=$BBOX maxzoom=$MAXZOOM build=${BUILD_IN:-latest}"
+
+      - name: Install pmtiles CLI ${{ env.PMTILES_VERSION }}
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/pmtiles.tar.gz" \
+            "https://github.com/protomaps/go-pmtiles/releases/download/v${PMTILES_VERSION}/go-pmtiles_${PMTILES_VERSION}_Linux_x86_64.tar.gz"
+          tar -xzf "$RUNNER_TEMP/pmtiles.tar.gz" -C "$RUNNER_TEMP" pmtiles
+          sudo install -m 0755 "$RUNNER_TEMP/pmtiles" /usr/local/bin/pmtiles
+          pmtiles version || pmtiles --help >/dev/null
+
+      - name: Resolve planet build
+        run: |
+          set -euo pipefail
+          if [ -n "$BUILD_IN" ]; then
+            BUILD="${BUILD_IN}.pmtiles"
+          else
+            BUILD="$(curl -fsSL --retry 3 https://build-metadata.protomaps.dev/builds.json | jq -r 'map(.key) | map(select(test("^[0-9]{8}\\.pmtiles$"))) | sort | last')"
+            if [ -z "$BUILD" ] || [ "$BUILD" = "null" ]; then
+              echo "::error::Could not resolve the newest build from builds.json"
+              exit 1
+            fi
+          fi
+          PLANET="https://build.protomaps.com/${BUILD}"
+          if ! curl -fsSIL --retry 3 -o /dev/null "$PLANET"; then
+            echo "::error::Planet build not reachable: $PLANET (only the last week of daily builds is kept; leave 'build' empty for the newest)"
+            exit 1
+          fi
+          {
+            echo "BUILD=$BUILD"
+            echo "PLANET=$PLANET"
+          } >> "$GITHUB_ENV"
+          echo "Planet build: $PLANET"
+
+      - name: Extract region (dry run, then real)
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          OUT="out/${NAME}.pmtiles"
+          echo "== dry run =="
+          pmtiles extract "$PLANET" "$OUT" --bbox="$BBOX" --maxzoom="$MAXZOOM" --dry-run
+          echo "== extract =="
+          if ! pmtiles extract "$PLANET" "$OUT" --bbox="$BBOX" --maxzoom="$MAXZOOM" --download-threads=8; then
+            echo "::warning::extract failed; retrying with --overfetch=0 (go-pmtiles issue #225)"
+            rm -f "$OUT"
+            pmtiles extract "$PLANET" "$OUT" --bbox="$BBOX" --maxzoom="$MAXZOOM" --download-threads=8 --overfetch=0
+          fi
+          pmtiles verify "$OUT"
+          pmtiles show "$OUT"
+          PM_BYTES="$(stat -c %s "$OUT")"
+          echo "PM_BYTES=$PM_BYTES" >> "$GITHUB_ENV"
+          echo "${NAME}.pmtiles: $PM_BYTES bytes"
+          if [ "$PM_BYTES" -gt "$MAX_ASSET_BYTES" ]; then
+            echo "::error::${NAME}.pmtiles is $PM_BYTES bytes, above the $MAX_ASSET_BYTES-byte GitHub release asset limit. Use a smaller bbox or maxzoom 14 (roughly halves the size), or split the region into several extracts."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Convert to MBTiles (python pmtiles ${{ env.PMTILES_PY_VERSION }})
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet "pmtiles==${PMTILES_PY_VERSION}"
+          pmtiles-convert "out/${NAME}.pmtiles" "out/${NAME}.mbtiles"
+          MB_BYTES="$(stat -c %s "out/${NAME}.mbtiles")"
+          echo "MB_BYTES=$MB_BYTES" >> "$GITHUB_ENV"
+          echo "${NAME}.mbtiles: $MB_BYTES bytes"
+          if [ "$MB_BYTES" -gt "$MAX_ASSET_BYTES" ]; then
+            echo "::error::${NAME}.mbtiles is $MB_BYTES bytes, above the $MAX_ASSET_BYTES-byte GitHub release asset limit. Use a smaller bbox or maxzoom 14 (roughly halves the size), or split the region into several extracts."
+            exit 1
+          fi
+          # Quick integrity check of the SQLite file and tile count.
+          sudo apt-get install -y -qq sqlite3 >/dev/null 2>&1 || true
+          if command -v sqlite3 >/dev/null; then
+            sqlite3 "out/${NAME}.mbtiles" 'PRAGMA integrity_check; SELECT COUNT(*) AS tiles, MIN(zoom_level) AS minz, MAX(zoom_level) AS maxz FROM tiles; SELECT name, substr(value, 1, 80) FROM metadata;'
+          fi
+          ls -l out
+
+      - name: Publish release map-${{ inputs.name }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="map-${NAME}"
+          NOTES="$RUNNER_TEMP/notes.md"
+          {
+            echo "Offline map region **${NAME}** for VeloTrack."
+            echo
+            echo "- Bounding box (minLon,minLat,maxLon,maxLat): \`${BBOX}\`"
+            echo "- Max zoom: ${MAXZOOM}"
+            echo "- Source: Protomaps planet build \`${BUILD}\` (https://build.protomaps.com/), tile schema v4"
+            echo "- Extracted: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "- ${NAME}.mbtiles: ${MB_BYTES} bytes (use this one in the app)"
+            echo "- ${NAME}.pmtiles: ${PM_BYTES} bytes"
+            echo
+            echo "Map data (c) OpenStreetMap contributors, ODbL - https://www.openstreetmap.org/copyright"
+            echo
+            echo "In VeloTrack: download the .mbtiles on the phone, then Menu > Map files > Import."
+          } > "$NOTES"
+
+          # Point the tag at the current commit (harmless; the release is keyed by tag name).
+          git tag -f "$TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$TAG"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "Map: ${NAME}" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" --title "Map: ${NAME}" --notes-file "$NOTES" --latest=false
+          fi
+          gh release upload "$TAG" "out/${NAME}.mbtiles" "out/${NAME}.pmtiles" --clobber
+
+      - name: Summary
+        run: |
+          set -euo pipefail
+          BASE="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/map-${NAME}"
+          human() { numfmt --to=iec-i --suffix=B "$1" 2>/dev/null || echo "$1 bytes"; }
+          {
+            echo "## Map region \`${NAME}\`"
+            echo
+            echo "| File | Size | Download |"
+            echo "|---|---|---|"
+            echo "| ${NAME}.mbtiles (use in app) | $(human "$MB_BYTES") | ${BASE}/${NAME}.mbtiles |"
+            echo "| ${NAME}.pmtiles | $(human "$PM_BYTES") | ${BASE}/${NAME}.pmtiles |"
+            echo
+            echo "- bbox: \`${BBOX}\`, maxzoom: ${MAXZOOM}, planet build: \`${BUILD}\`"
+            echo "- Release page: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/map-${NAME}"
+            echo
+            echo "On the phone: open the .mbtiles link, wait for the download, then in VeloTrack use Menu > Map files > Import."
+          } >> "$GITHUB_STEP_SUMMARY"

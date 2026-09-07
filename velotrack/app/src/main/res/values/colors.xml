@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black_bg">#FF000000</color>
+    <color name="primary">#FF42A5F5</color>
+    <color name="hud_bg">#B3000000</color>
+    <color name="hud_text">#FFFFFFFF</color>
+    <color name="hud_label">#FFB0BEC5</color>
+    <color name="warning">#FFFF9800</color>
+    <color name="record_red">#FFE53935</color>
+    <color name="pause_amber">#FFFFB300</color>
+    <color name="stop_grey">#FF616161</color>
+    <color name="banner_bg">#E6803300</color>
+    <color name="overlay_bg">#CC000000</color>
+</resources>

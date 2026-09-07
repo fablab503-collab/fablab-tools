@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Navigation arrow (chevron) in the 72dp safe zone -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,22 L80,80 L54,67 L28,80 Z" />
+    <path
+        android:fillColor="#FF42A5F5"
+        android:pathData="M54,36 L70,74 L54,66 L38,74 Z" />
+</vector>

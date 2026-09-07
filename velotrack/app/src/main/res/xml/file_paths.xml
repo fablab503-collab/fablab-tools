@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="tracks" path="tracks/" />
+    <!-- Fallback when external storage is unavailable (see TracksActivity.exportDir). -->
+    <files-path name="tracks_internal" path="tracks/" />
+</paths>
