@@ -81,7 +81,8 @@ toolchain and wants interactive iteration.
   fallback); it only overzooms past a source's `maxzoom`. Sparse coverage needs one file per zoom
   band (z0–6, 7–9, 10–12, 13–15), each its own style source with the layer set repeated.
 - Reloading the same style JSON keeps unchanged sources and their cached empty tiles: pass through a
-  blank style before the real one after the data changed.
+  blank style before the real one after the data changed (verified on device: World download →
+  new area renders without restart).
 - PMTiles range extraction on-device works: header (127 B) + root dir (≈16 KB) + a few leaf dirs,
   then only the tile blobs. Measured: 10 km z13–15 ≈ 16–50 MB, 100 km z10–12 ≈ 60 MB, France z7–9
   ≈ 100 MB, world z0–6 = 45 MB. Reference implementation: `velotrack/tools/pmtiles_dryrun.py`.

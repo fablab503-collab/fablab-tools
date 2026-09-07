@@ -44,6 +44,8 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 | Recording | Foreground `location` service, SQLite (WAL, one shared helper), GPX 1.1 export via SAF/FileProvider, crash recovery dialog |
 | UI | Material You dynamic colour (Google-blue baseline), HUD card + status chip, left column of 56 dp surface FABs, primary Extended FAB bottom-right, M3 two-line lists, edge-to-edge insets |
 | Privacy | INTERNET only for the Download screen; `MapLibre.setConnected(false)`; CI greps for it |
+| Favourites | Home / Work / Favourites FABs at the top of the left column; `favorites` table (TrackDatabase v3) with kinds home/work/person/restaurant/theater/place, name + description; bottom sheet add/edit/delete; straight-line guidance = target marker + dashed line + HUD row "→ name · distance · direction" (relative sectors when heading known, compass point otherwise) |
+| Where am I | `MapController.placeNameAt(latLon)` = `queryRenderedFeatures` in a 24 dp box around the puck on `roads_*_b3..b1`, then park / urban-green / water / locality layers; throttled to every 2 s and > 10 m; shown under the stats with a 16 dp pin; hidden when null or after a style reload |
 
 ## Gotchas discovered on device
 
@@ -54,6 +56,12 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 - Someone may tap the emulator while you test; check logcat `GrantPermissionsViewModel` /
   `ActivityTaskManager START` before blaming the app.
 - Android 15+ edge-to-edge: pad HUD/controls with window insets.
+- Selecting a chip can reflow a screen (chips wrap differently): re-screenshot before tapping a
+  button by coordinates, or the tap lands on the wrong control.
+- To prove coarse (z0–6) data renders at riding zoom, put the puck in open sea: the screen turns the
+  style's water colour (#31353f) instead of black. City streets never exist in the overview band.
+- Name lookups (`queryRenderedFeatures`) only see layers of the *rendered* style: query per band
+  and skip ids that are absent (the blank fallback style has none), never assume a layer exists.
 
 ## Where things are
 
