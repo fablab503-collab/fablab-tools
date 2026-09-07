@@ -899,7 +899,7 @@ class MapController(
         const val IMAGE_TARGET_PREFIX = "target-"
 
         private const val TAG = "VeloMap"
-        private const val DEBUG_PLACE = true
+        private const val DEBUG_PLACE = false
         private const val PROPERTY_NAME = "name"
         private const val PROPERTY_KIND = "kind"
         private const val SOURCE_LAYER_POIS = "pois"

@@ -56,5 +56,15 @@ Images: draw 6 marker bitmaps with Canvas (a 32 dp pin disc in `colorTertiary` w
 - New icons (Material Symbols Rounded): `ic_home`, `ic_work`, `ic_star` (favourites button), `ic_person`, `ic_restaurant`, `ic_theater_comedy`, `ic_place`, `ic_edit`, `ic_near_me` (guidance arrow). Strings for everything (sentence case).
 - Menu: no change. Settings: none.
 
+## 3.4 Where-am-I data facts (found on device)
+- Protomaps `landuse` polygons carry only `kind` and `sort_rank`, never `name`. Park names live on
+  point features in the `pois` source layer (kinds park, golf_course, grass, garden, …). `placeNameAt`
+  therefore: named road (bands 3→1) → rendered green polygon → nearest park-like POI *inside* that
+  polygon from the same band's source (`VectorSource.querySourceFeatures("pois", kind filter)`,
+  ray-cast point-in-polygon on the tile-clipped ring) → generic label for the polygon kind
+  (`place_kind_*` strings) → named water → locality.
+- Verified 2026-09-07 on the emulator: "Amphitheatre Parkway" on the road, "Vista Slope" in the park
+  north of it, "Shoreline Golf Links Driving Range" on the golf course.
+
 ## 4. Acceptance (emulator)
 Set Home from my position → Home button starts guidance ("→ Home · 0 m"); pan the map, set Work from map centre → guidance shows distance and direction; add "Mom and dad" (person) and a "Favourite restaurant" via the sheet, delete one; the HUD shows "Amphitheatre Parkway" while the puck sits on that road and "Shoreline Park" inside the park; nothing crashes when no map data exists (placeText hidden).
