@@ -572,7 +572,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
 
         if (active) {
             val fix = state.lastFix
-            renderLiveHud(fix, state.gps)
+            renderLiveHud(fix, state.gps, state.speedMps)
             if (fix != null && fix !== lastRenderedFix) {
                 lastRenderedFix = fix
                 val nowMs = System.currentTimeMillis()
@@ -588,10 +588,11 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         updateGpsBanner()
     }
 
-    private fun renderLiveHud(fix: GpsFix?, gps: GpsStatus) {
+    /** [speedOverride] is the filtered speed published by the recording service; null when idle. */
+    private fun renderLiveHud(fix: GpsFix?, gps: GpsStatus, speedOverride: Float? = null) {
         val units = prefs.units
         binding.speedUnit.text = Format.speedUnit(units)
-        val speed = state.speedMps ?: fix?.speedMps
+        val speed = speedOverride ?: fix?.speedMps
         binding.speedText.text = if (speed != null) {
             Format.speedValue(speed.toDouble(), units)
         } else {
