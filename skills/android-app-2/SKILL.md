@@ -107,6 +107,20 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 - Root README = project landing page (what, install link, layout, contributing, licence); app
   README = full user + build guide; `PATCH /repos/{owner}/{repo}` with `{"private": false}`.
 
+## Google Play kit (2026-09-08)
+
+- Play needs an `.aab`: add `bundleRelease` to the gradle step and publish
+  `app/build/outputs/bundle/release/*.aab` next to the APK. Our CI key is the *upload* key; Play
+  App Signing holds the store key.
+- Store assets without design tools: SVG → `qlmanage -t -s 1024 -o . file.svg` (unsandboxed via
+  osascript; thumbnails come out square, so draw a 1024x1024 SVG and `sips --cropToHeightWidth`
+  to 1024x500) and `sips --cropToHeightWidth 2160 1080` for phone screenshots (Play rejects
+  aspect ratios above 2:1; the emulator's 1080x2424 is 2.24:1).
+- Texts, privacy policy and the console checklist live in `velotrack/store/` and
+  `velotrack/PRIVACY.md`; the console forms (content rating, data safety, foreground-service
+  declaration with a screen recording, 12-tester closed test for new personal accounts) cannot be
+  scripted — the user or Claude in Chrome must do them.
+
 ## Where things are
 
 - Repo `~/Documents/GitHub/fablab-tools`, app `velotrack/`, specs/plans under `docs/superpowers/`,
