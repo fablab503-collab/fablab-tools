@@ -173,6 +173,27 @@ class PointFilterTest {
     }
 
     @Test
+    fun zeroReportedSpeedWhileMovingUsesDerivedSpeedAndDoesNotAutoPause() {
+        // Emulators and some receivers report speed 0 while the position clearly moves (5.5 m/s here).
+        val filter = PointFilter(FilterConfig())
+        filter.offer(fix(0.0, 0.0, accuracy = 5f, speed = 0f))
+        var last = filter.offer(fix(1.0, 5.5, accuracy = 5f, speed = 0f))
+        assertEquals(5.5f, last.speedMps, 0.2f)
+        for (i in 2..14) last = filter.offer(fix(i.toDouble(), i * 5.5, accuracy = 5f, speed = 0f))
+        assertFalse(last.autoPaused)
+        assertTrue(last.store)
+    }
+
+    @Test
+    fun zeroReportedSpeedWhileStationaryStillAutoPauses() {
+        // Position jitter below the accuracy radius must not be mistaken for movement.
+        val filter = PointFilter(FilterConfig())
+        var last = filter.offer(fix(0.0, 0.0, accuracy = 8f, speed = 0f))
+        for (i in 1..12) last = filter.offer(fix(i.toDouble(), if (i % 2 == 0) 0.0 else 3.0, accuracy = 8f, speed = 0f))
+        assertTrue(last.autoPaused)
+    }
+
+    @Test
     fun derivesSpeedWhenReceiverReportsNone() {
         val filter = PointFilter(FilterConfig())
         filter.offer(fix(0.0, 0.0, speed = null))

@@ -88,10 +88,17 @@ class PointFilter(private val config: FilterConfig) {
             if (distFromPrevM > maxPlausibleM) return rejected(fix)
         }
 
-        val reported = fix.speedMps
+        // Speed: trust the receiver when it reports real movement. Some receivers (and the Android
+        // emulator) report exactly 0 while the position clearly moves, so fall back to the speed
+        // derived from the previous fix whenever the displacement exceeds the accuracy radius.
+        val reported = fix.speedMps?.takeIf { !it.isNaN() && it >= 0f }
+        val derived: Float? = if (prev != null && dtS > 0.0) (distFromPrevM / dtS).toFloat() else null
+        val movedBeyondNoise = distFromPrevM > maxOf(accuracy, 2f).toDouble()
         val speed: Float = when {
-            reported != null && !reported.isNaN() && reported >= 0f -> reported
-            prev != null && dtS > 0.0 -> (distFromPrevM / dtS).toFloat()
+            reported != null && reported > MIN_TRUSTED_REPORTED_SPEED_MPS -> reported
+            derived != null && movedBeyondNoise -> derived
+            reported != null -> reported
+            derived != null -> derived
             else -> 0f
         }
 
@@ -175,6 +182,11 @@ class PointFilter(private val config: FilterConfig) {
             slowSinceNs = -1L
             if (autoPaused && speed >= config.resumeSpeedMps) autoPaused = false
         }
+    }
+
+    private companion object {
+        /** Reported speeds at or below this are treated as "unknown" and cross-checked with displacement. */
+        const val MIN_TRUSTED_REPORTED_SPEED_MPS = 0.3f
     }
 
     private fun rejected(fix: GpsFix): FilterDecision {

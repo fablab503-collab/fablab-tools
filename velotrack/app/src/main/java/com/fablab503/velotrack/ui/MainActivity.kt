@@ -25,7 +25,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -157,6 +160,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applySystemBarInsets()
 
         // MapLibre.getInstance() ran in VeloTrackApp.onCreate.
         val options = MapLibreMapOptions.createFromAttributes(this)
@@ -261,6 +265,26 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     }
 
     // ---------------------------------------------------------------- buttons and menu
+
+    /**
+     * Android 15+ draws the app edge to edge, so the HUD and the controls would sit under the
+     * status and navigation bars. Add their heights as padding; the map itself stays full screen.
+     */
+    private fun applySystemBarInsets() {
+        val topPanel = binding.topPanel
+        val controls = binding.controls
+        val basePaddingTop = topPanel.paddingTop
+        val basePaddingBottom = controls.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+            )
+            topPanel.updatePadding(top = basePaddingTop + bars.top)
+            controls.updatePadding(bottom = basePaddingBottom + bars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(binding.root)
+    }
 
     private fun setupButtons() {
         binding.btnRecord.setOnClickListener { onRecordClicked() }
