@@ -6,12 +6,17 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <!-- Merged in by the MapLibre AAR; this app must never touch the network. -->
-    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <!--
+        Network is used by the Download map screen only (download.MapDownloadService). MapLibre is
+        kept offline with MapLibre.setConnected(false) in VeloTrackApp; CI asserts that guard.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
 
     <uses-feature
@@ -49,6 +54,12 @@
             android:label="@string/title_map_files" />
 
         <activity
+            android:name=".ui.DownloadMapActivity"
+            android:exported="false"
+            android:label="@string/title_download_map"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:label="@string/title_settings" />
@@ -57,6 +68,13 @@
             android:name=".recording.RecordingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <!-- Own process: MapLibre's bundled SQLite and the platform SQLite must not share one process while writing the same band files. -->
+        <service
+            android:name=".download.MapDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:process=":download" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

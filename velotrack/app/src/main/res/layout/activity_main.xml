@@ -357,14 +357,14 @@
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnMapFiles"
+                    android:id="@+id/btnDownloadMap"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
                     android:layout_marginTop="@dimen/screen_margin"
                     android:text="@string/no_map_action"
-                    app:icon="@drawable/ic_add" />
+                    app:icon="@drawable/ic_download" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -10,6 +10,9 @@
         android:id="@+id/action_clear_route"
         android:title="@string/menu_clear_route" />
     <item
+        android:id="@+id/action_download_map"
+        android:title="@string/menu_download_map" />
+    <item
         android:id="@+id/action_map_files"
         android:title="@string/menu_map_files" />
     <item

@@ -62,5 +62,23 @@ object Format {
     fun dateTime(ms: Long): String =
         SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(ms))
 
+    /** Local date only, e.g. "2026-09-07". */
+    fun date(ms: Long): String =
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(ms))
+
+    /** Byte count for humans: "312 KB", "4.7 MB", "47 MB", "1.2 GB". */
+    fun bytes(b: Long): String {
+        val v = b.coerceAtLeast(0L).toDouble()
+        return when {
+            v < 1_000_000.0 -> "${(v / 1000.0).roundToInt()} KB"
+            v < 10_000_000.0 -> String.format(Locale.getDefault(), "%.1f MB", v / 1_000_000.0)
+            v < 1_000_000_000.0 -> "${(v / 1_000_000.0).roundToInt()} MB"
+            else -> String.format(Locale.getDefault(), "%.1f GB", v / 1_000_000_000.0)
+        }
+    }
+
+    /** Integer with grouping separators, e.g. "12 345". */
+    fun count(n: Long): String = String.format(Locale.getDefault(), "%,d", n)
+
     private fun safe(v: Double): Double = if (v.isNaN() || v.isInfinite()) 0.0 else v
 }

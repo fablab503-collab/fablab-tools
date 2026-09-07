@@ -79,6 +79,19 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_SAVER_WARNED, false)
         set(value) = sp.edit().putBoolean(KEY_SAVER_WARNED, value).apply()
 
+    /** URL of a PMTiles planet file to download from instead of the official Protomaps build; null when unset or blank. */
+    var planetUrlOverride: String?
+        get() = sp.getString(KEY_PLANET_URL, null)?.trim()?.takeIf { it.isNotEmpty() }
+        set(value) {
+            val v = value?.trim()
+            if (v.isNullOrEmpty()) sp.edit().remove(KEY_PLANET_URL).apply() else sp.edit().putString(KEY_PLANET_URL, v).apply()
+        }
+
+    /** Refuse map downloads on metered networks unless the user confirms. */
+    var wifiOnlyDownloads: Boolean
+        get() = sp.getBoolean(KEY_WIFI_ONLY_DOWNLOADS, true)
+        set(value) = sp.edit().putBoolean(KEY_WIFI_ONLY_DOWNLOADS, value).apply()
+
     fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) =
         sp.registerOnSharedPreferenceChangeListener(listener)
 
@@ -102,6 +115,8 @@ class Prefs(context: Context) {
         const val KEY_SAVER_WARNED = "battery_saver_warned"
         const val KEY_LAST_LAT = "last_lat"
         const val KEY_LAST_LON = "last_lon"
+        const val KEY_PLANET_URL = "planet_url"
+        const val KEY_WIFI_ONLY_DOWNLOADS = "wifi_only_downloads"
 
         const val DEFAULT_ACCURACY_CUTOFF_M = 50f
         const val DEFAULT_PITCH_DEG = 55

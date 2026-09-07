@@ -2,8 +2,10 @@ package com.fablab503.velotrack.ui
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.net.Uri
@@ -35,6 +37,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityMainBinding
+import com.fablab503.velotrack.download.Bands
+import com.fablab503.velotrack.download.MapDownloadService
+import com.fablab503.velotrack.download.MapLibrary
 import com.fablab503.velotrack.location.GpsSource
 import com.fablab503.velotrack.location.HeadingEstimator
 import com.fablab503.velotrack.map.MapController
@@ -51,7 +56,6 @@ import com.fablab503.velotrack.recording.RideSession
 import com.fablab503.velotrack.recording.RideStats
 import com.fablab503.velotrack.route.RouteFollower
 import com.fablab503.velotrack.settings.Prefs
-import com.fablab503.velotrack.storage.MapFileStore
 import com.fablab503.velotrack.storage.RouteStore
 import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
@@ -75,6 +79,10 @@ import kotlin.math.roundToInt
 /**
  * Map + HUD screen. The MapView is created programmatically and inserted under the HUD overlay.
  *
+ * Map data: the four detail-band MBTiles files owned by [MapLibrary] are always the map sources;
+ * the style is loaded once they exist and reloaded whenever [MapDownloadService] reports a finished
+ * download. The "no map" overlay shows only while no region has been downloaded or imported.
+ *
  * Position source: while [RideSession] is idle and the recording service is not running, this
  * activity runs its own [GpsSource] for the puck; while a ride is recorded, the service is the only
  * GPS client and the UI renders `RideSession.state` (last fix, heading, stats, satellites).
@@ -85,7 +93,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     private lateinit var prefs: Prefs
     private lateinit var db: TrackDatabase
     private lateinit var repo: TrackRepository
-    private lateinit var mapFileStore: MapFileStore
+    private lateinit var mapLibrary: MapLibrary
     private lateinit var routeStore: RouteStore
     private lateinit var gpsSource: GpsSource
     private lateinit var mapView: MapView
@@ -108,9 +116,10 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     private var trackPointsOnMap = -1
     private var trackLoadJob: Job? = null
 
-    // Map file and route.
-    private var styleRequested = false
-    private var loadedMapPath: String? = null
+    // Map data and route.
+    /** The four band files once [MapLibrary.ensureBandFiles] has run; null until then. */
+    private var bandFiles: List<File>? = null
+    private var downloadReceiverRegistered = false
     private var loadedRouteKey: String? = null
     private var routeFollower: RouteFollower? = null
     private var offRoute = false
@@ -140,6 +149,19 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
             if (uri != null) importRoute(uri)
         }
 
+    /**
+     * Download map / Map data screens report RESULT_OK when the band files changed under MapLibre's
+     * feet. This activity is stopped while they are on top, so [downloadReceiver] misses the
+     * service's `done` broadcast; the result is the reliable signal to reload the style.
+     */
+    private val mapDataLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                refreshNoMapOverlay()
+                reloadStyle()
+            }
+        }
+
     private val clockRunnable = object : Runnable {
         override fun run() {
             updateClockAndBattery()
@@ -149,6 +171,17 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
 
     private val gpsRetryRunnable = Runnable { refreshLocalGps() }
 
+    /** A finished download changes the band files under MapLibre's feet: reload the style. */
+    private val downloadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != MapDownloadService.ACTION_PROGRESS) return
+            if (intent.getStringExtra(MapDownloadService.EXTRA_PHASE) == PHASE_DONE) {
+                refreshNoMapOverlay()
+                reloadStyle()
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- lifecycle
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -156,7 +189,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         prefs = Prefs(this)
         db = TrackDatabase.get(this)
         repo = TrackRepository(db)
-        mapFileStore = MapFileStore(this, prefs)
+        mapLibrary = MapLibrary(this, prefs, db)
         routeStore = RouteStore(this, db, prefs)
         gpsSource = GpsSource(this)
 
@@ -170,6 +203,8 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
             .logoEnabled(false)
             .compassEnabled(false)
             .setPrefetchesTiles(false)
+            // Four band sources carry the same labels; without this, one band's labels would suppress another's.
+            .crossSourceCollisions(false)
         mapView = MapView(this, options)
         binding.mapContainer.addView(
             mapView,
@@ -190,6 +225,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         setupButtons()
         updateModeButton()
         pendingViewTrackId = viewTrackIdFrom(intent)
+        prepareMapData()
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -214,6 +250,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         super.onStart()
         mapView.onStart()
         activityStarted = true
+        registerDownloadReceiver()
         refreshLocalGps()
         handler.removeCallbacks(clockRunnable)
         clockRunnable.run()
@@ -228,7 +265,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         mapView.onResume()
         applyScreenMode()
         updateGpsBanner()
-        refreshMapFile()
+        refreshNoMapOverlay()
         refreshRoute()
         updateModeButton()
         render(RideSession.state.value)
@@ -245,6 +282,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         handler.removeCallbacks(clockRunnable)
         handler.removeCallbacks(gpsRetryRunnable)
         refreshLocalGps() // stops the local feed while not visible
+        unregisterDownloadReceiver()
         mapView.onStop()
         super.onStop()
     }
@@ -307,7 +345,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         binding.btnToggle3d.setOnClickListener { toggleFollowMode() }
         binding.btnMenu.setOnClickListener { showMenu() }
         binding.btnGpsSettings.setOnClickListener { openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) }
-        binding.btnMapFiles.setOnClickListener { startActivity(Intent(this, MapFilesActivity::class.java)) }
+        binding.btnDownloadMap.setOnClickListener { openDownloadMap() }
     }
 
     private fun toggleFollowMode() {
@@ -352,7 +390,8 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
                 R.id.action_tracks -> startActivity(Intent(this, TracksActivity::class.java))
                 R.id.action_import_route -> routeLauncher.launch(arrayOf("*/*"))
                 R.id.action_clear_route -> clearRoute()
-                R.id.action_map_files -> startActivity(Intent(this, MapFilesActivity::class.java))
+                R.id.action_download_map -> openDownloadMap()
+                R.id.action_map_files -> mapDataLauncher.launch(Intent(this, MapFilesActivity::class.java))
                 R.id.action_settings -> startActivity(Intent(this, SettingsActivity::class.java))
                 R.id.action_about -> AboutDialog.show(this)
                 else -> return@setOnMenuItemClickListener false
@@ -756,27 +795,80 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         m.easeCamera(update, FRAME_EASE_MS, true)
     }
 
-    // ---------------------------------------------------------------- map file
+    // ---------------------------------------------------------------- map data
 
-    private fun refreshMapFile() {
-        val active = mapFileStore.activeMap()
-        binding.noMapOverlay.isVisible = active == null
-        val path = active?.absolutePath
-        if (styleRequested && path == loadedMapPath) return
-        styleRequested = true
-        loadedMapPath = path
-        mapController.loadStyle(active) { error -> onStyleLoaded(active, error) }
+    /** Creates the (possibly empty) band files off the main thread, then loads the style over them. */
+    private fun prepareMapData() {
+        lifecycleScope.launch {
+            val files: List<File> = withContext(Dispatchers.IO) {
+                runCatching { mapLibrary.ensureBandFiles() }
+                Bands.ALL.map { band -> mapLibrary.bandFile(band) }
+            }
+            bandFiles = files
+            reloadStyle()
+            refreshNoMapOverlay()
+        }
     }
 
-    private fun onStyleLoaded(file: File?, error: String?) {
+    /** (Re)loads the style with all four band sources; a no-op until the band files are known. */
+    private fun reloadStyle() {
+        val files = bandFiles ?: return
+        mapController.loadStyle(files) { error -> onStyleLoaded(error) }
+    }
+
+    private fun onStyleLoaded(error: String?) {
         if (error == null || isFinishing || isDestroyed) return
-        if (file != null) {
-            // Corrupt or unsupported archive: deactivate it, tell the user, fall back to the black base.
-            mapFileStore.setActive(null)
-            loadedMapPath = null
-            binding.noMapOverlay.isVisible = true
-            showMessage(getString(R.string.map_load_failed, error))
-            mapController.loadStyle(null) { }
+        showMessage(getString(R.string.map_load_failed, error))
+    }
+
+    /** The overlay invites a first download only while no region has been downloaded or imported. */
+    private fun refreshNoMapOverlay() {
+        lifecycleScope.launch {
+            val empty = withContext(Dispatchers.IO) {
+                runCatching { mapLibrary.listRegions().isEmpty() }.getOrDefault(true)
+            }
+            binding.noMapOverlay.isVisible = empty
+        }
+    }
+
+    /** Opens the Download screen with the rider's position and the camera target as candidate centres. */
+    private fun openDownloadMap() {
+        val intent = Intent(this, DownloadMapActivity::class.java)
+        val fix = RideSession.state.value.lastFix ?: localLastFix
+        if (fix != null) {
+            intent.putExtra(DownloadMapActivity.EXTRA_LAT, fix.lat)
+            intent.putExtra(DownloadMapActivity.EXTRA_LON, fix.lon)
+        } else {
+            prefs.lastPosition?.let { p ->
+                intent.putExtra(DownloadMapActivity.EXTRA_LAT, p.lat)
+                intent.putExtra(DownloadMapActivity.EXTRA_LON, p.lon)
+            }
+        }
+        map?.cameraPosition?.target?.let { target ->
+            intent.putExtra(DownloadMapActivity.EXTRA_CENTER_LAT, target.latitude)
+            intent.putExtra(DownloadMapActivity.EXTRA_CENTER_LON, target.longitude)
+        }
+        mapDataLauncher.launch(intent)
+    }
+
+    private fun registerDownloadReceiver() {
+        if (downloadReceiverRegistered) return
+        ContextCompat.registerReceiver(
+            this,
+            downloadReceiver,
+            IntentFilter(MapDownloadService.ACTION_PROGRESS),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        downloadReceiverRegistered = true
+    }
+
+    private fun unregisterDownloadReceiver() {
+        if (!downloadReceiverRegistered) return
+        downloadReceiverRegistered = false
+        try {
+            unregisterReceiver(downloadReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Already unregistered.
         }
     }
 
@@ -895,6 +987,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     companion object {
         /** Long extra: id of a saved track to draw on the map (sent by [TracksActivity]). */
         const val EXTRA_VIEW_TRACK_ID = "view_track_id"
+
+        /** [MapDownloadService.EXTRA_PHASE] value that marks a completed download. */
+        private const val PHASE_DONE = "done"
 
         private const val OFF_ROUTE_DELAY_MS = 10_000L
         private const val GPS_RETRY_MS = 1_000L

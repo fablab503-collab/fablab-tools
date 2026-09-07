@@ -5,13 +5,14 @@ map** viewed from a tilted, course-up 3D perspective, **records rides** of any l
 live speed, distance, moving time and climb, and can follow a **pre-planned GPX route** and warn
 you when you leave it.
 
-It uses **only the GPS receiver**. The app has no internet permission at all, so it can never
-touch Wi-Fi or mobile data, and it is built to be as cheap on battery as possible so a big phone
-lasts a multi-day ride. Everything is built and published by GitHub Actions: every push to `main`
+While riding it uses **only the GPS receiver**: the map renderer is locked offline and the
+network is touched by exactly one screen, **Download map**, where you fetch the map data for the
+area you ride in. The app is built to be as cheap on battery as possible so a big phone lasts a
+multi-day ride. Everything is built and published by GitHub Actions: every push to `main`
 produces an installable APK.
 
-Requirements: Android 8.0 (API 26) or newer, a GPS receiver, roughly 100 MB to 2 GB of free
-storage per map region.
+Requirements: Android 8.0 (API 26) or newer, a GPS receiver, and free storage for the map data
+(16-50 MB for 10 km of streets, about 100 MB for France, 45 MB for the world overview).
 
 ## Install
 
@@ -27,31 +28,65 @@ storage per map region.
 
 ## Get a map
 
-Maps are prepared at home, once per region, by a GitHub workflow, then copied to the phone.
+Map data is downloaded **in the app**, straight from the Protomaps planet file, using HTTP range
+requests: only the tiles for the chosen area are transferred, nothing is prepared on a server.
+The exact size is shown before you confirm.
 
-1. Go to [bboxfinder.com](http://bboxfinder.com/), draw a rectangle around the area you ride in
-   and copy the coordinates in the order **minLon,minLat,maxLon,maxLat** (the site shows this
-   order as "Lon/Lat"). A region of 100 x 100 km at full detail is typically 100-400 MB; a whole
-   small country can reach the 2 GB limit, so split large areas or use `maxzoom` 14.
+1. **Menu -> Download map** (or the *Download map* button shown while no map data exists).
+2. Pick the **centre**: *My position* (last GPS fix) or *Map centre* (where the map is looking).
+3. Pick the **area**. Each radius maps to a detail band; every download also fills the coarser
+   bands for the same area, so a detailed island always has its context:
+
+   | Choice | Zooms | Typical size |
+   |---|---|---|
+   | 10 km · streets | 13-15 (+ coarser bands) | 16 MB rural, 50 MB dense city |
+   | 100 km · roads | 10-12 (+ coarser) | 60-100 MB |
+   | 1000 km · region | 7-9 (+ overview) | about 140 MB |
+   | World · overview | 0-6 | 45 MB |
+   | Preset **France** | 7-9 (+ overview) | about 100 MB |
+
+   Sizes measured against the 2026-09-07 planet build. Start with **World** (45 MB) plus **10 km**
+   around home; add more 10 km or 100 km areas as you go: downloads merge into the existing data,
+   they never replace it.
+4. Check the estimate ("Download 47 MB · 812 tiles · build 2026-09-07"), adjust the name if you
+   like, tap **Download**. The download runs as a foreground service with a progress notification
+   and a Cancel button; you can leave the screen. When it finishes the map reloads by itself.
+
+**Wi-Fi only** is on by default (Settings -> Map downloads): on mobile data the app asks before
+downloading. The **Planet file URL** setting lets you point at your own PMTiles planet; leave it
+empty for the newest official Protomaps build.
+
+Data lives in the app's private storage (`Android/data/com.fablab503.velotrack/files/maps/`) as
+four MBTiles files, one per detail band: `band0.mbtiles` (z0-6), `band1.mbtiles` (z7-9),
+`band2.mbtiles` (z10-12), `band3.mbtiles` (z13-15). **Menu -> Map data** shows the total size,
+the size per band and every downloaded region (long-press a region to delete its tiles); its
+toolbar menu has **Import file** (feeds any `.mbtiles` extract into the bands by zoom) and
+**Clear all map data**.
+
+### Alternative: prepare a very large area on GitHub
+
+For a whole country at street detail (hundreds of MB to 2 GB) the phone download is slow; the
+`velotrack-map-extract` workflow does the extraction on GitHub instead and the result is imported
+with **Map data -> Import file**.
+
+1. Go to [bboxfinder.com](http://bboxfinder.com/), draw a rectangle around the area and copy the
+   coordinates in the order **minLon,minLat,maxLon,maxLat** (the site shows this order as
+   "Lon/Lat"). A region of 100 x 100 km at full detail is typically 100-400 MB; a whole small
+   country can reach the 2 GB limit, so split large areas or use `maxzoom` 14.
 2. In the repository open **Actions** -> **velotrack-map-extract** -> **Run workflow**. Enter a
    short `name` (lowercase letters, digits, hyphens, e.g. `alps-west`), paste the `bbox`, keep
    `maxzoom` 15 unless the region is large, leave `build` empty to use the newest planet build.
 3. Wait for the run to finish (a few minutes for a city, up to an hour for a large region). The
-   run summary lists the download links; the files are attached to the release **map-\<name\>**.
-4. On the phone, download **`<name>.mbtiles`** from that release (the `.pmtiles` file is a
-   secondary copy; the app can load it too, but MBTiles is the tested format).
-5. In VeloTrack: **Menu -> Map files -> Import**, pick the downloaded file. The file is copied
-   into the app's own storage (a progress bar shows the copy), and becomes the active map. You can
-   import several regions and switch between them from the same screen; delete the download from
+   files are attached to the release **map-\<name\>**; download **`<name>.mbtiles`** on the phone.
+4. In VeloTrack: **Menu -> Map data -> Import file**, pick the downloaded file. Its tiles are
+   copied into the band files by zoom (a progress dialog shows the copy); delete the download from
    your Downloads folder afterwards to free space.
-
-Running the workflow again with the same `name` replaces the files on the same release, so you
-can refresh a region with newer OpenStreetMap data whenever you like.
 
 ## Ride
 
 - **Airplane mode is recommended.** GPS works in airplane mode, and with all radios off the phone
-  lasts much longer. The app itself never uses the network, so nothing is lost.
+  lasts much longer. Once the map data is downloaded the app never needs the network, so nothing
+  is lost.
 - **The first fix can take a while.** Without internet there is no assisted GPS, so a cold start
   can take from 30 seconds to a few minutes with a clear view of the sky. Start the app while
   you get ready. Later fixes are fast.
@@ -85,11 +120,16 @@ can refresh a region with newer OpenStreetMap data whenever you like.
 | Units | Kilometres or miles | km |
 | 3D pitch | Camera tilt in Follow 3D mode (max 60) | 55 degrees |
 | Off-route distance | Distance from the route that counts as off-route | 50 m |
+| Wi-Fi only | Ask before downloading map data over a metered (mobile data) connection | on |
+| Planet file URL | PMTiles planet to download from; empty means the newest official Protomaps build | empty |
 
 ## Privacy
 
-- The APK declares **no `INTERNET` permission**; the CI build fails if the merged manifest ever
-  contains it. The app cannot send anything anywhere.
+- The network is used **only by the Download map screen**, to fetch map tiles from the Protomaps
+  planet file (or the URL you set). The map renderer is locked offline
+  (`MapLibre.setConnected(false)`) and never requests anything; the CI build fails if that guard
+  disappears or if the `ACCESS_WIFI_STATE` permission creeps back in. Nothing about you or your
+  rides is ever sent anywhere.
 - No Google Play Services, no accounts, no analytics. Rides, routes and map files live only on
   the phone, in the app's private storage, until you export them yourself.
 - Location is used only while the app is visible or a recording is running (a persistent
@@ -120,13 +160,15 @@ environment.
 - No turn-by-turn navigation: a route is a line on the map with distance remaining and an
   off-route warning. No elevation profiles, sensors (heart rate, cadence, barometer, compass) or
   cloud sync.
-- Maps must be prepared on GitHub and copied to the phone; the app cannot download anything.
+- Map data is a set of square tiles; a radius download covers the bounding square of the circle.
+  Very large areas at street detail (a whole country at z13-15) are better prepared with the GitHub
+  workflow and imported.
 - Label language is fixed at build time (`VELOTRACK_LANG` or `LANG` when running
   `tools/build-assets.sh`, see above). Devanagari labels are not bundled.
 - Elevation comes from GPS (mean sea level on Android 14+ when the phone provides it, otherwise
   the raw WGS84 height), so climb figures are approximate.
-- `.pmtiles` files can be loaded but MapLibre's PMTiles reader has open bugs with gzip-compressed
-  archives (which Protomaps extracts are); prefer the `.mbtiles` file.
+- Import accepts `.mbtiles` files only (their tiles are merged into the band files); `.pmtiles`
+  archives are the download *source*, not an import format.
 
 ## Licences
 

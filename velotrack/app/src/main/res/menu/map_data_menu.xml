@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_import_file"
+        android:title="@string/map_data_import_file"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_clear_all"
+        android:title="@string/map_data_clear_all"
+        app:showAsAction="never" />
+</menu>

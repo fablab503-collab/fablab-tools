@@ -13,14 +13,16 @@
 
     <!-- Activity titles -->
     <string name="title_tracks">Tracks</string>
-    <string name="title_map_files">Map files</string>
+    <string name="title_map_files">Map data</string>
+    <string name="title_download_map">Download map</string>
     <string name="title_settings">Settings</string>
 
     <!-- Overflow menu -->
     <string name="menu_tracks">Tracks</string>
     <string name="menu_import_route">Import route (GPX)</string>
     <string name="menu_clear_route">Clear route</string>
-    <string name="menu_map_files">Map files</string>
+    <string name="menu_download_map">Download map</string>
+    <string name="menu_map_files">Map data</string>
     <string name="menu_settings">Settings</string>
     <string name="menu_about">About</string>
 
@@ -55,8 +57,9 @@
     <string name="btn_resume">Resume</string>
     <string name="btn_stop">Stop</string>
     <string name="btn_import">Import</string>
+    <string name="btn_download_map">Download map</string>
     <string name="btn_location_settings">Location settings</string>
-    <string name="no_map_action">Add a map</string>
+    <string name="no_map_action">Download map</string>
 
     <!-- Content descriptions for icon-only controls -->
     <string name="cd_menu">More options</string>
@@ -64,14 +67,14 @@
     <string name="cd_toggle_view">Switch between 2D and 3D view</string>
     <string name="cd_stop">Stop recording</string>
     <string name="cd_import">Import a map file</string>
+    <string name="cd_download_map">Download map data for an area</string>
     <string name="cd_track_actions">Track actions</string>
-    <string name="cd_active_map">Active map</string>
 
     <!-- Banners and overlays -->
     <string name="gps_off_banner">Location is turned off</string>
-    <string name="no_map_title">No map file loaded</string>
-    <string name="no_map_body">Import a .mbtiles region file to see the map. The position, heading and ride statistics work without a map. Create a region with the velotrack-map-extract workflow on GitHub and copy the file to this phone.</string>
-    <string name="map_load_failed">Map file could not be loaded and was deactivated: %1$s</string>
+    <string name="no_map_title">No map data yet</string>
+    <string name="no_map_body">Download the area you ride in straight from this phone: 10 km of streets is 16–50 MB, the whole world overview 45 MB. Position, heading and ride statistics work without a map.</string>
+    <string name="map_load_failed">Map could not be loaded: %1$s</string>
 
     <!-- Dialogs -->
     <string name="dialog_ok">OK</string>
@@ -110,22 +113,67 @@
     <string name="track_saved">GPX saved</string>
     <string name="track_share_title">Share GPX</string>
 
-    <!-- Map files -->
-    <string name="map_files_empty">No map files</string>
-    <string name="map_files_empty_hint">Tap Import to copy a .mbtiles or .pmtiles file into the app</string>
-    <string name="map_file_size_mb">%1$s MB</string>
-    <string name="map_file_activated">Active map: %1$s</string>
-    <string name="map_file_delete_title">Delete map file?</string>
-    <string name="map_file_delete_body">%1$s will be removed from this phone.</string>
-    <string name="map_import_progress">Copying… %1$s</string>
-    <string name="map_import_progress_total">Copying… %1$s of %2$s</string>
+    <!-- Map data (MapFilesActivity) -->
+    <string name="map_data_total">%1$s on this phone</string>
+    <string name="map_data_total_label">Map data</string>
+    <string name="map_data_band_line">%1$s · z%2$d–%3$d · %4$s</string>
+    <string name="map_data_empty">No map data</string>
+    <string name="map_data_empty_hint">Tap Download map to fetch the area you ride in</string>
+    <string name="map_data_import_file">Import file</string>
+    <string name="map_data_clear_all">Clear all map data</string>
+    <string name="map_data_clear_all_title">Clear all map data?</string>
+    <string name="map_data_clear_all_body">Every downloaded region is removed from this phone. Rides and routes are kept.</string>
+    <string name="map_data_clear_all_action">Clear all</string>
+    <string name="map_region_subtitle">%1$s · z%2$d–%3$d · %4$s · %5$s</string>
+    <string name="map_region_delete_title">Delete region?</string>
+    <string name="map_region_delete_body">The tiles of %1$s will be removed from this phone.</string>
+    <string name="map_import_progress">Importing… %1$s</string>
+    <string name="map_import_progress_total">Importing… %1$s of %2$s</string>
     <string name="map_import_failed">Import failed: %1$s</string>
-    <string name="map_import_done">Imported %1$s</string>
+    <string name="map_import_done">Import finished</string>
+    <string name="band_label_0">Overview</string>
+    <string name="band_label_1">Region</string>
+    <string name="band_label_2">Roads</string>
+    <string name="band_label_3">Streets</string>
+
+    <!-- Download map (DownloadMapActivity) -->
+    <string name="download_centre_label">Centre</string>
+    <string name="download_my_position">My position</string>
+    <string name="download_map_centre">Map centre</string>
+    <string name="download_area_label">Area</string>
+    <string name="download_presets_label">Presets</string>
+    <string name="download_chip_10km">10 km · streets · z13–15</string>
+    <string name="download_chip_100km">100 km · roads · z10–12</string>
+    <string name="download_chip_1000km">1000 km · region · z7–9</string>
+    <string name="download_chip_world">World · overview · z0–6</string>
+    <string name="download_chip_france">France · region · z7–9</string>
+    <string name="download_name_hint">Name</string>
+    <string name="download_name_around_me">Around me %1$s</string>
+    <string name="download_name_map_centre">Map centre %1$s</string>
+    <string name="download_name_world">World</string>
+    <string name="download_name_france">France</string>
+    <string name="download_estimating">Calculating size…</string>
+    <string name="download_estimate">Download %1$s · %2$s tiles</string>
+    <string name="download_estimate_build">Download %1$s · %2$s tiles · build %3$s</string>
+    <string name="download_estimate_failed">Could not calculate the size: %1$s</string>
+    <string name="download_no_centre">No position yet. Wait for a GPS fix, move the map, or pick a preset.</string>
+    <string name="download_metered_warning">You are on a metered connection (mobile data). Wi-Fi only is on in Settings, so the download will ask before using it.</string>
+    <string name="download_button">Download</string>
+    <string name="download_starting">Starting download…</string>
+    <string name="download_progress">%1$s of %2$s · %3$d%%</string>
+    <string name="download_progress_tiles">%1$s of %2$s · %3$d%% · %4$s of %5$s tiles</string>
+    <string name="download_done">Map data downloaded</string>
+    <string name="download_cancelled">Download cancelled</string>
+    <string name="download_failed">Download failed: %1$s</string>
+    <string name="download_metered_title">Mobile data connection</string>
+    <string name="download_metered_body">This download would use mobile data, and Wi-Fi only is turned on in Settings. Download anyway?</string>
+    <string name="download_anyway">Download anyway</string>
 
     <!-- Settings -->
     <string name="pref_cat_recording">Recording</string>
     <string name="pref_cat_display">Display and map</string>
     <string name="pref_cat_route">Route</string>
+    <string name="pref_cat_downloads">Map downloads</string>
     <string name="pref_accuracy_title">Ignore fixes less accurate than</string>
     <string name="pref_auto_pause_title">Auto-pause</string>
     <string name="pref_auto_pause_summary">Pause moving time and point storage when stopped</string>
@@ -136,6 +184,11 @@
     <string name="pref_pitch_title">3D tilt (degrees)</string>
     <string name="pref_pitch_summary">Camera pitch in Follow 3D mode</string>
     <string name="pref_off_route_title">Off-route distance</string>
+    <string name="pref_wifi_only_title">Wi-Fi only</string>
+    <string name="pref_wifi_only_summary">Ask before downloading map data over mobile data</string>
+    <string name="pref_planet_url_title">Planet file URL</string>
+    <string name="pref_planet_url_summary">Leave empty for the official Protomaps build</string>
+    <string name="pref_planet_url_dialog">Full https URL of a PMTiles planet file, or empty for the newest official build</string>
     <string name="screen_mode_keep_on">Keep on</string>
     <string name="screen_mode_dim">Keep on, dimmed</string>
     <string name="screen_mode_system">System default</string>
@@ -144,5 +197,5 @@
 
     <!-- About -->
     <string name="about_title">About VeloTrack</string>
-    <string name="about_body">Version %1$s\n\nMap data © OpenStreetMap contributors (ODbL) — https://www.openstreetmap.org/copyright. Style: Protomaps (BSD-3). Renderer: MapLibre Native (BSD-2). Fonts: Noto Sans (OFL 1.1).\n\nVeloTrack has no network permission: it uses only the GPS receiver and stores everything on this phone.</string>
+    <string name="about_body">Version %1$s\n\nMap data © OpenStreetMap contributors (ODbL) — https://www.openstreetmap.org/copyright. Style: Protomaps (BSD-3). Renderer: MapLibre Native (BSD-2). Fonts: Noto Sans (OFL 1.1).\n\nVeloTrack uses the network only while you download map data from the Download map screen. The map, GPS and recordings work fully offline; everything is stored on this phone.</string>
 </resources>

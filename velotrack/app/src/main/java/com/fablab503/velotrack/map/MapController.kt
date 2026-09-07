@@ -43,8 +43,8 @@ import java.io.IOException
 import kotlin.math.roundToInt
 
 /**
- * Owns everything MapLibre-related for the main screen: style loading with the local tile archive,
- * puck / track / route layers, and the three camera modes.
+ * Owns everything MapLibre-related for the main screen: style loading with the local band tile
+ * archives, puck / track / route layers, and the three camera modes.
  *
  * All methods must be called on the main thread. MapLibre is only touched after [onMapReady] and,
  * for style objects, after the style has finished loading ([styleReady]); until then data is kept in
@@ -74,7 +74,7 @@ class MapController(
     private var map: MapLibreMap? = null
     private var styleReady = false
     private var pendingOnDone: ((String?) -> Unit)? = null
-    private var pendingLoad: Pair<File?, (String?) -> Unit>? = null
+    private var pendingLoad: Pair<List<File>, (String?) -> Unit>? = null
     private var styleWatchdog: Runnable? = null
 
     private var lastFollowMode: CameraMode = prefs.followMode
@@ -151,21 +151,26 @@ class MapController(
         }
         mapView.addOnDidFailLoadingMapListener(failListener)
 
-        pendingLoad?.let { (file, onDone) ->
+        pendingLoad?.let { (files, onDone) ->
             pendingLoad = null
-            loadStyle(file, onDone)
+            loadStyle(files, onDone)
         }
     }
 
     /**
-     * Loads `assets/style.json` with the tile URL substituted, adds the route/track/puck sources and
-     * layers, then calls [onDone] with `null` on success or an error message.
+     * Loads `assets/style.json` with the band-file URLs substituted (`{MAP_URL_N}` for the N-th entry
+     * of [bandFiles], i.e. band0.mbtiles .. band3.mbtiles in order), adds the route/track/puck
+     * sources and layers, then calls [onDone] with `null` on success or an error message.
+     *
+     * A band file that does not exist yields a `null` URL, which [StyleTemplate.render] turns into an
+     * empty `"tiles": []` source; when no band file exists at all (or the list is empty) a
+     * self-contained black base style is loaded instead.
      * Safe to call before [onMapReady]: the load is deferred until the map exists.
      */
-    fun loadStyle(mapFile: File?, onDone: (String?) -> Unit) {
+    fun loadStyle(bandFiles: List<File>, onDone: (String?) -> Unit) {
         val m = map
         if (m == null) {
-            pendingLoad = Pair(mapFile, onDone)
+            pendingLoad = Pair(bandFiles, onDone)
             return
         }
         val template = try {
@@ -174,20 +179,25 @@ class MapController(
             onDone("Cannot read $STYLE_ASSET: ${e.message}")
             return
         }
-        val mapUrl: String? = if (mapFile != null) {
-            try {
-                MapUrl.forFile(mapFile.absolutePath)
+        val mapUrls = ArrayList<String?>(bandFiles.size)
+        for (file in bandFiles) {
+            if (!file.isFile) {
+                mapUrls.add(null)
+                continue
+            }
+            val url = try {
+                MapUrl.forFile(file.absolutePath)
             } catch (e: IllegalArgumentException) {
                 onDone(e.message ?: "Unsupported map file")
                 return
             }
-        } else {
-            null
+            mapUrls.add(url)
         }
-        // Without a map file the template's vector source would have to be emitted with an empty
-        // "tiles" array, and MapLibre's TileLoader indexes tiles[0] unguarded (native abort on the
-        // first render). Use a self-contained black style instead; setupStyle adds the overlays.
-        val json = if (mapUrl != null) StyleTemplate.render(template, mapUrl) else EMPTY_STYLE_JSON
+        // Without any map file the template's vector sources would all have to be emitted with an
+        // empty "tiles" array, and MapLibre's TileLoader indexes tiles[0] unguarded (native abort on
+        // the first render). Use a self-contained black style instead; setupStyle adds the overlays.
+        val hasAnyFile = mapUrls.any { it != null }
+        val json = if (hasAnyFile) StyleTemplate.render(template, mapUrls) else EMPTY_STYLE_JSON
 
         styleReady = false
         clearStyleRefs()
@@ -535,7 +545,7 @@ class MapController(
     companion object {
         const val STYLE_ASSET = "style.json"
 
-        /** Base style used when no map file is active: no tile sources, black background. */
+        /** Base style used when no band file exists: no tile sources, black background. */
         private const val EMPTY_STYLE_JSON =
             """{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#000000"}}]}"""
 

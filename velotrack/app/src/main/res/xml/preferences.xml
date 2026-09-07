@@ -70,4 +70,21 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_cat_downloads">
+
+        <SwitchPreferenceCompat
+            android:key="wifi_only_downloads"
+            android:title="@string/pref_wifi_only_title"
+            android:summary="@string/pref_wifi_only_summary"
+            android:defaultValue="true" />
+
+        <EditTextPreference
+            android:key="planet_url"
+            android:title="@string/pref_planet_url_title"
+            android:summary="@string/pref_planet_url_summary"
+            android:dialogTitle="@string/pref_planet_url_title"
+            android:dialogMessage="@string/pref_planet_url_dialog" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

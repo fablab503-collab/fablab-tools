@@ -45,7 +45,7 @@ jobs:
         working-directory: velotrack
         run: gradle --no-daemon testDebugUnitTest assembleRelease
 
-      - name: Assert the merged manifest has no INTERNET permission
+      - name: Assert network permissions and the MapLibre offline guard
         run: |
           set -euo pipefail
           MANIFEST="$(find velotrack/app/build/intermediates/merged_manifests/release -type f -name AndroidManifest.xml | head -n 1 || true)"
@@ -57,11 +57,27 @@ jobs:
           echo "Merged manifest: $MANIFEST"
           echo "Permissions in the merged manifest:"
           grep -o 'android:name="android\.permission\.[A-Z_]*"' "$MANIFEST" | sort -u || echo "(none found)"
-          if grep -q '"android.permission.INTERNET"' "$MANIFEST"; then
-            echo "::error::android.permission.INTERNET is present in the merged manifest (tools:node=\"remove\" missing?)"
+
+          # The in-app map download needs INTERNET; nothing else may use the network.
+          if ! grep -q '"android.permission.INTERNET"' "$MANIFEST"; then
+            echo "::error::android.permission.INTERNET is missing from the merged manifest (map download would fail)"
             exit 1
           fi
-          echo "OK: no INTERNET permission"
+          echo "OK: INTERNET permission present (used only by the map download service)"
+
+          if grep -q '"android.permission.ACCESS_WIFI_STATE"' "$MANIFEST"; then
+            echo "::error::android.permission.ACCESS_WIFI_STATE is present in the merged manifest (tools:node=\"remove\" missing?)"
+            exit 1
+          fi
+          echo "OK: no ACCESS_WIFI_STATE permission"
+
+          # MapLibre must stay offline: only the Download screen may touch the network.
+          APP_CLASS="velotrack/app/src/main/java/com/fablab503/velotrack/VeloTrackApp.kt"
+          if ! grep -q 'MapLibre.setConnected(false)' "$APP_CLASS"; then
+            echo "::error::$APP_CLASS does not call MapLibre.setConnected(false); the map renderer could fetch tiles online"
+            exit 1
+          fi
+          echo "OK: MapLibre.setConnected(false) found in $APP_CLASS"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7

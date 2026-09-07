@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
@@ -15,6 +16,55 @@
         android:background="?attr/colorSurface"
         app:title="@string/title_map_files"
         app:titleTextAppearance="?attr/textAppearanceTitleLarge" />
+
+    <!-- Header: total size on disk and the four detail bands -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/summaryCard"
+        style="@style/Widget.Material3.CardView.Filled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/screen_margin"
+        android:layout_marginTop="@dimen/fab_gap"
+        android:layout_marginEnd="@dimen/screen_margin"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:cardCornerRadius="@dimen/card_corner_small">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/card_padding_horizontal"
+            android:paddingTop="@dimen/card_padding_vertical"
+            android:paddingEnd="@dimen/card_padding_horizontal"
+            android:paddingBottom="@dimen/card_padding_vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/map_data_total_label"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/totalText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="212 MB on this phone" />
+
+            <TextView
+                android:id="@+id/bandsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/fab_gap"
+                android:lineSpacingExtra="2dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Overview · z0–6 · 45 MB\nRegion · z7–9 · 98 MB" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -44,7 +94,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="@string/map_files_empty"
+                android:text="@string/map_data_empty"
                 android:textAppearance="?attr/textAppearanceBodyLarge"
                 android:textColor="?attr/colorOnSurface"
                 android:visibility="gone" />
@@ -55,21 +105,21 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="@string/map_files_empty_hint"
+                android:text="@string/map_data_empty_hint"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone" />
         </LinearLayout>
 
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-            android:id="@+id/btnImport"
+            android:id="@+id/btnDownload"
             style="@style/Widget.Material3.ExtendedFloatingActionButton.Icon.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/screen_margin"
-            android:contentDescription="@string/cd_import"
-            android:text="@string/btn_import"
-            app:icon="@drawable/ic_add" />
+            android:contentDescription="@string/cd_download_map"
+            android:text="@string/btn_download_map"
+            app:icon="@drawable/ic_download" />
     </FrameLayout>
 </LinearLayout>
