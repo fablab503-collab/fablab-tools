@@ -49,6 +49,7 @@ import com.fablab503.velotrack.download.MapLibrary
 import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.location.GpsSource
 import com.fablab503.velotrack.location.HeadingEstimator
+import com.fablab503.velotrack.location.IdleSpeedEstimator
 import com.fablab503.velotrack.map.MapController
 import com.fablab503.velotrack.model.CameraMode
 import com.fablab503.velotrack.model.Favorite
@@ -117,6 +118,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
     private var map: MapLibreMap? = null
     private val heading = HeadingEstimator()
+    private val idleSpeed = IdleSpeedEstimator()
     private val handler = Handler(Looper.getMainLooper())
 
     // Theme (dark / light / auto by sun), riding mode and auto record.
@@ -679,6 +681,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         localGpsRunning = false
         gpsSource.stop()
         localGpsStatus = GpsStatus()
+        idleSpeed.reset()
     }
 
     override fun onFix(fix: GpsFix) {
@@ -690,10 +693,11 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         updateRoute(fix.latLon, nowMs)
         updateGuidance(fix, headingDeg)
         updatePlace(fix, nowMs)
-        onSpeedSample(fix.speedMps)
-        checkAutoRecord(fix)
+        val speed = idleSpeed.update(fix) // receiver speed, or derived when it reports 0
+        onSpeedSample(speed)
+        checkAutoRecord(fix, speed)
         if (!localGpsRunning) return // an auto start just handed GPS to the service
-        renderLiveHud(fix, localGpsStatus)
+        renderLiveHud(fix, localGpsStatus, speed)
     }
 
     override fun onStatus(status: GpsStatus) {
@@ -896,13 +900,13 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
      * Idle path only: starts a recording by itself once the rider has been moving for a while.
      * Starting the location foreground service from a resumed activity needs no user tap.
      */
-    private fun checkAutoRecord(fix: GpsFix) {
+    private fun checkAutoRecord(fix: GpsFix, speedMps: Float?) {
         if (!prefs.autoRecord) {
             autoRecord.reset()
             return
         }
         val now = SystemClock.elapsedRealtime()
-        val detected = autoRecord.onFix(fix.speedMps, fix.accuracyM ?: Float.MAX_VALUE, prefs.accuracyCutoffM, now)
+        val detected = autoRecord.onFix(speedMps, fix.accuracyM ?: Float.MAX_VALUE, prefs.accuracyCutoffM, now)
         if (!detected) return
         if (RideSession.state.value.status != RecordingStatus.IDLE || recoveryDialogShowing ||
             !hasFineLocation() || !hasNotificationPermission() ||
