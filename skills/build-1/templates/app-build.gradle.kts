@@ -6,7 +6,7 @@ plugins {
 // Override with KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS env vars to use a secret key instead.
 val keystoreFile: File = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
     ?: rootProject.file("keystore/velotrack.p12")
-val keystorePassword: String = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "velotrack-local"
+val keystorePassword: String = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: ""
 val keystoreAlias: String = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "velotrack"
 val hasReleaseKey = keystoreFile.exists()
 

@@ -27,8 +27,8 @@
 
         <!-- Interstate everywhere: theme-level family for every TextView-based widget, plus the
              M3 type scale for drawable-rendered text (Chip, Badge, Slider tooltip). -->
-        <item name="android:fontFamily">@font/interstate</item>
-        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/barlow_condensed</item>
+        <item name="fontFamily">@font/barlow_condensed</item>
         <item name="android:textAppearanceListItem">@style/TextAppearance.VeloTrack.ListItem</item>
         <item name="textAppearanceDisplayLarge">@style/TextAppearance.VeloTrack.DisplayLarge</item>
         <item name="textAppearanceDisplayMedium">@style/TextAppearance.VeloTrack.DisplayMedium</item>

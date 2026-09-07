@@ -47,7 +47,7 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 | Favourites | Home / Work / Favourites FABs at the top of the left column; `favorites` table (TrackDatabase v3) with kinds home/work/person/restaurant/theater/place, name + description; bottom sheet add/edit/delete; straight-line guidance = target marker + dashed line + HUD row "→ name · distance · direction" (relative sectors when heading known, compass point otherwise) |
 | Riding mode | `ui/RidingModeController` (pure Kotlin): the whole `controls` container fades out above 5 km/h for 3 s, back below 5 km/h for 2 s or on any touch (`Activity.onUserInteraction`), re-hides 8 s after a touch; stale speed (> 5 s old) counts as slow |
 | Theme | `theme_mode` Dark / Light / Auto; Auto = `geo/SolarTimes` sunrise/sunset from `Prefs.lastPosition` (07–19 fallback) applied by `ui/NightModeManager` via `AppCompatDelegate.setDefaultNightMode` in `VeloTrackApp` and re-checked on resume/at the next transition; `Theme.Material3.DayNight`, light palette in `values/colors.xml`, dark in `values-night/`; map picks `style_light.json` (Protomaps light flavour with darker casings/labels) via `MapController.lightMap` |
-| Font | Interstate Comp Regular OTF in `res/font/interstate_comp.otf` + `interstate.xml`; theme `android:fontFamily` + all 15 `textAppearance*` overridden in `values/type.xml` (letterSpacing 0) |
+| Font | Barlow Condensed (OFL) in `res/font/barlow_condensed_*.ttf` + `barlow_condensed.xml` (400/500/600); theme `android:fontFamily` + all 15 `textAppearance*` overridden in `values/type.xml` (letterSpacing 0). The user's Interstate Comp OTF was used first, then removed before going public: commercial font, not redistributable |
 | 3D icons | 105 "color" style icons converted with `cwebp -q 82 -alpha_q 100 -resize 320 0` into `assets/icons3d/` (~5 KB each); app subset `res/drawable-nodpi/img3d_*.webp` used as illustrations only (stats cards, empty states, no-map overlay) |
 | Auto-record + totals | `ui/AutoRecordDetector` (≥ 3 fixes above 5 km/h spanning 10 s, 2-min cooldown after a stop, no dialogs/permission prompts on the auto path) starts the FGS from the resumed activity; `storage/StatsRepository` SUM/COUNT/MAX over finished tracks with java.time period starts; `StatsActivity` all-time / year / month / week cards |
 | Idle speed | `location/IdleSpeedEstimator` derives speed from displacement when the receiver reports 0 (same noise gate as PointFilter) so riding mode / auto-record also work idle |
@@ -86,6 +86,22 @@ templates and sandbox workarounds. This skill adds the product and process knowl
   files) → brief with per-module file ownership and exact signatures → 5 implementers → 3 reviewers →
   apply the "minor" findings yourself (they were real behaviour bugs: toast-before-start, stale
   speed, dialog races) → push.
+
+## Going public checklist (done 2026-09-08)
+
+- Audit `git ls-files` for keys/fonts/secrets; a committed keystore is compromised the moment the
+  repo is public: generate a new PKCS12 with openssl, store it base64 in GitHub secrets
+  (`gh secret set` works only through the unsandboxed osascript shell), decode in CI to
+  `$RUNNER_TEMP`, drop every default password from Gradle, delete old releases/tags, purge the
+  blob from history (`git filter-branch --index-filter 'git rm --cached --ignore-unmatch …'
+  --tag-name-filter cat -- --all`, then force-push). Keep a copy of the key for the user outside
+  the repo (`~/Documents/VeloTrack signing key/`).
+- Commercial fonts (Interstate, Helvetica…) cannot ship in a public repo or a free APK: swap to an
+  OFL font from google/fonts (curl the TTFs from github.com/google/fonts/raw/main/ofl/<family>/).
+- 3dicons.co icons are CC0; Material Symbols Apache-2.0; Protomaps basemaps BSD-3; OSM data ODbL:
+  list everything in THIRD_PARTY.md and credit OSM in the README.
+- Root README = project landing page (what, install link, layout, contributing, licence); app
+  README = full user + build guide; `PATCH /repos/{owner}/{repo}` with `{"private": false}`.
 
 ## Where things are
 

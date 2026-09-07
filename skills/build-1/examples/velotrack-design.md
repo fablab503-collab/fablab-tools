@@ -251,7 +251,7 @@ pre-release `velotrack-latest` (always the newest APK at a stable URL) and an im
 `velotrack-v<run_number>`.
 
 Signing: a PKCS12 keystore generated with OpenSSL is committed at `velotrack/keystore/velotrack.p12`
-(alias `velotrack`, password `velotrack-local`, key password equal to store password as PKCS12
+(alias `velotrack`, password kept out of the repository as a GitHub secret, key password equal to store password as PKCS12
 requires). This is acceptable for a private, personal repository and keeps updates installable over
 each other. The build reads `KEYSTORE_FILE`, `KEYSTORE_PASSWORD` and `KEY_ALIAS` from the
 environment with those defaults, so the key can move into GitHub Secrets later with no code change.

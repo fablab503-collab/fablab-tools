@@ -41,8 +41,26 @@ jobs:
         working-directory: velotrack
         run: tools/build-assets.sh
 
+      - name: Decode the release signing key
+        # The PKCS12 keystore lives only in repository secrets (base64); forks and pull requests
+        # without the secret build a debug-signed APK instead.
+        env:
+          KEYSTORE_B64: ${{ secrets.VELOTRACK_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/velotrack-release.p12"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/velotrack-release.p12" >> "$GITHUB_ENV"
+            echo "Release key decoded ($(stat -c %s "$RUNNER_TEMP/velotrack-release.p12") bytes)"
+          else
+            echo "::warning::VELOTRACK_KEYSTORE_B64 secret not set: the APK will carry the debug signature"
+          fi
+
       - name: Unit tests and release APK
         working-directory: velotrack
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.VELOTRACK_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.VELOTRACK_KEY_ALIAS }}
         run: gradle --no-daemon testDebugUnitTest assembleRelease
 
       - name: Assert network permissions and the MapLibre offline guard

@@ -2,13 +2,14 @@ plugins {
     alias(libs.plugins.android.application) // built-in Kotlin (AGP 9); no org.jetbrains.kotlin.android
 }
 
-// Signing: defaults point at the committed PKCS12 keystore (private personal repo).
-// Override with KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS env vars to use a secret key instead.
-val keystoreFile: File = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
-    ?: rootProject.file("keystore/velotrack.p12")
-val keystorePassword: String = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "velotrack-local"
+// Signing: release builds are signed with the PKCS12 keystore named by KEYSTORE_FILE, using
+// KEYSTORE_PASSWORD and KEY_ALIAS from the environment; CI decodes it from a repository secret.
+// Without those variables the release APK falls back to the debug signature (fine for a local
+// sideload, but it will not install over a copy signed with the release key).
+val keystoreFile: File? = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+val keystorePassword: String = System.getenv("KEYSTORE_PASSWORD") ?: ""
 val keystoreAlias: String = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "velotrack"
-val hasReleaseKey = keystoreFile.exists()
+val hasReleaseKey = keystoreFile?.exists() == true && keystorePassword.isNotEmpty()
 
 // versionCode comes from the GitHub Actions run number so every CI build is installable over the previous one.
 val ciRunNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
@@ -28,7 +29,7 @@ android {
     signingConfigs {
         if (hasReleaseKey) {
             create("release") {
-                storeFile = keystoreFile
+                storeFile = keystoreFile!!
                 storePassword = keystorePassword
                 keyAlias = keystoreAlias
                 keyPassword = keystorePassword // PKCS12: key password must equal store password

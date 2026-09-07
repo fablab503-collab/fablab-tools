@@ -1,9 +1,16 @@
 # VeloTrack
 
-VeloTrack is a personal Android app for cycling. It shows where you are on an **offline vector
+Free and open source (MIT). No accounts, no tracking, no data connection needed while you ride.
+
+VeloTrack is an Android app for cycling. It shows where you are on an **offline vector
 map** viewed from a tilted, course-up 3D perspective, **records rides** of any length to GPX with
 live speed, distance, moving time and climb, and can follow a **pre-planned GPX route** and warn
 you when you leave it.
+
+It also keeps **Home, Work and favourite places** one tap away with straight-line guidance, tells
+you the **name of the street or park** you are on, hides every button when you ride faster than
+5 km/h (**riding mode**), switches between **dark and light** with the sun, **starts recording by
+itself** when you set off, and adds up your kilometres in a **Statistics** screen.
 
 While riding it uses **only the GPS receiver**: the map renderer is locked offline and the
 network is touched by exactly one screen, **Download map**, where you fetch the map data for the
@@ -21,7 +28,9 @@ Requirements: Android 8.0 (API 26) or newer, a GPS receiver, and free storage fo
    `velotrack-latest.apk`. Numbered releases (`velotrack-v123`) are the same builds frozen per run.
 3. Open the downloaded file. Android asks to allow installing apps from your browser (or Files
    app) the first time; allow it. Updates install over the previous version because every build
-   is signed with the same key.
+   is signed with the same key. (Builds published before 8 September 2026 used a different key:
+   uninstall that copy once before installing a newer one. Rides are stored inside the app, so
+   export any you want to keep first.)
 4. On first start grant the **location** permission ("While using the app" is enough) and, on
    Android 13+, **notifications** (the recording notification is how Android keeps the recording
    alive with the screen off).
@@ -109,6 +118,34 @@ with **Map data -> Import file**.
   back on the route.
 - **Tracks:** Menu -> Tracks lists your rides. Tap one to see it on the map; long-press to rename,
   export (share, or save as a `.gpx` file) or delete.
+- **Auto-record:** with *Start recording automatically* on (default), riding faster than 5 km/h for
+  10 seconds starts a recording by itself, so a ride is never lost because you forgot to press
+  Record. After you stop a ride it waits two minutes before it can start again.
+- **Riding mode:** above 5 km/h every button fades away and only the top card stays. Tap the map
+  to bring them back for a few seconds; they come back for good when you slow down.
+- **Statistics:** Menu -> Statistics shows totals for all time, this year, this month and this
+  week: distance, number of rides, moving time, climb and your longest ride.
+
+## Places
+
+- **Home** and **Work** buttons sit at the top of the left column. The first tap asks where the
+  place is (your position, or the map centre after you pan there); later taps start guidance: a
+  pin on the map, a dashed line from you to the place and a line in the HUD such as
+  "→ Home · 3.2 km · ahead-left" (compass points when your heading is not known yet). Long-press
+  to move or clear them.
+- **Favourites** (star button) holds as many places as you like, each with a name, an optional
+  description and a kind: Person, Restaurant, Theatre or Place. Tap one to get guidance, use the
+  row menu to edit or delete.
+- **Where am I:** under the ride statistics the HUD shows the road you are on, or the park, golf
+  course, water or town you are in, read from the downloaded map tiles. No network involved.
+
+## Appearance
+
+- **Theme** (Settings -> Appearance): *Dark*, *Light* or *Auto*. Auto is dark between sunset and
+  sunrise, computed from your last GPS position (07:00-19:00 when no position is known yet). The
+  map switches with it: a black OLED-friendly style at night, a light style with strong road edges
+  in daylight.
+- The typeface is Barlow Condensed (open licence), chosen for narrow, legible numbers at a glance.
 
 ## Settings
 
@@ -116,7 +153,9 @@ with **Map data -> Import file**.
 |---|---|---|
 | Accuracy cut-off | GPS fixes with a worse horizontal accuracy are ignored | 50 m |
 | Auto-pause | Pause moving time and storage when slower than walking pace for 10 s | on |
-| Screen | Keep the screen on while the map is visible, dim it to a chosen level, or leave it to the system | keep on |
+| Theme | Dark, Light, or Auto (dark from sunset to sunrise at your position) | Auto |
+| Start recording automatically | Begin a ride after 10 s faster than 5 km/h | on |
+| Screen during a ride | Keep the screen on while a ride is recorded, dim it to a chosen level, or leave it to the system; when idle the system setting applies | keep on |
 | Units | Kilometres or miles | km |
 | 3D pitch | Camera tilt in Follow 3D mode (max 60) | 55 degrees |
 | Off-route distance | Distance from the route that counts as off-route | 50 m |
@@ -133,7 +172,8 @@ with **Map data -> Import file**.
 - No Google Play Services, no accounts, no analytics. Rides, routes and map files live only on
   the phone, in the app's private storage, until you export them yourself.
 - Location is used only while the app is visible or a recording is running (a persistent
-  notification is shown in that case). Background location permission is never requested.
+  notification is shown in that case). Background location permission is never requested. The
+  automatic theme uses your last position for the sunrise/sunset calculation on the phone itself.
 
 ## Building locally
 
@@ -151,9 +191,23 @@ gradle testDebugUnitTest assembleRelease
 `app/src/main/assets/` are generated, not committed. Set `VELOTRACK_LANG=de` (or any code from the
 Protomaps list, e.g. `fr`, `pt`, `zh-Hans`) to get labels in another language; without it the
 script uses the language part of the system `LANG` variable (`de_DE.UTF-8` -> `de`; `C`/`POSIX`
-and unset -> `en`), so CI builds are English with the local name as fallback. Release builds are
-signed with the keystore in `keystore/` unless `KEYSTORE_FILE`, `KEYSTORE_PASSWORD` and `KEY_ALIAS` are set in the
-environment.
+and unset -> `en`), so CI builds are English with the local name as fallback.
+
+Release builds are signed with the PKCS12 keystore named by the `KEYSTORE_FILE` environment
+variable (password `KEYSTORE_PASSWORD`, alias `KEY_ALIAS`). On GitHub Actions the key comes from
+the repository secrets `VELOTRACK_KEYSTORE_B64`, `VELOTRACK_KEYSTORE_PASSWORD` and
+`VELOTRACK_KEY_ALIAS`; the key itself is not in the repository. Without those variables the
+release APK is signed with the debug key, which is fine for your own sideloads. To publish your
+own fork: create a keystore (`openssl req … && openssl pkcs12 -export …`, see `docs/superpowers/`),
+base64-encode it and add the three secrets.
+
+## How it is made
+
+Everything in this app was specified, implemented, reviewed and tested with Claude Code from a Mac
+without Android Studio: the design briefs in `docs/superpowers/specs/` describe each feature round
+and its contracts, parallel agents implement them, reviewers check compile and behaviour, GitHub
+Actions compiles and publishes, and the Android emulator verifies the result. The `skills/`
+folder at the repository root documents that process so it can be repeated.
 
 ## Limitations
 
@@ -172,6 +226,7 @@ environment.
 
 ## Licences
 
-App code: MIT (see the repository licence). Map data is (c) OpenStreetMap contributors, licensed
-under the ODbL: https://www.openstreetmap.org/copyright. The map style, fonts, sprites and
-libraries used by the app and their licences are listed in [THIRD_PARTY.md](THIRD_PARTY.md).
+App code: MIT (see the repository [LICENSE](../LICENSE)): free for everyone to use, modify and
+redistribute. Map data is (c) OpenStreetMap contributors, licensed under the ODbL:
+https://www.openstreetmap.org/copyright. The map style, fonts, icons, sprites and libraries used by
+the app and their licences are listed in [THIRD_PARTY.md](THIRD_PARTY.md).

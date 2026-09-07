@@ -11,3 +11,8 @@ app/src/main/assets/sprites/
 app/src/main/assets/style.json
 app/src/main/assets/style_light.json
 tools/node_modules/
+
+# Release signing key: never commit it. CI decodes it from the VELOTRACK_KEYSTORE_B64 secret.
+keystore/
+*.p12
+*.jks
