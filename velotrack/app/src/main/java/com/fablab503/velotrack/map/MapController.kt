@@ -126,6 +126,13 @@ class MapController(
         }
         map.setPrefetchesTiles(false)
 
+        // Before the first fix, show the last known area instead of the whole world.
+        if (lastFix == null) {
+            prefs.lastPosition?.let { p ->
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(p.lat, p.lon), INITIAL_ZOOM_IDLE))
+            }
+        }
+
         map.addOnCameraMoveStartedListener { reason ->
             if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) {
                 handleUserGesture()
@@ -505,6 +512,7 @@ class MapController(
         private const val EASE_MS = 1000
         private const val RECENTER_MS = 500
         private const val INITIAL_ZOOM_3D = 17.0
+        private const val INITIAL_ZOOM_IDLE = 15.0
         private const val ZOOM_2D = 15.5
         private const val PUCK_TOP_PADDING_FRACTION = 0.55
         private const val PUCK_SIZE_PX = 96

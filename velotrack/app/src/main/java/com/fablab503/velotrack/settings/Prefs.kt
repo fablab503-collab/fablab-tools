@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import com.fablab503.velotrack.model.CameraMode
+import com.fablab503.velotrack.model.LatLon
 import com.fablab503.velotrack.model.ScreenMode
 import com.fablab503.velotrack.model.Units
 
@@ -59,6 +60,21 @@ class Prefs(context: Context) {
         }
         set(value) = sp.edit().putString(KEY_FOLLOW_MODE, value.name).apply()
 
+    /** Last known rider position, used to place the map before the first fix of a session. */
+    var lastPosition: LatLon?
+        get() {
+            val lat = sp.getString(KEY_LAST_LAT, null)?.toDoubleOrNull() ?: return null
+            val lon = sp.getString(KEY_LAST_LON, null)?.toDoubleOrNull() ?: return null
+            return LatLon(lat, lon)
+        }
+        set(value) {
+            if (value == null) {
+                sp.edit().remove(KEY_LAST_LAT).remove(KEY_LAST_LON).apply()
+            } else {
+                sp.edit().putString(KEY_LAST_LAT, value.lat.toString()).putString(KEY_LAST_LON, value.lon.toString()).apply()
+            }
+        }
+
     var batterySaverWarningShown: Boolean
         get() = sp.getBoolean(KEY_SAVER_WARNED, false)
         set(value) = sp.edit().putBoolean(KEY_SAVER_WARNED, value).apply()
@@ -84,6 +100,8 @@ class Prefs(context: Context) {
         const val KEY_ACTIVE_ROUTE = "active_route_id"
         const val KEY_FOLLOW_MODE = "follow_mode"
         const val KEY_SAVER_WARNED = "battery_saver_warned"
+        const val KEY_LAST_LAT = "last_lat"
+        const val KEY_LAST_LON = "last_lon"
 
         const val DEFAULT_ACCURACY_CUTOFF_M = 50f
         const val DEFAULT_PITCH_DEG = 55

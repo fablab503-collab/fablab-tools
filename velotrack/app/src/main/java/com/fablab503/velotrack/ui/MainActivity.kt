@@ -238,6 +238,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
 
     override fun onStop() {
         activityStarted = false
+        (RideSession.state.value.lastFix ?: localLastFix)?.let { prefs.lastPosition = it.latLon }
         handler.removeCallbacks(clockRunnable)
         handler.removeCallbacks(gpsRetryRunnable)
         refreshLocalGps() // stops the local feed while not visible
