@@ -57,7 +57,11 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 
 - Emulator GPS reports speed 0 and no bearing → derive speed from displacement; heading holds.
 - `adb install -r` kills a running recording → recovery dialog appears (expected).
-- Same-JSON `setStyle` reuses sources and their cached empty tiles → pass through a blank style.
+- Same-JSON `setStyle` reuses sources; even a blank-style pass-through does not clear MapLibre's
+  cached "no content" tile answers or its open MBTiles connections → after a download the main
+  activity calls `recreate()` (verified: fresh install → first download → map appears at once).
+- Test the *first* download on a fresh install (`adb uninstall` first): the empty-band startup path
+  behaves differently from a second download into files that already have tiles.
 - Two SQLite libraries in one process (MapLibre + Android) → writer in its own process.
 - Someone may tap the emulator while you test; check logcat `GrantPermissionsViewModel` /
   `ActivityTaskManager START` before blaming the app.

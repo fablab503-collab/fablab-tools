@@ -80,9 +80,12 @@ toolchain and wants interactive iteration.
 - MapLibre's MBTiles source returns "no content" for a missing tile and draws nothing (no parent
   fallback); it only overzooms past a source's `maxzoom`. Sparse coverage needs one file per zoom
   band (z0–6, 7–9, 10–12, 13–15), each its own style source with the layer set repeated.
-- Reloading the same style JSON keeps unchanged sources and their cached empty tiles: pass through a
-  blank style before the real one after the data changed (verified on device: World download →
-  new area renders without restart).
+- After tiles are added to a band file the map does NOT refresh in place: MapLibre keeps one
+  read-only SQLite connection per MBTiles path plus the "no content" answers for tiles already
+  requested, and reloading the style (even through a blank style) does not clear them. A viewport
+  that was empty before the download stays black until the process restarts; areas never requested
+  render fine (that is why a "World download → new area renders" test looked like a pass). Fix:
+  `recreate()` the map activity when the Download/Map data screens return RESULT_OK.
 - PMTiles range extraction on-device works: header (127 B) + root dir (≈16 KB) + a few leaf dirs,
   then only the tile blobs. Measured: 10 km z13–15 ≈ 16–50 MB, 100 km z10–12 ≈ 60 MB, France z7–9
   ≈ 100 MB, world z0–6 = 45 MB. Reference implementation: `velotrack/tools/pmtiles_dryrun.py`.
