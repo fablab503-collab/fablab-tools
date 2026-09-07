@@ -85,7 +85,7 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
         RideSession.serviceRunning = true
         prefs = Prefs(this)
         gps = GpsSource(this)
-        database = TrackDatabase(this)
+        database = TrackDatabase.get(this)
         repo = TrackRepository(database)
         createChannel()
     }

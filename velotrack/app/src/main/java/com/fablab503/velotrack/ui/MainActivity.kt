@@ -152,7 +152,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        db = TrackDatabase(this)
+        db = TrackDatabase.get(this)
         repo = TrackRepository(db)
         mapFileStore = MapFileStore(this, prefs)
         routeStore = RouteStore(this, db, prefs)
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         mapController.onDestroy()
         mapView.onDestroy()
         super.onDestroy()
-        db.close()
+        // TrackDatabase is process-wide and shared with the recording service; never close it here.
     }
 
     // ---------------------------------------------------------------- buttons and menu

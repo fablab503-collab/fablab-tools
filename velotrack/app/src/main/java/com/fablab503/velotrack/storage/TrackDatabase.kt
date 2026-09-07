@@ -6,14 +6,16 @@ import android.database.sqlite.SQLiteOpenHelper
 
 /**
  * SQLite schema for recorded tracks, their points and imported routes.
- * WAL mode is enabled in [onConfigure] so that the recording service can insert
- * batches while the UI reads without blocking.
+ * WAL mode lets the recording service insert batches while the UI reads without blocking.
+ *
+ * Use [TrackDatabase.get]: one helper per process avoids competing connections that fight over
+ * the journal mode ("could not change the database journal mode ... database is locked").
  */
-class TrackDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
+class TrackDatabase private constructor(context: Context) :
+    SQLiteOpenHelper(context.applicationContext, DB_NAME, null, DB_VERSION) {
 
-    override fun onConfigure(db: SQLiteDatabase) {
-        super.onConfigure(db)
-        db.enableWriteAheadLogging()
+    init {
+        setWriteAheadLoggingEnabled(true)
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -29,6 +31,15 @@ class TrackDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null,
     companion object {
         const val DB_NAME = "velotrack.db"
         const val DB_VERSION = 1
+
+        @Volatile
+        private var instance: TrackDatabase? = null
+
+        /** Process-wide helper; never close it. */
+        fun get(context: Context): TrackDatabase =
+            instance ?: synchronized(this) {
+                instance ?: TrackDatabase(context).also { instance = it }
+            }
 
         const val TABLE_TRACKS = "tracks"
         const val TABLE_POINTS = "points"

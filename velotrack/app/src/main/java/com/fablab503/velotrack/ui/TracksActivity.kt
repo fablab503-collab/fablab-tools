@@ -52,7 +52,7 @@ class TracksActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        db = TrackDatabase(this)
+        db = TrackDatabase.get(this)
         repo = TrackRepository(db)
 
         binding = ActivityTracksBinding.inflate(layoutInflater)
@@ -84,7 +84,7 @@ class TracksActivity : AppCompatActivity() {
     override fun onDestroy() {
         progress?.dismiss()
         progress = null
-        if (::db.isInitialized) db.close()
+        // TrackDatabase is process-wide; never close it here.
         super.onDestroy()
     }
 
