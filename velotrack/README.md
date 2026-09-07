@@ -234,6 +234,13 @@ folder at the repository root documents that process so it can be repeated.
 - Import accepts `.mbtiles` files only (their tiles are merged into the band files); `.pmtiles`
   archives are the download *source*, not an import format.
 
+## Google Play
+
+The store listing texts, graphics and the step-by-step checklist for publishing on Google Play are
+in [store/](store/PLAY_STORE.md); the privacy policy the listing points to is
+[PRIVACY.md](PRIVACY.md). Every CI build also produces the Android App Bundle
+(`velotrack-latest.aab`) that the Play Console takes.
+
 ## Licences
 
 App code: MIT (see the repository [LICENSE](../LICENSE)): free for everyone to use, modify and
