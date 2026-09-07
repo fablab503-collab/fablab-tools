@@ -1223,6 +1223,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     private fun stopGuidance() {
+        Log.d(TAG, "stopGuidance", Throwable("caller"))
         guidanceTarget = null
         mapController.setTarget(null, null)
         mapController.setGuidanceLine(null, null)

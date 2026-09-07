@@ -12,6 +12,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.appcompat.content.res.AppCompatResources
 import com.fablab503.velotrack.R
+import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.geo.Simplify
 import com.fablab503.velotrack.geo.ZoomController
 import com.fablab503.velotrack.model.CameraMode
