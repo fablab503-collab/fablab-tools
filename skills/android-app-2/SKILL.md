@@ -45,7 +45,7 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 | UI | Material You dynamic colour (Google-blue baseline), HUD card + status chip, left column of 56 dp surface FABs, primary Extended FAB bottom-right, M3 two-line lists, edge-to-edge insets |
 | Privacy | INTERNET only for the Download screen; `MapLibre.setConnected(false)`; CI greps for it |
 | Favourites | Home / Work / Favourites FABs at the top of the left column; `favorites` table (TrackDatabase v3) with kinds home/work/person/restaurant/theater/place, name + description; bottom sheet add/edit/delete; straight-line guidance = target marker + dashed line + HUD row "→ name · distance · direction" (relative sectors when heading known, compass point otherwise) |
-| Where am I | `MapController.placeNameAt(latLon)` = `queryRenderedFeatures` in a 24 dp box around the puck on `roads_*_b3..b1`, then park / urban-green / water / locality layers; throttled to every 2 s and > 10 m; shown under the stats with a 16 dp pin; hidden when null or after a style reload |
+| Where am I | `MapController.placeNameAt(latLon)` = `queryRenderedFeatures` in an 18 px box around the puck on `roads_*_b3..b1`; then the rendered green polygon → park-like POI point inside it (`VectorSource.querySourceFeatures("pois", kind filter)` + point-in-polygon) or a generic kind label; then named water / locality. Throttled to every 2 s and > 10 m; shown under the stats with a 16 dp pin; hidden when null or after a style reload |
 
 ## Gotchas discovered on device
 
@@ -62,6 +62,14 @@ templates and sandbox workarounds. This skill adds the product and process knowl
   style's water colour (#31353f) instead of black. City streets never exist in the overview band.
 - Name lookups (`queryRenderedFeatures`) only see layers of the *rendered* style: query per band
   and skip ids that are absent (the blank fallback style has none), never assume a layer exists.
+- Protomaps `landuse` polygons have no `name` (only `kind`, `sort_rank`); park names are `pois`
+  points. Decode a tile before designing a lookup: `sqlite3` + gzip + a 40-line MVT varint parser
+  (no pip in the sandbox) shows the real keys per layer and zoom.
+- A lookup that returns nothing on device with plausible code: add `Log.d` with the query box and
+  feature counts and ship it (one CI round) instead of reasoning for an hour; the first fix after a
+  camera jump projects off-screen, so expect nulls until the ease finishes.
+- Unresolved reference in CI after a fixer/agent adds a call: check the import block first
+  (`Geo` used in MapController without `import …geo.Geo`).
 
 ## Where things are
 
