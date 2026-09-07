@@ -73,6 +73,8 @@ class MapController(
 
     private var map: MapLibreMap? = null
     private var styleReady = false
+    /** True once any style has finished loading; a later reload then passes through a blank style first. */
+    private var styleLoadedOnce = false
     private var pendingOnDone: ((String?) -> Unit)? = null
     private var pendingLoad: Pair<List<File>, (String?) -> Unit>? = null
     private var styleWatchdog: Runnable? = null
@@ -199,18 +201,30 @@ class MapController(
         val hasAnyFile = mapUrls.any { it != null }
         val json = if (hasAnyFile) StyleTemplate.render(template, mapUrls) else EMPTY_STYLE_JSON
 
+        val hadStyle = styleLoadedOnce
         styleReady = false
         clearStyleRefs()
         pendingOnDone = onDone
-        m.setStyle(Style.Builder().fromJson(json)) { style ->
-            cancelStyleWatchdog()
-            setupStyle(style)
-            styleReady = true
-            val cb = pendingOnDone
-            pendingOnDone = null
-            cb?.invoke(null)
+        val applyFinal = {
+            m.setStyle(Style.Builder().fromJson(json)) { style ->
+                cancelStyleWatchdog()
+                setupStyle(style)
+                styleReady = true
+                styleLoadedOnce = true
+                val cb = pendingOnDone
+                pendingOnDone = null
+                cb?.invoke(null)
+            }
+            armStyleWatchdog(onDone)
         }
-        armStyleWatchdog(onDone)
+        if (hadStyle && json != EMPTY_STYLE_JSON) {
+            // MapLibre keeps sources whose definition did not change, together with the tiles it has
+            // already fetched (including the "no content" ones from before a download). Passing
+            // through a blank style forces every source to be recreated and its tiles re-read.
+            m.setStyle(Style.Builder().fromJson(EMPTY_STYLE_JSON)) { applyFinal() }
+        } else {
+            applyFinal()
+        }
     }
 
     /**
