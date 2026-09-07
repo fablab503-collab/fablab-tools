@@ -249,6 +249,60 @@
                         </LinearLayout>
                     </LinearLayout>
 
+                    <!-- Row 4: where am I (road / park / water / town under the puck). Driven by MainActivity. -->
+                    <TextView
+                        android:id="@+id/placeText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:drawablePadding="6dp"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:maxLines="1"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone"
+                        app:drawableStartCompat="@drawable/ic_place_16"
+                        app:drawableTint="?attr/colorOnSurfaceVariant"
+                        tools:text="Amphitheatre Parkway"
+                        tools:visibility="visible" />
+
+                    <!-- Row 5: guidance to a favourite; tap the text or Stop to end it -->
+                    <LinearLayout
+                        android:id="@+id/guidanceRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <TextView
+                            android:id="@+id/guidanceText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="?attr/selectableItemBackground"
+                            android:drawablePadding="6dp"
+                            android:ellipsize="end"
+                            android:gravity="center_vertical"
+                            android:maxLines="1"
+                            android:textAppearance="?attr/textAppearanceBodyLarge"
+                            android:textColor="?attr/colorOnSurface"
+                            app:drawableStartCompat="@drawable/ic_near_me"
+                            app:drawableTint="?attr/colorTertiary"
+                            tools:text="→ Home · 3.2 km · ahead-left" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnStopGuidance"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/btn_stop_guidance" />
+                    </LinearLayout>
+
                     <TextView
                         android:id="@+id/routeText"
                         android:layout_width="match_parent"
@@ -387,10 +441,40 @@
                 android:orientation="vertical">
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnHome"
+                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/cd_home"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_home" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnWork"
+                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
+                    android:contentDescription="@string/cd_work"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_work" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnFavorites"
+                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
+                    android:contentDescription="@string/cd_favorites"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_star" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnRecenter"
                     style="@style/Widget.Material3.FloatingActionButton.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
                     android:contentDescription="@string/cd_recenter"
                     app:fabCustomSize="@dimen/fab_standard_size"
                     app:srcCompat="@drawable/ic_my_location" />

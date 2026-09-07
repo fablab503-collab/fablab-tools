@@ -25,6 +25,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
@@ -37,13 +38,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityMainBinding
+import com.fablab503.velotrack.databinding.DialogPlacePickerBinding
 import com.fablab503.velotrack.download.Bands
 import com.fablab503.velotrack.download.MapDownloadService
 import com.fablab503.velotrack.download.MapLibrary
+import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.location.GpsSource
 import com.fablab503.velotrack.location.HeadingEstimator
 import com.fablab503.velotrack.map.MapController
 import com.fablab503.velotrack.model.CameraMode
+import com.fablab503.velotrack.model.Favorite
+import com.fablab503.velotrack.model.FavoriteKind
 import com.fablab503.velotrack.model.GpsFix
 import com.fablab503.velotrack.model.GpsStatus
 import com.fablab503.velotrack.model.LatLon
@@ -56,6 +61,7 @@ import com.fablab503.velotrack.recording.RideSession
 import com.fablab503.velotrack.recording.RideStats
 import com.fablab503.velotrack.route.RouteFollower
 import com.fablab503.velotrack.settings.Prefs
+import com.fablab503.velotrack.storage.FavoritesRepository
 import com.fablab503.velotrack.storage.RouteStore
 import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
@@ -74,6 +80,7 @@ import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 import java.io.File
 import java.util.Date
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -86,13 +93,18 @@ import kotlin.math.roundToInt
  * Position source: while [RideSession] is idle and the recording service is not running, this
  * activity runs its own [GpsSource] for the puck; while a ride is recorded, the service is the only
  * GPS client and the UI renders `RideSession.state` (last fix, heading, stats, satellites).
+ *
+ * Favourites: Home, Work and the Favourites sheet start *guidance*, a marker plus a straight dashed
+ * line to the place and a HUD line with distance and relative direction. "Where am I" reads the
+ * named map feature under the puck from the rendered tiles (fully offline).
  */
-class MainActivity : AppCompatActivity(), GpsSource.Listener {
+class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Listener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: Prefs
     private lateinit var db: TrackDatabase
     private lateinit var repo: TrackRepository
+    private lateinit var favorites: FavoritesRepository
     private lateinit var mapLibrary: MapLibrary
     private lateinit var routeStore: RouteStore
     private lateinit var gpsSource: GpsSource
@@ -124,6 +136,12 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     private var routeFollower: RouteFollower? = null
     private var offRoute = false
     private var routeLoadJob: Job? = null
+
+    // Guidance to a favourite and the "where am I" line.
+    private var guidanceTarget: Favorite? = null
+    private var placeQueriedAtMs = 0L
+    private var placeQueriedAt: LatLon? = null
+    private var placeName: String? = null
 
     // One-shot UI.
     private var batterySaverWarned = false
@@ -189,6 +207,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         prefs = Prefs(this)
         db = TrackDatabase.get(this)
         repo = TrackRepository(db)
+        favorites = FavoritesRepository(db)
         mapLibrary = MapLibrary(this, prefs, db)
         routeStore = RouteStore(this, db, prefs)
         gpsSource = GpsSource(this)
@@ -346,6 +365,20 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         binding.btnMenu.setOnClickListener { showMenu() }
         binding.btnGpsSettings.setOnClickListener { openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) }
         binding.btnDownloadMap.setOnClickListener { openDownloadMap() }
+
+        binding.btnHome.setOnClickListener { onFixedFavoriteClicked(FavoriteKind.HOME) }
+        binding.btnHome.setOnLongClickListener {
+            showFixedFavoriteMenu(FavoriteKind.HOME)
+            true
+        }
+        binding.btnWork.setOnClickListener { onFixedFavoriteClicked(FavoriteKind.WORK) }
+        binding.btnWork.setOnLongClickListener {
+            showFixedFavoriteMenu(FavoriteKind.WORK)
+            true
+        }
+        binding.btnFavorites.setOnClickListener { showFavoritesSheet() }
+        binding.btnStopGuidance.setOnClickListener { stopGuidance() }
+        binding.guidanceText.setOnClickListener { stopGuidance() }
     }
 
     private fun toggleFollowMode() {
@@ -580,6 +613,8 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         val nowMs = System.currentTimeMillis()
         mapController.updatePosition(fix, headingDeg, nowMs)
         updateRoute(fix.latLon, nowMs)
+        updateGuidance(fix, headingDeg)
+        updatePlace(fix, nowMs)
         renderLiveHud(fix, localGpsStatus)
     }
 
@@ -637,6 +672,8 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
                 val nowMs = System.currentTimeMillis()
                 mapController.updatePosition(fix, state.headingDeg, nowMs)
                 updateRoute(fix.latLon, nowMs)
+                updateGuidance(fix, state.headingDeg)
+                updatePlace(fix, nowMs)
             }
             syncTrackOnMap(state)
         } else {
@@ -817,8 +854,19 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
     }
 
     private fun onStyleLoaded(error: String?) {
-        if (error == null || isFinishing || isDestroyed) return
-        showMessage(getString(R.string.map_load_failed, error))
+        if (isFinishing || isDestroyed) return
+        if (error != null) {
+            showMessage(getString(R.string.map_load_failed, error))
+            return
+        }
+        // A fresh style has no marker or guidance line yet, and the place lookup needs rendered tiles.
+        guidanceTarget?.let { target ->
+            mapController.setTarget(target.latLon, target.kind)
+            currentFix()?.let { fix -> mapController.setGuidanceLine(fix.latLon, target.latLon) }
+        }
+        placeQueriedAt = null
+        placeName = null
+        binding.placeText.isVisible = false
     }
 
     /** The overlay invites a first download only while no region has been downloaded or imported. */
@@ -974,6 +1022,277 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         }
     }
 
+    // ---------------------------------------------------------------- favourites
+
+    /** The rider's last fix from whichever feed is active (recording service or idle GPS). */
+    private fun currentFix(): GpsFix? = RideSession.state.value.lastFix ?: localLastFix
+
+    private fun currentPosition(): LatLon? = currentFix()?.latLon
+
+    private fun currentHeading(): Float? {
+        val state = RideSession.state.value
+        return if (state.status != RecordingStatus.IDLE) state.headingDeg else heading.headingDeg
+    }
+
+    private fun mapCentre(): LatLon? = map?.cameraPosition?.target?.let { LatLon(it.latitude, it.longitude) }
+
+    private fun fixedName(kind: FavoriteKind): String =
+        getString(if (kind == FavoriteKind.HOME) R.string.fav_home else R.string.fav_work)
+
+    private fun toast(resId: Int) {
+        Toast.makeText(this, resId, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Home / Work tap: set the place when unset, otherwise start guidance to it. */
+    private fun onFixedFavoriteClicked(kind: FavoriteKind) {
+        lifecycleScope.launch {
+            val fav = withContext(Dispatchers.IO) { runCatching { favorites.getByKind(kind) }.getOrNull() }
+            if (isFinishing || isDestroyed) return@launch
+            if (fav == null) showPlacePicker(kind) else startGuidance(fav)
+        }
+    }
+
+    /** "Set Home / Work": name field plus two ways to pick the location (my position, map centre). */
+    private fun showPlacePicker(kind: FavoriteKind) {
+        val defaultName = fixedName(kind)
+        val b = DialogPlacePickerBinding.inflate(layoutInflater)
+        b.bodyText.text = getString(R.string.fav_set_body, defaultName)
+        b.nameInput.setText(defaultName)
+        b.nameInput.setSelection(defaultName.length)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.fav_set_title, defaultName))
+            .setView(b.root)
+            .setPositiveButton(R.string.fav_my_position, null)
+            .setNeutralButton(R.string.fav_map_centre, null)
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .create()
+        dialog.setOnShowListener {
+            fun enteredName(): String {
+                val typed = b.nameInput.text?.toString()?.trim() ?: ""
+                return if (typed.isEmpty()) defaultName else typed
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val pos = currentPosition()
+                if (pos == null) {
+                    toast(R.string.fav_no_position)
+                    return@setOnClickListener
+                }
+                saveFixedFavorite(kind, enteredName(), pos)
+                dialog.dismiss()
+            }
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                val centre = mapCentre()
+                if (centre == null) {
+                    toast(R.string.fav_no_map_centre)
+                    return@setOnClickListener
+                }
+                saveFixedFavorite(kind, enteredName(), centre)
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
+    }
+
+    /** Home / Work long-press: Set from my position / Set from map centre / Clear (when set). */
+    private fun showFixedFavoriteMenu(kind: FavoriteKind) {
+        lifecycleScope.launch {
+            val existing = withContext(Dispatchers.IO) { runCatching { favorites.getByKind(kind) }.getOrNull() }
+            if (isFinishing || isDestroyed) return@launch
+            val name = existing?.name ?: fixedName(kind)
+            val items = mutableListOf(getString(R.string.fav_set_here), getString(R.string.fav_set_map_centre))
+            if (existing != null) items += getString(R.string.fav_clear)
+            MaterialAlertDialogBuilder(this@MainActivity)
+                .setTitle(name)
+                .setItems(items.toTypedArray()) { _, which ->
+                    when (which) {
+                        0 -> {
+                            val pos = currentPosition()
+                            if (pos == null) toast(R.string.fav_no_position) else saveFixedFavorite(kind, name, pos)
+                        }
+                        1 -> {
+                            val centre = mapCentre()
+                            if (centre == null) toast(R.string.fav_no_map_centre) else saveFixedFavorite(kind, name, centre)
+                        }
+                        2 -> existing?.let { deleteFavorite(it, null) }
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun saveFixedFavorite(kind: FavoriteKind, name: String, at: LatLon) {
+        lifecycleScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching { favorites.upsertFixed(kind, name, at.lat, at.lon) }.getOrNull()
+            }
+            if (isFinishing || isDestroyed) return@launch
+            if (saved == null) {
+                toast(R.string.fav_save_failed)
+                return@launch
+            }
+            Toast.makeText(this@MainActivity, getString(R.string.fav_saved, saved.name), Toast.LENGTH_SHORT).show()
+            // Guidance to a place that just moved follows it.
+            if (guidanceTarget?.kind == kind) startGuidance(saved)
+        }
+    }
+
+    /** Adds or updates a favourite from the dialog input, then refreshes the sheet if it is still open. */
+    private fun saveFavorite(existing: Favorite?, input: FavoriteInput, sheet: FavoritesSheet) {
+        lifecycleScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching {
+                    if (existing == null) {
+                        favorites.add(input.name, input.description, input.kind, input.location.lat, input.location.lon)
+                    } else {
+                        val updated = existing.copy(
+                            name = input.name,
+                            description = input.description,
+                            kind = input.kind,
+                            lat = input.location.lat,
+                            lon = input.location.lon,
+                        )
+                        favorites.update(updated)
+                        updated
+                    }
+                }.getOrNull()
+            }
+            if (isFinishing || isDestroyed) return@launch
+            if (saved == null) {
+                toast(R.string.fav_save_failed)
+                return@launch
+            }
+            if (guidanceTarget?.id == saved.id) startGuidance(saved)
+            if (sheet.isAdded) sheet.reload()
+        }
+    }
+
+    private fun deleteFavorite(fav: Favorite, sheet: FavoritesSheet?) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { runCatching { favorites.delete(fav.id) } }
+            if (isFinishing || isDestroyed) return@launch
+            if (guidanceTarget?.id == fav.id) stopGuidance()
+            Toast.makeText(this@MainActivity, getString(R.string.fav_cleared, fav.name), Toast.LENGTH_SHORT).show()
+            if (sheet != null && sheet.isAdded) sheet.reload()
+        }
+    }
+
+    private fun showFavoritesSheet() {
+        if (supportFragmentManager.findFragmentByTag(FavoritesSheet.TAG) != null) return
+        FavoritesSheet().show(supportFragmentManager, FavoritesSheet.TAG)
+    }
+
+    // FavoritesSheet.Listener
+
+    override fun favoritesPosition(): LatLon? = currentPosition()
+
+    override fun onFavoriteChosen(fav: Favorite) {
+        startGuidance(fav)
+    }
+
+    override fun onAddFavorite(sheet: FavoritesSheet) {
+        AddFavoriteDialog.show(this, null, currentPosition(), mapCentre()) { input -> saveFavorite(null, input, sheet) }
+    }
+
+    override fun onEditFavorite(sheet: FavoritesSheet, fav: Favorite) {
+        AddFavoriteDialog.show(this, fav, currentPosition(), mapCentre()) { input -> saveFavorite(fav, input, sheet) }
+    }
+
+    override fun onDeleteFavorite(sheet: FavoritesSheet, fav: Favorite) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.fav_delete_title)
+            .setMessage(getString(R.string.fav_delete_body, fav.name))
+            .setPositiveButton(R.string.dialog_delete) { _, _ -> deleteFavorite(fav, sheet) }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
+    }
+
+    // ---------------------------------------------------------------- guidance
+
+    private fun startGuidance(fav: Favorite) {
+        guidanceTarget = fav
+        mapController.setTarget(fav.latLon, fav.kind)
+        binding.guidanceRow.isVisible = true
+        val fix = currentFix()
+        if (fix != null) {
+            updateGuidance(fix, currentHeading())
+        } else {
+            binding.guidanceText.text = getString(R.string.guidance_no_position, fav.name)
+            mapController.setGuidanceLine(null, null)
+        }
+    }
+
+    private fun stopGuidance() {
+        guidanceTarget = null
+        mapController.setTarget(null, null)
+        mapController.setGuidanceLine(null, null)
+        binding.guidanceRow.isVisible = false
+    }
+
+    /** Per fix: "→ {name} · {distance} · {direction}" and the straight line from the rider to the place. */
+    private fun updateGuidance(fix: GpsFix, headingDeg: Float?) {
+        val target = guidanceTarget ?: return
+        val from = fix.latLon
+        val to = target.latLon
+        val distanceM = Geo.distanceM(from, to)
+        val bearing = Geo.bearingDeg(from, to)
+        binding.guidanceText.text = getString(
+            R.string.guidance_format,
+            target.name,
+            Format.distance(distanceM, prefs.units),
+            directionLabel(bearing, headingDeg),
+        )
+        mapController.setGuidanceLine(from, to)
+    }
+
+    /**
+     * Direction to the target: relative to the heading when one is known (ahead, ahead-right, …),
+     * otherwise the compass point of the bearing (N, NE, …).
+     */
+    private fun directionLabel(bearingDeg: Double, headingDeg: Float?): String {
+        if (headingDeg == null) {
+            val index = ((Geo.normalizeDeg(bearingDeg) + 22.5) / 45.0).toInt() % 8
+            return getString(COMPASS_LABELS[index])
+        }
+        val diff = Geo.angleDiffDeg(headingDeg.toDouble(), bearingDeg)
+        val a = abs(diff)
+        val res = when {
+            a <= 22.5 -> R.string.direction_ahead
+            a >= 157.5 -> R.string.direction_behind
+            diff > 0 -> when {
+                a <= 67.5 -> R.string.direction_ahead_right
+                a <= 112.5 -> R.string.direction_right
+                else -> R.string.direction_behind_right
+            }
+            else -> when {
+                a <= 67.5 -> R.string.direction_ahead_left
+                a <= 112.5 -> R.string.direction_left
+                else -> R.string.direction_behind_left
+            }
+        }
+        return getString(res)
+    }
+
+    // ---------------------------------------------------------------- where am I
+
+    /**
+     * Refreshes the place line from the rendered tiles at most every [PLACE_MIN_INTERVAL_MS] and only
+     * after moving [PLACE_MIN_MOVE_M] (or on the first fix, or while the last lookup found nothing).
+     * Runs on the main thread: the query reads the rendered map.
+     */
+    private fun updatePlace(fix: GpsFix, nowMs: Long) {
+        val last = placeQueriedAt
+        if (last != null) {
+            if (nowMs - placeQueriedAtMs < PLACE_MIN_INTERVAL_MS) return
+            if (placeName != null && Geo.distanceM(last, fix.latLon) < PLACE_MIN_MOVE_M) return
+        }
+        placeQueriedAtMs = nowMs
+        placeQueriedAt = fix.latLon
+        val name = runCatching { mapController.placeNameAt(fix.latLon) }.getOrNull()?.takeIf { it.isNotBlank() }
+        placeName = name
+        binding.placeText.isVisible = name != null
+        if (name != null) binding.placeText.text = name
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private fun showMessage(message: String) {
@@ -998,6 +1317,14 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         private const val MIN_BOUNDS_DEG = 1e-5
         private const val FRAME_PADDING_DP = 32f
         private const val FRAME_EASE_MS = 800
+        private const val PLACE_MIN_INTERVAL_MS = 2_000L
+        private const val PLACE_MIN_MOVE_M = 10.0
+
+        /** Compass points for 45° sectors starting at north. */
+        private val COMPASS_LABELS = intArrayOf(
+            R.string.compass_n, R.string.compass_ne, R.string.compass_e, R.string.compass_se,
+            R.string.compass_s, R.string.compass_sw, R.string.compass_w, R.string.compass_nw,
+        )
 
         /** Off-route: three long pulses. Back on route: one short buzz. (timings: off, on, off, on…) */
         private val OFF_ROUTE_PATTERN = longArrayOf(0L, 400L, 200L, 400L, 200L, 400L)

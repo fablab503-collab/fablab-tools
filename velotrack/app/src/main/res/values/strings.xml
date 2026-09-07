@@ -69,6 +69,67 @@
     <string name="cd_import">Import a map file</string>
     <string name="cd_download_map">Download map data for an area</string>
     <string name="cd_track_actions">Track actions</string>
+    <string name="cd_home">Home</string>
+    <string name="cd_work">Work</string>
+    <string name="cd_favorites">Favourites</string>
+    <string name="cd_favorite_actions">Favourite actions</string>
+
+    <!-- Favourites -->
+    <string name="fav_home">Home</string>
+    <string name="fav_work">Work</string>
+    <string name="fav_title">Favourites</string>
+    <string name="fav_empty">No favourites yet. Add the places you ride to.</string>
+    <string name="fav_add">Add favourite</string>
+    <string name="fav_edit">Edit</string>
+    <string name="fav_delete">Delete</string>
+    <string name="fav_set_here">Set from my position</string>
+    <string name="fav_set_map_centre">Set from map centre</string>
+    <string name="fav_clear">Clear</string>
+    <string name="fav_set_title">Set %1$s</string>
+    <string name="fav_set_body">Where is %1$s? Use my position, or pan the map to the spot first and use the map centre.</string>
+    <string name="fav_edit_title">Edit favourite</string>
+    <string name="fav_name_hint">Name</string>
+    <string name="fav_description_hint">Description (optional)</string>
+    <string name="fav_name_required">Enter a name</string>
+    <string name="fav_kind_label">Kind</string>
+    <string name="fav_location_label">Location</string>
+    <string name="fav_location_keep">Keep</string>
+    <string name="fav_my_position">My position</string>
+    <string name="fav_map_centre">Map centre</string>
+    <string name="fav_no_position">No position yet. Wait for a GPS fix or use the map centre.</string>
+    <string name="fav_no_map_centre">The map is not ready yet.</string>
+    <string name="fav_saved">%1$s saved</string>
+    <string name="fav_save_failed">Could not save the favourite</string>
+    <string name="fav_cleared">%1$s cleared</string>
+    <string name="fav_delete_title">Delete favourite?</string>
+    <string name="fav_delete_body">%1$s will be removed.</string>
+    <string name="fav_distance_unknown">Distance unknown</string>
+    <string name="fav_subtitle">%1$s · %2$s</string>
+    <string name="fav_kind_person">Person</string>
+    <string name="fav_kind_restaurant">Restaurant</string>
+    <string name="fav_kind_theatre">Theatre</string>
+    <string name="fav_kind_place">Place</string>
+
+    <!-- Guidance line in the HUD -->
+    <string name="guidance_format">→ %1$s · %2$s · %3$s</string>
+    <string name="guidance_no_position">→ %1$s · waiting for GPS</string>
+    <string name="btn_stop_guidance">Stop</string>
+    <string name="direction_ahead">ahead</string>
+    <string name="direction_ahead_right">ahead-right</string>
+    <string name="direction_right">right</string>
+    <string name="direction_behind_right">behind-right</string>
+    <string name="direction_behind">behind</string>
+    <string name="direction_behind_left">behind-left</string>
+    <string name="direction_left">left</string>
+    <string name="direction_ahead_left">ahead-left</string>
+    <string name="compass_n">N</string>
+    <string name="compass_ne">NE</string>
+    <string name="compass_e">E</string>
+    <string name="compass_se">SE</string>
+    <string name="compass_s">S</string>
+    <string name="compass_sw">SW</string>
+    <string name="compass_w">W</string>
+    <string name="compass_nw">NW</string>
 
     <!-- Banners and overlays -->
     <string name="gps_off_banner">Location is turned off</string>

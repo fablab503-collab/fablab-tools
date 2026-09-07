@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 /**
- * SQLite schema for recorded tracks, their points and imported routes.
+ * SQLite schema for recorded tracks, their points, imported routes, map regions and favourites.
  * WAL mode lets the recording service insert batches while the UI reads without blocking.
  *
  * Use [TrackDatabase.get]: one helper per process avoids competing connections that fight over
@@ -23,6 +23,7 @@ class TrackDatabase private constructor(context: Context) :
         db.execSQL(CREATE_POINTS)
         db.execSQL(CREATE_ROUTES)
         db.execSQL(CREATE_MAP_REGIONS)
+        db.execSQL(CREATE_FAVORITES)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -30,11 +31,15 @@ class TrackDatabase private constructor(context: Context) :
             // Version 2: downloaded / imported map regions (one row per detail band filled).
             db.execSQL(CREATE_MAP_REGIONS)
         }
+        if (oldVersion < 3) {
+            // Version 3: favourite places (Home, Work and custom favourites).
+            db.execSQL(CREATE_FAVORITES)
+        }
     }
 
     companion object {
         const val DB_NAME = "velotrack.db"
-        const val DB_VERSION = 2
+        const val DB_VERSION = 3
 
         @Volatile
         private var instance: TrackDatabase? = null
@@ -49,6 +54,7 @@ class TrackDatabase private constructor(context: Context) :
         const val TABLE_POINTS = "points"
         const val TABLE_ROUTES = "routes"
         const val TABLE_MAP_REGIONS = "map_regions"
+        const val TABLE_FAVORITES = "favorites"
 
         private const val CREATE_TRACKS = """
             CREATE TABLE tracks (
@@ -110,6 +116,22 @@ class TrackDatabase private constructor(context: Context) :
                 tiles INTEGER NOT NULL DEFAULT 0,
                 bytes INTEGER NOT NULL DEFAULT 0,
                 build TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL
+            )
+        """
+
+        /**
+         * Saved places. `kind` is a `model.FavoriteKind` key; `home` and `work` have at most one row
+         * each (see `FavoritesRepository.upsertFixed`).
+         */
+        private const val CREATE_FAVORITES = """
+            CREATE TABLE IF NOT EXISTS favorites (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                kind TEXT NOT NULL,
+                lat REAL NOT NULL,
+                lon REAL NOT NULL,
                 created_at INTEGER NOT NULL
             )
         """

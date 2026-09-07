@@ -1,15 +1,20 @@
 package com.fablab503.velotrack.map
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.os.SystemClock
+import androidx.appcompat.content.res.AppCompatResources
+import com.fablab503.velotrack.R
 import com.fablab503.velotrack.geo.Simplify
 import com.fablab503.velotrack.geo.ZoomController
 import com.fablab503.velotrack.model.CameraMode
+import com.fablab503.velotrack.model.FavoriteKind
 import com.fablab503.velotrack.model.GpsFix
 import com.fablab503.velotrack.model.LatLon
 import com.fablab503.velotrack.settings.Prefs
@@ -22,6 +27,7 @@ import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
+import org.maplibre.android.style.layers.PropertyFactory.iconAnchor
 import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
 import org.maplibre.android.style.layers.PropertyFactory.iconImage
 import org.maplibre.android.style.layers.PropertyFactory.iconRotate
@@ -29,6 +35,7 @@ import org.maplibre.android.style.layers.PropertyFactory.iconRotationAlignment
 import org.maplibre.android.style.layers.PropertyFactory.iconSize
 import org.maplibre.android.style.layers.PropertyFactory.lineCap
 import org.maplibre.android.style.layers.PropertyFactory.lineColor
+import org.maplibre.android.style.layers.PropertyFactory.lineDasharray
 import org.maplibre.android.style.layers.PropertyFactory.lineJoin
 import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.android.style.layers.SymbolLayer
@@ -92,6 +99,10 @@ class MapController(
     private var historyLayer: LineLayer? = null
     private var liveLayer: LineLayer? = null
     private var puckLayer: SymbolLayer? = null
+    private var targetSource: GeoJsonSource? = null
+    private var guidanceSource: GeoJsonSource? = null
+    private var targetLayer: SymbolLayer? = null
+    private var guidanceLayer: LineLayer? = null
 
     // Theme colours (ARGB). Defaults match the pre-Material-3 look; MainActivity overrides them from the theme.
     private var trackColor: Int = DEFAULT_TRACK_COLOR
@@ -105,6 +116,10 @@ class MapController(
     private val livePoints = ArrayList<LatLon>()
     private var lastFix: GpsFix? = null
     private var lastHeading: Float? = null
+    private var targetPoint: LatLon? = null
+    private var targetKind: FavoriteKind? = null
+    private var guidanceFrom: LatLon? = null
+    private var guidanceTo: LatLon? = null
 
     // Camera bookkeeping.
     private var cameraApplied = false
@@ -380,6 +395,63 @@ class MapController(
         pushRoute()
     }
 
+    // ---------------------------------------------------------------- guidance (favourites)
+
+    /**
+     * Shows a marker for the guidance target with the image of [kind] (`target-<kind>`, a null kind
+     * uses the generic place image), or clears the marker when [target] is null. Kept across style
+     * reloads.
+     */
+    fun setTarget(target: LatLon?, kind: FavoriteKind?) {
+        targetPoint = target
+        targetKind = kind
+        pushTarget()
+    }
+
+    /**
+     * Draws the dashed straight guidance line between [from] and [to] (route colour, 3 px, dash 2/2);
+     * either null clears the line. Kept across style reloads.
+     */
+    fun setGuidanceLine(from: LatLon?, to: LatLon?) {
+        guidanceFrom = from
+        guidanceTo = to
+        pushGuidance()
+    }
+
+    /**
+     * Names of the map features under a screen point: nearest named road, else park/green, else water,
+     * else locality. Null when nothing named is there or the style is not ready.
+     *
+     * Queries the rendered features in an 18 px box around the projected [latLon], one layer group at a
+     * time in priority order, and returns the first non-blank `name` property.
+     */
+    fun placeNameAt(latLon: LatLon): String? {
+        if (!styleReady) return null
+        val m = map ?: return null
+        val screen = m.projection.toScreenLocation(LatLng(latLon.lat, latLon.lon))
+        val r = PLACE_QUERY_RADIUS_PX
+        val box = RectF(screen.x - r, screen.y - r, screen.x + r, screen.y + r)
+        for (group in PLACE_LAYER_GROUPS) {
+            val features = m.queryRenderedFeatures(box, *group)
+            for (feature in features) {
+                val name = nameOf(feature)
+                if (name != null) return name
+            }
+        }
+        return null
+    }
+
+    /** The feature's `name` property when it is a non-blank string; tile data is untrusted, so never throw. */
+    private fun nameOf(feature: Feature): String? {
+        if (!feature.hasNonNullValueForProperty(PROPERTY_NAME)) return null
+        val name = try {
+            feature.getStringProperty(PROPERTY_NAME)
+        } catch (e: RuntimeException) {
+            null // not a JSON primitive (Gson throws on arrays/objects)
+        }
+        return if (name.isNullOrBlank()) null else name.trim()
+    }
+
     // ---------------------------------------------------------------- theme colours
 
     /**
@@ -396,8 +468,12 @@ class MapController(
         routeLayer?.setProperties(lineColor(routeColor))
         historyLayer?.setProperties(lineColor(trackColor))
         liveLayer?.setProperties(lineColor(trackColor))
-        // addImage with an existing name replaces the image; the symbol layer keeps referencing it.
-        style?.addImage(IMAGE_PUCK, drawPuckBitmap())
+        guidanceLayer?.setProperties(lineColor(routeColor))
+        // addImage with an existing name replaces the image; the symbol layers keep referencing it.
+        style?.let { s ->
+            s.addImage(IMAGE_PUCK, drawPuckBitmap())
+            addTargetImages(s)
+        }
     }
 
     // ---------------------------------------------------------------- style setup
@@ -409,12 +485,16 @@ class MapController(
         val history = GeoJsonSource(SOURCE_TRACK_HISTORY, lineCollection(historyPoints), lineOptions)
         val live = GeoJsonSource(SOURCE_TRACK_LIVE, lineCollection(livePoints), lineOptions)
         val puck = GeoJsonSource(SOURCE_PUCK, puckCollection())
+        val guidance = GeoJsonSource(SOURCE_GUIDANCE, guidanceCollection())
+        val target = GeoJsonSource(SOURCE_TARGET, targetCollection())
         style.addSource(route)
         style.addSource(history)
         style.addSource(live)
         style.addSource(puck)
+        style.addSource(guidance)
+        style.addSource(target)
 
-        // Added in order: route below the track lines, puck on top.
+        // Added in order: route below the track lines, then the guidance line, puck, target marker on top.
         val routeLine = LineLayer(LAYER_ROUTE, SOURCE_ROUTE).withProperties(
             lineColor(routeColor),
             lineWidth(6f),
@@ -433,9 +513,17 @@ class MapController(
             lineCap(Property.LINE_CAP_ROUND),
             lineJoin(Property.LINE_JOIN_ROUND),
         )
+        val guidanceLine = LineLayer(LAYER_GUIDANCE, SOURCE_GUIDANCE).withProperties(
+            lineColor(routeColor),
+            lineWidth(GUIDANCE_LINE_WIDTH),
+            lineDasharray(arrayOf(2f, 2f)),
+            lineCap(Property.LINE_CAP_BUTT),
+            lineJoin(Property.LINE_JOIN_ROUND),
+        )
         style.addLayer(routeLine)
         style.addLayer(historyLine)
         style.addLayer(liveLine)
+        style.addLayer(guidanceLine)
 
         style.addImage(IMAGE_PUCK, drawPuckBitmap())
         val puckSymbol = SymbolLayer(LAYER_PUCK, SOURCE_PUCK).withProperties(
@@ -448,15 +536,29 @@ class MapController(
         )
         style.addLayer(puckSymbol)
 
+        addTargetImages(style)
+        val targetSymbol = SymbolLayer(LAYER_TARGET, SOURCE_TARGET).withProperties(
+            iconImage(targetImageName(targetKind)),
+            iconAnchor(Property.ICON_ANCHOR_BOTTOM),
+            iconAllowOverlap(true),
+            iconIgnorePlacement(true),
+            iconSize(1f),
+        )
+        style.addLayer(targetSymbol)
+
         this.style = style
         routeSource = route
         historySource = history
         liveSource = live
         puckSource = puck
+        guidanceSource = guidance
+        targetSource = target
         routeLayer = routeLine
         historyLayer = historyLine
         liveLayer = liveLine
         puckLayer = puckSymbol
+        guidanceLayer = guidanceLine
+        targetLayer = targetSymbol
     }
 
     private fun clearStyleRefs() {
@@ -465,10 +567,14 @@ class MapController(
         historySource = null
         liveSource = null
         puckSource = null
+        guidanceSource = null
+        targetSource = null
         routeLayer = null
         historyLayer = null
         liveLayer = null
         puckLayer = null
+        guidanceLayer = null
+        targetLayer = null
     }
 
     private fun pushRoute() {
@@ -492,9 +598,33 @@ class MapController(
         puckLayer?.setProperties(iconRotate(lastHeading ?: 0f))
     }
 
+    private fun pushTarget() {
+        if (!styleReady) return
+        targetLayer?.setProperties(iconImage(targetImageName(targetKind)))
+        targetSource?.setGeoJson(targetCollection())
+    }
+
+    private fun pushGuidance() {
+        if (!styleReady) return
+        guidanceSource?.setGeoJson(guidanceCollection())
+    }
+
     private fun puckCollection(): FeatureCollection {
         val fix = lastFix ?: return FeatureCollection.fromFeatures(emptyList<Feature>())
         return FeatureCollection.fromFeatures(listOf(Feature.fromGeometry(Point.fromLngLat(fix.lon, fix.lat))))
+    }
+
+    private fun targetCollection(): FeatureCollection {
+        val p = targetPoint ?: return FeatureCollection.fromFeatures(emptyList<Feature>())
+        return FeatureCollection.fromFeatures(listOf(Feature.fromGeometry(Point.fromLngLat(p.lon, p.lat))))
+    }
+
+    /** Empty unless both ends are set (a GeoJSON line needs two positions). */
+    private fun guidanceCollection(): FeatureCollection {
+        val from = guidanceFrom
+        val to = guidanceTo
+        if (from == null || to == null) return FeatureCollection.fromFeatures(emptyList<Feature>())
+        return lineCollection(listOf(from, to))
     }
 
     /** A GeoJSON line needs at least two positions; anything shorter becomes an empty collection. */
@@ -556,6 +686,88 @@ class MapController(
         return bitmap
     }
 
+    // ---------------------------------------------------------------- target marker images
+
+    private fun targetImageName(kind: FavoriteKind?): String =
+        IMAGE_TARGET_PREFIX + (kind ?: FavoriteKind.PLACE).key
+
+    /** Adds (or replaces) the six `target-<kind>` marker images in [style]. */
+    private fun addTargetImages(style: Style) {
+        for (kind in FavoriteKind.entries) {
+            style.addImage(targetImageName(kind), drawTargetBitmap(kind))
+        }
+    }
+
+    /** The Material Symbols drawable used as the marker glyph of [kind] (drawables are owned by the ui module). */
+    private fun glyphRes(kind: FavoriteKind): Int = when (kind) {
+        FavoriteKind.HOME -> R.drawable.ic_home
+        FavoriteKind.WORK -> R.drawable.ic_work
+        FavoriteKind.PERSON -> R.drawable.ic_person
+        FavoriteKind.RESTAURANT -> R.drawable.ic_restaurant
+        FavoriteKind.THEATRE -> R.drawable.ic_theater_comedy
+        FavoriteKind.PLACE -> R.drawable.ic_place
+    }
+
+    /**
+     * Pin marker for [kind] on a 32 x 40 dp canvas (density-aware): a 32 dp disc in [routeColor] with a
+     * 2 dp white ring, a short white-edged tail down to the anchor point at the bottom centre, and the
+     * kind's glyph tinted white at 18 dp in the disc. Falls back to the plain disc when the glyph
+     * drawable cannot be loaded.
+     */
+    private fun drawTargetBitmap(kind: FavoriteKind): Bitmap {
+        val density = context.resources.displayMetrics.density
+        val dp = density
+        val width = (TARGET_DISC_DP * density).roundToInt().coerceAtLeast(1)
+        val height = (TARGET_HEIGHT_DP * density).roundToInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val radius = TARGET_DISC_DP * dp / 2f
+        val cx = width / 2f
+        val cy = radius
+
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = routeColor
+        }
+        val ringWidth = TARGET_RING_WIDTH_DP * dp
+        val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = ringWidth
+            color = Color.WHITE
+        }
+
+        // Tail: a triangle from the lower part of the disc to the anchor point at the bottom centre.
+        val tailHalf = TARGET_TAIL_HALF_WIDTH_DP * dp
+        val tail = Path().apply {
+            moveTo(cx - tailHalf, cy + radius * 0.55f)
+            lineTo(cx, height.toFloat() - ringWidth / 2f)
+            lineTo(cx + tailHalf, cy + radius * 0.55f)
+            close()
+        }
+        canvas.drawPath(tail, fill)
+        canvas.drawPath(tail, ring)
+
+        canvas.drawCircle(cx, cy, radius, fill)
+        // Stroke is centred on the radius, so pull it in by half its width to keep the outer edge at 16dp.
+        canvas.drawCircle(cx, cy, radius - ringWidth / 2f, ring)
+
+        val glyph = try {
+            AppCompatResources.getDrawable(context, glyphRes(kind))
+        } catch (e: Resources.NotFoundException) {
+            null
+        }
+        if (glyph != null) {
+            val d = glyph.mutate()
+            d.setTint(Color.WHITE)
+            val glyphPx = (TARGET_GLYPH_DP * dp).roundToInt().coerceAtLeast(1)
+            val left = (cx - glyphPx / 2f).roundToInt()
+            val top = (cy - glyphPx / 2f).roundToInt()
+            d.setBounds(left, top, left + glyphPx, top + glyphPx)
+            d.draw(canvas)
+        }
+        return bitmap
+    }
+
     companion object {
         const val STYLE_ASSET = "style.json"
 
@@ -576,6 +788,49 @@ class MapController(
         const val LAYER_TRACK_LIVE = "track-live-line"
         const val LAYER_PUCK = "puck-layer"
         const val IMAGE_PUCK = "puck"
+        const val SOURCE_TARGET = "target"
+        const val SOURCE_GUIDANCE = "guidance"
+        const val LAYER_TARGET = "target-layer"
+        const val LAYER_GUIDANCE = "guidance-line"
+        /** Marker image ids are `target-<kind key>`, e.g. `target-home`. */
+        const val IMAGE_TARGET_PREFIX = "target-"
+
+        private const val PROPERTY_NAME = "name"
+        private const val PLACE_QUERY_RADIUS_PX = 18f
+        private const val GUIDANCE_LINE_WIDTH = 3f
+        private const val TARGET_DISC_DP = 32f
+        private const val TARGET_HEIGHT_DP = 40f
+        private const val TARGET_RING_WIDTH_DP = 2f
+        private const val TARGET_GLYPH_DP = 18f
+        private const val TARGET_TAIL_HALF_WIDTH_DP = 5f
+
+        /** Bands searched by [placeNameAt], most detailed first (band 0 is the low-zoom overview). */
+        private val PLACE_BANDS = listOf(3, 2, 1)
+        private val ROAD_LAYER_BASES = listOf(
+            "roads_minor", "roads_major", "roads_highway", "roads_other", "roads_link", "roads_minor_service",
+            "roads_bridges_minor", "roads_bridges_major", "roads_bridges_highway", "roads_bridges_other",
+            "roads_tunnels_minor", "roads_tunnels_major", "roads_tunnels_highway", "roads_tunnels_other",
+        )
+        private val GREEN_LAYER_BASES = listOf("landuse_park", "landuse_urban_green")
+        private val WATER_LAYER_BASES = listOf("water")
+        private val LOCALITY_LAYER_BASES = listOf("places_locality")
+
+        /**
+         * Layer-id groups queried by [placeNameAt] in priority order: roads of band 3, band 2, band 1,
+         * then green areas, water and localities (each across bands 3, 2, 1).
+         */
+        private val PLACE_LAYER_GROUPS: List<Array<String>> = buildList {
+            for (band in PLACE_BANDS) add(withBand(ROAD_LAYER_BASES, listOf(band)))
+            add(withBand(GREEN_LAYER_BASES, PLACE_BANDS))
+            add(withBand(WATER_LAYER_BASES, PLACE_BANDS))
+            add(withBand(LOCALITY_LAYER_BASES, PLACE_BANDS))
+        }
+
+        private fun withBand(bases: List<String>, bands: List<Int>): Array<String> {
+            val ids = ArrayList<String>(bases.size * bands.size)
+            for (band in bands) for (base in bases) ids.add("${base}_b$band")
+            return ids.toTypedArray()
+        }
 
         // ARGB defaults (Long literals narrowed to Int; not const because of the conversion call).
         private val DEFAULT_TRACK_COLOR: Int = 0xFF42A5F5.toInt()
