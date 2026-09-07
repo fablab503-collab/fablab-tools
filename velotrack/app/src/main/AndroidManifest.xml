@@ -49,6 +49,11 @@
             android:label="@string/title_tracks" />
 
         <activity
+            android:name=".ui.StatsActivity"
+            android:exported="false"
+            android:label="@string/title_stats" />
+
+        <activity
             android:name=".ui.MapFilesActivity"
             android:exported="false"
             android:label="@string/title_map_files" />

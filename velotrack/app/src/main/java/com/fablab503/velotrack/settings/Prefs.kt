@@ -6,6 +6,7 @@ import androidx.preference.PreferenceManager
 import com.fablab503.velotrack.model.CameraMode
 import com.fablab503.velotrack.model.LatLon
 import com.fablab503.velotrack.model.ScreenMode
+import com.fablab503.velotrack.model.ThemeMode
 import com.fablab503.velotrack.model.Units
 
 /** Typed access to the app's SharedPreferences. Keys are public so res/xml/preferences.xml can use them. */
@@ -22,9 +23,19 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_AUTO_PAUSE, true)
         set(value) = sp.edit().putBoolean(KEY_AUTO_PAUSE, value).apply()
 
+    /** Start a recording by itself when riding is detected while idle. */
+    var autoRecord: Boolean
+        get() = sp.getBoolean(KEY_AUTO_RECORD, true)
+        set(value) = sp.edit().putBoolean(KEY_AUTO_RECORD, value).apply()
+
     var screenMode: ScreenMode
         get() = enumOrDefault(sp.getString(KEY_SCREEN_MODE, null), ScreenMode.KEEP_ON)
         set(value) = sp.edit().putString(KEY_SCREEN_MODE, value.name).apply()
+
+    /** Dark, light, or automatic (dark between sunset and sunrise); stored as the enum name. */
+    var themeMode: ThemeMode
+        get() = enumOrDefault(sp.getString(KEY_THEME_MODE, null), ThemeMode.AUTO)
+        set(value) = sp.edit().putString(KEY_THEME_MODE, value.name).apply()
 
     /** Brightness 0.05..1.0 used when screenMode == DIM. */
     var dimLevel: Float
@@ -104,7 +115,9 @@ class Prefs(context: Context) {
     companion object {
         const val KEY_ACCURACY_CUTOFF = "accuracy_cutoff_m"
         const val KEY_AUTO_PAUSE = "auto_pause"
+        const val KEY_AUTO_RECORD = "auto_record"
         const val KEY_SCREEN_MODE = "screen_mode"
+        const val KEY_THEME_MODE = "theme_mode"
         const val KEY_DIM_LEVEL = "dim_level"
         const val KEY_UNITS = "units"
         const val KEY_PITCH = "pitch_deg"

@@ -2,6 +2,18 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <PreferenceCategory android:title="@string/pref_cat_appearance">
+
+        <ListPreference
+            android:key="theme_mode"
+            android:title="@string/pref_theme_title"
+            android:entries="@array/theme_mode_entries"
+            android:entryValues="@array/theme_mode_values"
+            android:defaultValue="AUTO"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/pref_cat_recording">
 
         <ListPreference
@@ -16,6 +28,12 @@
             android:key="auto_pause"
             android:title="@string/pref_auto_pause_title"
             android:summary="@string/pref_auto_pause_summary"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="auto_record"
+            android:title="@string/pref_auto_record_title"
+            android:summary="@string/pref_auto_record_summary"
             android:defaultValue="true" />
 
     </PreferenceCategory>

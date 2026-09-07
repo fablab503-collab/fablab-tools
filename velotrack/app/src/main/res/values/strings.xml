@@ -13,12 +13,14 @@
 
     <!-- Activity titles -->
     <string name="title_tracks">Tracks</string>
+    <string name="title_stats">Statistics</string>
     <string name="title_map_files">Map data</string>
     <string name="title_download_map">Download map</string>
     <string name="title_settings">Settings</string>
 
     <!-- Overflow menu -->
     <string name="menu_tracks">Tracks</string>
+    <string name="menu_stats">Statistics</string>
     <string name="menu_import_route">Import route (GPX)</string>
     <string name="menu_clear_route">Clear route</string>
     <string name="menu_download_map">Download map</string>
@@ -174,6 +176,21 @@
     <string name="track_saved">GPX saved</string>
     <string name="track_share_title">Share GPX</string>
 
+    <!-- Statistics (StatsActivity) -->
+    <string name="stats_all_time">All time</string>
+    <string name="stats_this_year">This year</string>
+    <string name="stats_this_month">This month</string>
+    <string name="stats_this_week">This week</string>
+    <string name="stats_rides">%1$d rides</string>
+    <string name="stats_ride_one">1 ride</string>
+    <string name="stats_moving">Moving %1$s</string>
+    <string name="stats_climb">Climb %1$s</string>
+    <string name="stats_longest">Longest ride %1$s</string>
+    <string name="stats_empty_title">No rides yet</string>
+    <string name="stats_empty_body">Start a ride and your kilometres add up here.</string>
+    <string name="stats_total_headline">%1$s ridden in total</string>
+    <string name="cd_stats_icon">Statistics illustration</string>
+
     <!-- Map data (MapFilesActivity) -->
     <string name="map_data_total">%1$s on this phone</string>
     <string name="map_data_total_label">Map data</string>
@@ -231,6 +248,11 @@
     <string name="download_anyway">Download anyway</string>
 
     <!-- Settings -->
+    <string name="pref_cat_appearance">Appearance</string>
+    <string name="pref_theme_title">Theme</string>
+    <string name="theme_mode_dark">Dark</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_auto">Auto (dark after sunset)</string>
     <string name="pref_cat_recording">Recording</string>
     <string name="pref_cat_display">Display and map</string>
     <string name="pref_cat_route">Route</string>
@@ -238,7 +260,11 @@
     <string name="pref_accuracy_title">Ignore fixes less accurate than</string>
     <string name="pref_auto_pause_title">Auto-pause</string>
     <string name="pref_auto_pause_summary">Pause moving time and point storage when stopped</string>
-    <string name="pref_screen_mode_title">Screen while map is visible</string>
+    <string name="pref_auto_record_title">Start recording automatically</string>
+    <string name="pref_auto_record_summary">When you ride faster than 5 km/h for 10 seconds</string>
+    <string name="auto_record_started">Recording started automatically</string>
+    <string name="pref_screen_mode_title">Screen during a ride</string>
+    <string name="pref_screen_mode_summary">Applies while a ride is being recorded</string>
     <string name="pref_dim_level_title">Dim brightness (%)</string>
     <string name="pref_dim_level_summary">Used when screen mode is Dim</string>
     <string name="pref_units_title">Units</string>

@@ -35,6 +35,18 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
 
+        <!-- 3D empty-state illustration; stays gone until FavoritesSheet toggles it together
+             with emptyText in a later round. -->
+        <ImageView
+            android:id="@+id/emptyImage"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/fab_gap"
+            android:contentDescription="@null"
+            android:src="@drawable/img3d_star"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/emptyText"
             android:layout_width="match_parent"

@@ -6,8 +6,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
@@ -16,6 +18,7 @@ import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -116,6 +119,18 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     private val heading = HeadingEstimator()
     private val handler = Handler(Looper.getMainLooper())
 
+    // Theme (dark / light / auto by sun), riding mode and auto record.
+    private lateinit var nightMode: NightModeManager
+    private val ridingMode = RidingModeController()
+    private val autoRecord = AutoRecordDetector()
+    /** Last effective speed handed to [ridingMode]; replayed by [ridingModeRunnable] when a timer expires. */
+    private var ridingSpeedMps: Float? = null
+    private var ridingSpeedAtMs = 0L
+    /** True while the crash-recovery dialog is on screen; auto-record must not start a second ride then. */
+    private var recoveryDialogShowing = false
+    /** Status of the last rendered [RideState]; detects the non-IDLE → IDLE transition (recording stopped). */
+    private var lastStatus: RecordingStatus = RecordingStatus.IDLE
+
     // Idle (not recording) GPS feed.
     private var activityStarted = false
     private var localGpsRunning = false
@@ -190,6 +205,25 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
     private val gpsRetryRunnable = Runnable { refreshLocalGps() }
 
+    /** Riding mode timers (touch timeout, enter/exit delays) can expire without a new fix. */
+    private val ridingModeRunnable = Runnable {
+        val now = SystemClock.elapsedRealtime()
+        // A speed sample older than a few seconds (GPS lost, tunnel) no longer proves the rider is fast.
+        val speed = if (now - ridingSpeedAtMs > RIDING_SPEED_STALE_MS) null else ridingSpeedMps
+        if (ridingMode.onSpeed(speed, now)) applyRidingMode()
+        scheduleRidingModeCheck(now)
+    }
+
+    /** Auto theme: re-evaluate at the next sunrise/sunset while this screen is resumed. */
+    private val nightCheckRunnable = Runnable {
+        if (nightMode.needsChange()) nightMode.apply() // AppCompat recreates this activity
+        scheduleNightCheck() // re-arm in case it did not
+    }
+
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Prefs.KEY_THEME_MODE) nightMode.apply()
+    }
+
     /** A finished download changes the band files under MapLibre's feet: reload the style. */
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -206,6 +240,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
+        nightMode = NightModeManager(prefs)
         db = TrackDatabase.get(this)
         repo = TrackRepository(db)
         favorites = FavoritesRepository(db)
@@ -245,6 +280,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         setupButtons()
         updateModeButton()
         pendingViewTrackId = viewTrackIdFrom(intent)
+        mapController.lightMap = !isNightUi()
         prepareMapData()
 
         lifecycleScope.launch {
@@ -253,7 +289,17 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             }
         }
 
+        // Registered for the activity's whole life: the theme is changed from Settings while this
+        // screen is stopped behind it, so an onResume/onPause registration would never hear it.
+        prefs.registerListener(prefsListener)
+
         if (!hasFineLocation()) requestLocationPermissions(null)
+    }
+
+    /** Any touch (before dispatch, ACTION_DOWN only) brings the controls back in riding mode. */
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        onScreenTouched()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -283,6 +329,12 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     override fun onResume() {
         super.onResume()
         mapView.onResume()
+        if (nightMode.needsChange()) {
+            // Sunset/sunrise passed (or the theme was changed) while away. AppCompat normally recreates
+            // this activity; carry on regardless, the calls below are harmless either way.
+            nightMode.apply()
+        }
+        scheduleNightCheck()
         applyScreenMode()
         updateGpsBanner()
         refreshNoMapOverlay()
@@ -292,6 +344,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     override fun onPause() {
+        handler.removeCallbacks(nightCheckRunnable)
+        handler.removeCallbacks(ridingModeRunnable)
+        if (ridingMode.reset()) applyRidingMode(animate = false)
         mapView.onPause()
         super.onPause()
     }
@@ -319,6 +374,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        prefs.unregisterListener(prefsListener)
         stopLocalGps()
         mapController.onDestroy()
         mapView.onDestroy()
@@ -416,12 +472,19 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         chip.chipIconTint = ColorStateList.valueOf(MaterialColors.getColor(chip, tintAttr))
     }
 
+    /** A dialog, menu or sheet is about to open: bring the controls back so nothing fades behind it. */
+    private fun showControlsForDialog() {
+        if (ridingMode.reset()) applyRidingMode()
+    }
+
     private fun showMenu() {
+        showControlsForDialog()
         val popup = PopupMenu(this, binding.btnMenu)
         popup.inflate(R.menu.main_menu)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_tracks -> startActivity(Intent(this, TracksActivity::class.java))
+                R.id.action_stats -> startActivity(Intent(this, StatsActivity::class.java))
                 R.id.action_import_route -> routeLauncher.launch(arrayOf("*/*"))
                 R.id.action_clear_route -> clearRoute()
                 R.id.action_download_map -> openDownloadMap()
@@ -468,16 +531,25 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     /** Stops the local GPS feed first so the service is the only client, then starts it. */
-    private fun launchService(start: () -> Unit) {
+    private fun launchService(start: () -> Unit): Boolean {
         stopLocalGps()
-        start()
+        val started = try {
+            start()
+            true
+        } catch (e: IllegalStateException) {
+            // Foreground start refused (the activity just left the foreground): keep the idle feed.
+            Log.w(TAG, "service start refused", e)
+            false
+        }
         // If the service could not start (permission revoked, etc.) the state stays IDLE and the
         // local feed is restored by this retry.
         handler.removeCallbacks(gpsRetryRunnable)
         handler.postDelayed(gpsRetryRunnable, SERVICE_START_GRACE_MS)
+        return started
     }
 
     private fun confirmStop() {
+        showControlsForDialog()
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.stop_confirm_title)
             .setMessage(R.string.stop_confirm_body)
@@ -505,7 +577,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             } ?: return@launch
             if (RideSession.serviceRunning || RideSession.state.value.status != RecordingStatus.IDLE) return@launch
             if (isFinishing || isDestroyed) return@launch
+            recoveryDialogShowing = true
             MaterialAlertDialogBuilder(this@MainActivity)
+                .setOnDismissListener { recoveryDialogShowing = false }
                 .setTitle(R.string.recovery_title)
                 .setMessage(
                     getString(R.string.recovery_body, unfinished.name, Format.distance(unfinished.distanceM, prefs.units))
@@ -616,6 +690,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         updateRoute(fix.latLon, nowMs)
         updateGuidance(fix, headingDeg)
         updatePlace(fix, nowMs)
+        onSpeedSample(fix.speedMps)
+        checkAutoRecord(fix)
+        if (!localGpsRunning) return // an auto start just handed GPS to the service
         renderLiveHud(fix, localGpsStatus)
     }
 
@@ -631,6 +708,18 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         val units = prefs.units
         val status = state.status
         val active = status != RecordingStatus.IDLE
+
+        if (status != lastStatus) {
+            lastStatus = status
+            if (!active) {
+                // Recording stopped: show the controls again and hold auto-record for a while.
+                autoRecord.cooldown(SystemClock.elapsedRealtime())
+                ridingSpeedMps = null
+                handler.removeCallbacks(ridingModeRunnable)
+                if (ridingMode.reset()) applyRidingMode()
+            }
+            applyScreenMode()
+        }
 
         binding.btnRecord.isVisible = !active
         binding.btnPause.isVisible = active
@@ -675,6 +764,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 updateRoute(fix.latLon, nowMs)
                 updateGuidance(fix, state.headingDeg)
                 updatePlace(fix, nowMs)
+                onSpeedSample(state.speedMps)
             }
             syncTrackOnMap(state)
         } else {
@@ -724,9 +814,15 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
     }
 
+    /**
+     * Keep-on / dim apply only while a ride is being recorded; when idle the system setting rules.
+     * Derived from state (not from a click) because window flags die with a recreated activity.
+     */
     private fun applyScreenMode() {
+        val recording = RideSession.state.value.status != RecordingStatus.IDLE
+        val mode = if (recording) prefs.screenMode else ScreenMode.SYSTEM
         val lp = window.attributes
-        when (prefs.screenMode) {
+        when (mode) {
             ScreenMode.KEEP_ON -> {
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
@@ -742,6 +838,93 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
         window.attributes = lp
     }
+
+    // ---------------------------------------------------------------- riding mode, auto record, theme
+
+    /** Feeds one effective speed sample to the riding-mode controller and re-arms its timer. */
+    private fun onSpeedSample(speedMps: Float?) {
+        val now = SystemClock.elapsedRealtime()
+        ridingSpeedMps = speedMps
+        ridingSpeedAtMs = now
+        if (ridingMode.onSpeed(speedMps, now)) applyRidingMode()
+        scheduleRidingModeCheck(now)
+    }
+
+    private fun onScreenTouched() {
+        val now = SystemClock.elapsedRealtime()
+        if (ridingMode.onTouch(now)) applyRidingMode()
+        scheduleRidingModeCheck(now)
+    }
+
+    private fun scheduleRidingModeCheck(nowMs: Long) {
+        handler.removeCallbacks(ridingModeRunnable)
+        val delay = ridingMode.nextCheckDelayMs(nowMs) ?: return
+        handler.postDelayed(ridingModeRunnable, delay.coerceAtLeast(RIDING_MIN_RECHECK_MS))
+    }
+
+    /**
+     * Fades the whole controls container (FAB column and action row) to match [RidingModeController.hidden].
+     * Hidden ends GONE with alpha restored: an alpha-0 VISIBLE view would still eat map taps, and a
+     * cancelled fade-out never runs its end action, so the show path resets alpha itself.
+     */
+    private fun applyRidingMode(animate: Boolean = true) {
+        val controls = binding.controls
+        controls.animate().cancel()
+        if (ridingMode.hidden) {
+            if (!animate) {
+                controls.isVisible = false
+                controls.alpha = 1f
+                return
+            }
+            controls.animate().alpha(0f).setDuration(FADE_MS).withEndAction {
+                controls.isVisible = false
+                controls.alpha = 1f
+            }
+        } else {
+            if (!animate) {
+                controls.alpha = 1f
+                controls.isVisible = true
+                return
+            }
+            controls.alpha = 0f
+            controls.isVisible = true
+            controls.animate().alpha(1f).setDuration(FADE_MS)
+        }
+    }
+
+    /**
+     * Idle path only: starts a recording by itself once the rider has been moving for a while.
+     * Starting the location foreground service from a resumed activity needs no user tap.
+     */
+    private fun checkAutoRecord(fix: GpsFix) {
+        if (!prefs.autoRecord) {
+            autoRecord.reset()
+            return
+        }
+        val now = SystemClock.elapsedRealtime()
+        val detected = autoRecord.onFix(fix.speedMps, fix.accuracyM ?: Float.MAX_VALUE, prefs.accuracyCutoffM, now)
+        if (!detected) return
+        if (RideSession.state.value.status != RecordingStatus.IDLE || recoveryDialogShowing ||
+            !hasFineLocation() || !hasNotificationPermission() ||
+            (!batterySaverWarned && batterySaverStopsGps())
+        ) {
+            // Anything that would need a dialog or a permission prompt is left to the Record button.
+            autoRecord.reset()
+            return
+        }
+        autoRecord.cooldown(now)
+        if (launchService { RideController.startNew(this) }) toast(R.string.auto_record_started)
+    }
+
+    /** Arms [nightCheckRunnable] for the next sunrise/sunset (plus slack); nothing to do for DARK/LIGHT. */
+    private fun scheduleNightCheck() {
+        handler.removeCallbacks(nightCheckRunnable)
+        val delay = nightMode.millisUntilNextCheck() ?: return
+        handler.postDelayed(nightCheckRunnable, delay + NIGHT_CHECK_SLACK_MS)
+    }
+
+    private fun isNightUi(): Boolean =
+        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
     // ---------------------------------------------------------------- track on map
 
@@ -851,6 +1034,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     /** (Re)loads the style with all four band sources; a no-op until the band files are known. */
     private fun reloadStyle() {
         val files = bandFiles ?: return
+        mapController.lightMap = !isNightUi()
         mapController.loadStyle(files) { error -> onStyleLoaded(error) }
     }
 
@@ -1055,6 +1239,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
     /** "Set Home / Work": name field plus two ways to pick the location (my position, map centre). */
     private fun showPlacePicker(kind: FavoriteKind) {
+        showControlsForDialog()
         val defaultName = fixedName(kind)
         val b = DialogPlacePickerBinding.inflate(layoutInflater)
         b.bodyText.text = getString(R.string.fav_set_body, defaultName)
@@ -1096,6 +1281,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
     /** Home / Work long-press: Set from my position / Set from map centre / Clear (when set). */
     private fun showFixedFavoriteMenu(kind: FavoriteKind) {
+        showControlsForDialog()
         lifecycleScope.launch {
             val existing = withContext(Dispatchers.IO) { runCatching { favorites.getByKind(kind) }.getOrNull() }
             if (isFinishing || isDestroyed) return@launch
@@ -1179,6 +1365,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
     private fun showFavoritesSheet() {
         if (supportFragmentManager.findFragmentByTag(FavoritesSheet.TAG) != null) return
+        showControlsForDialog()
         FavoritesSheet().show(supportFragmentManager, FavoritesSheet.TAG)
     }
 
@@ -1323,6 +1510,10 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         private const val TAG = "VeloMain"
         private const val PLACE_MIN_INTERVAL_MS = 2_000L
         private const val PLACE_MIN_MOVE_M = 10.0
+        private const val FADE_MS = 200L
+        private const val RIDING_MIN_RECHECK_MS = 100L
+        private const val RIDING_SPEED_STALE_MS = 5_000L
+        private const val NIGHT_CHECK_SLACK_MS = 60_000L
 
         /** Compass points for 45° sectors starting at north. */
         private val COMPASS_LABELS = intArrayOf(

@@ -1,9 +1,14 @@
 #!/usr/bin/env node
-// Generates the offline MapLibre style bundled in the APK (app/src/main/assets/style.json) and the
-// vector_layers list used when the app creates empty band files (app/src/main/assets/vector_layers.json).
+// Generates the offline MapLibre styles bundled in the APK (app/src/main/assets/style.json for the dark
+// theme, style_light.json for the light theme) and the vector_layers list used when the app creates
+// empty band files (app/src/main/assets/vector_layers.json).
 //
-// The style is the Protomaps "dark" flavor from @protomaps/basemaps 5.7.2, patched for an OLED
-// screen: pure black background and earth fill, POI layers removed.
+// Two flavours, one per run (--flavor):
+//   dark   the Protomaps "dark" flavor from @protomaps/basemaps 5.7.2, patched for an OLED screen:
+//          pure black background and earth fill.
+//   light  the Protomaps "light" flavor with darker road casings and label greys so the map stays
+//          legible in sunlight (see docs/superpowers/specs/2026-09-07-velotrack-riding-mode-theme-stats-design.md §3.6).
+// POI layers are removed from both. Each flavour references its own sprite sheet (sprites/v4/<flavor>).
 //
 // Four vector sources, one per detail band (see docs/superpowers/specs/2026-09-07-velotrack-map-download-design.md):
 //   band0 z0-6, band1 z7-9, band2 z10-12, band3 z13-15
@@ -14,9 +19,11 @@
 // overzooms every band past its maxzoom, so coarse bands show through wherever finer data is missing.
 // Glyphs and sprites are read from APK assets.
 //
-// Usage: node gen-style.mjs [output-path]
-//   output-path defaults to ../app/src/main/assets/style.json relative to this script.
-//   vector_layers.json is written next to the style output.
+// Usage: node gen-style.mjs [output-path] [--flavor dark|light]
+//   --flavor defaults to dark.
+//   output-path defaults to ../app/src/main/assets/style.json (dark) or style_light.json (light)
+//   relative to this script.
+//   vector_layers.json is written next to the style output (same content for both flavours).
 // Environment:
 //   VELOTRACK_LANG        label language code (e.g. en, de, fr, pt, zh-Hans). Falls back to the language
 //                         part of the system LANG variable (en_US.UTF-8 -> en); default en.
@@ -29,7 +36,9 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { layers, namedFlavor, language_script_pairs } from "@protomaps/basemaps";
 
-const FLAVOR = "dark";
+const FLAVOR_NAMES = ["dark", "light"];
+const DEFAULT_FLAVOR = "dark";
+const DEFAULT_OUTPUT = { dark: "style.json", light: "style_light.json" };
 const BAND_COUNT = 4;
 const MAP_URL_PLACEHOLDER_PREFIX = "{MAP_URL_"; // "{MAP_URL_0}" .. "{MAP_URL_3}"
 const ATTRIBUTION = "© OpenStreetMap contributors";
@@ -74,21 +83,98 @@ function pickLang() {
   return code;
 }
 
+// ---------------------------------------------------------------- CLI
+
+/** Parses `[output-path] [--flavor dark|light]`; exits with usage on anything else. */
+function parseArgs(argv) {
+  let flavorName = DEFAULT_FLAVOR;
+  let outArg = null;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--flavor") {
+      if (i + 1 >= argv.length) usage(`--flavor needs a value (${FLAVOR_NAMES.join("|")})`);
+      flavorName = argv[++i];
+    } else if (a.startsWith("--flavor=")) {
+      flavorName = a.slice("--flavor=".length);
+    } else if (a.startsWith("--")) {
+      usage(`unknown option ${a}`);
+    } else if (outArg === null) {
+      outArg = a;
+    } else {
+      usage(`unexpected argument ${a}`);
+    }
+  }
+  if (!FLAVOR_NAMES.includes(flavorName)) usage(`unknown flavor "${flavorName}" (expected ${FLAVOR_NAMES.join("|")})`);
+  return { flavorName, outArg };
+}
+
+function usage(message) {
+  console.error(`gen-style: ${message}`);
+  console.error(`usage: node gen-style.mjs [output-path] [--flavor ${FLAVOR_NAMES.join("|")}]`);
+  process.exit(2);
+}
+
+// ---------------------------------------------------------------- flavours
+
+/**
+ * Light flavour overrides for sunlight legibility. Stock LIGHT casings (#e0e0e0 on earth #e2dfda) and
+ * mid-grey labels wash out outdoors, so every road casing and label colour is darkened; the highway
+ * and major fills get a pale amber tint to keep the hierarchy readable. Halos stay untouched.
+ */
+const LIGHT_PATCH = {
+  minor_casing: "#b8b8b8",
+  major_casing_early: "#9a9a9a",
+  major_casing_late: "#9a9a9a",
+  highway_casing_early: "#8a8a8a",
+  highway_casing_late: "#8a8a8a",
+  bridges_minor_casing: "#b8b8b8",
+  bridges_major_casing: "#9a9a9a",
+  bridges_highway_casing: "#8a8a8a",
+  link_casing: "#a8a8a8",
+  minor_service_casing: "#c4c4c4",
+  bridges_link_casing: "#a8a8a8",
+  bridges_other_casing: "#b8b8b8",
+  highway: "#fff2c2",
+  major: "#fffbe6",
+  bridges_highway: "#fff2c2",
+  bridges_major: "#fffbe6",
+  roads_label_minor: "#4a4a4a",
+  roads_label_major: "#2e2e2e",
+  city_label: "#1f1f1f",
+  subplace_label: "#4a4a4a",
+  state_label: "#7a7a7a",
+  country_label: "#5c5c5c",
+  address_label: "#4a4a4a",
+};
+
+/** The Protomaps flavour object handed to layers() for [flavorName]. */
+function flavorFor(flavorName) {
+  const base = namedFlavor(flavorName);
+  if (flavorName === "light") {
+    for (const key of Object.keys(LIGHT_PATCH)) {
+      if (!(key in base)) throw new Error(`gen-style: light patch key "${key}" does not exist in the Protomaps flavour`);
+    }
+    return { ...base, ...LIGHT_PATCH };
+  }
+  return base;
+}
+
 // ---------------------------------------------------------------- style
 
 /**
- * Generates the Protomaps layer set bound to source `band<index>`, patched for OLED, with every
- * layer id suffixed `_b<index>`. The background layer is removed (the style has a single one).
+ * Generates the Protomaps layer set bound to source `band<index>`, with every layer id suffixed
+ * `_b<index>`. The dark flavour gets a pure black earth fill (OLED). The background layer is removed
+ * (the style has a single one).
  */
-function bandLayers(index, lang) {
+function bandLayers(index, lang, flavorName, flavor) {
   const source = `band${index}`;
   const suffix = `_b${index}`;
-  let out = layers(source, namedFlavor(FLAVOR), { lang });
+  let out = layers(source, flavor, { lang });
   out = out.filter((l) => l.type !== "background" && !l.id.startsWith("pois"));
   let sawEarth = false;
   for (const l of out) {
     if (l.id === "earth") {
-      l.paint = { ...(l.paint ?? {}), "fill-color": "#000000" };
+      if (flavorName === "dark") l.paint = { ...(l.paint ?? {}), "fill-color": "#000000" };
       sawEarth = true;
     }
     l.id = `${l.id}${suffix}`;
@@ -98,18 +184,19 @@ function bandLayers(index, lang) {
   return out;
 }
 
-function backgroundLayer(lang) {
-  const bg = layers("band0", namedFlavor(FLAVOR), { lang }).filter((l) => l.type === "background");
+function backgroundLayer(lang, flavorName, flavor) {
+  const bg = layers("band0", flavor, { lang }).filter((l) => l.type === "background");
   if (bg.length !== 1) throw new Error(`gen-style: expected exactly one background layer, got ${bg.length}`);
   const l = bg[0];
-  l.paint = { ...(l.paint ?? {}), "background-color": "#000000" };
+  if (flavorName === "dark") l.paint = { ...(l.paint ?? {}), "background-color": "#000000" };
   return l;
 }
 
-function buildStyle(lang) {
-  const styleLayers = [backgroundLayer(lang)];
+function buildStyle(lang, flavorName) {
+  const flavor = flavorFor(flavorName);
+  const styleLayers = [backgroundLayer(lang, flavorName, flavor)];
   for (let b = 0; b < BAND_COUNT; b++) {
-    styleLayers.push(...bandLayers(b, lang));
+    styleLayers.push(...bandLayers(b, lang, flavorName, flavor));
   }
 
   const ids = new Set(styleLayers.map((l) => l.id));
@@ -139,15 +226,15 @@ function buildStyle(lang) {
 
   const style = {
     version: 8,
-    name: "velotrack-dark",
+    name: `velotrack-${flavorName}`,
     metadata: {
       "velotrack:generator": "@protomaps/basemaps 5.7.2",
-      "velotrack:flavor": FLAVOR,
+      "velotrack:flavor": flavorName,
       "velotrack:lang": lang,
       "velotrack:bands": BAND_COUNT,
     },
     glyphs: "asset://fonts/{fontstack}/{range}.pbf",
-    sprite: `asset://sprites/v4/${FLAVOR}`,
+    sprite: `asset://sprites/v4/${flavorName}`,
     sources,
     layers: styleLayers,
   };
@@ -233,16 +320,17 @@ async function resolveVectorLayers() {
 // ---------------------------------------------------------------- main
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outPath = resolve(process.argv[2] ?? resolve(here, "../app/src/main/assets/style.json"));
+const { flavorName, outArg } = parseArgs(process.argv.slice(2));
+const outPath = resolve(outArg ?? resolve(here, "../app/src/main/assets", DEFAULT_OUTPUT[flavorName]));
 const vectorLayersPath = resolve(dirname(outPath), "vector_layers.json");
 const lang = pickLang();
 
-const { style, symbolLayers } = buildStyle(lang);
+const { style, symbolLayers } = buildStyle(lang, flavorName);
 
 mkdirSync(dirname(outPath), { recursive: true });
 // Pretty-printed so each source entry reads exactly "url": "{MAP_URL_N}" (see map/StyleTemplate.kt).
 writeFileSync(outPath, `${JSON.stringify(style, null, 2)}\n`);
-console.log(`gen-style: wrote ${outPath} (${style.layers.length} layers in ${BAND_COUNT} bands, lang=${lang}, ${symbolLayers} label layers)`);
+console.log(`gen-style: wrote ${outPath} (${style.layers.length} layers in ${BAND_COUNT} bands, flavor=${flavorName}, lang=${lang}, ${symbolLayers} label layers)`);
 
 const { vectorLayers, source } = await resolveVectorLayers();
 writeFileSync(vectorLayersPath, `${JSON.stringify(vectorLayers, null, 2)}\n`);

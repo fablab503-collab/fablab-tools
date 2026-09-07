@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-        Baseline Material 3 dark palette seeded from Google blue #4285F4. Used only when dynamic
-        colour (Material You, Android 12+) is unavailable; DynamicColors overrides these roles at
-        runtime otherwise. Layouts never reference these directly: they use ?attr/color* roles.
+        Baseline Material 3 LIGHT palette seeded from Google blue #4285F4; the dark palette with the
+        same names lives in values-night/colors.xml. Used only when dynamic colour (Material You,
+        Android 12+) is unavailable; DynamicColors overrides these roles at runtime otherwise.
+        Layouts never reference these directly: they use ?attr/color* roles.
     -->
-    <color name="md_primary">#FFA8C7FA</color>
-    <color name="md_on_primary">#FF062E6F</color>
-    <color name="md_primary_container">#FF0842A0</color>
-    <color name="md_on_primary_container">#FFD3E3FD</color>
-    <color name="md_secondary_container">#FF404659</color>
-    <color name="md_on_secondary_container">#FFDAE2F9</color>
-    <color name="md_tertiary">#FFFFB68F</color>
-    <color name="md_surface">#FF131314</color>
-    <color name="md_surface_container">#FF1E1F20</color>
-    <color name="md_surface_container_high">#FF282A2C</color>
-    <color name="md_on_surface">#FFE3E3E3</color>
-    <color name="md_on_surface_variant">#FFC4C7C5</color>
-    <color name="md_error">#FFF2B8B5</color>
-    <color name="md_error_container">#FF8C1D18</color>
-    <color name="md_outline">#FF8E918F</color>
-    <color name="md_outline_variant">#FF444746</color>
+    <color name="md_primary">#FF0B57D0</color>
+    <color name="md_on_primary">#FFFFFFFF</color>
+    <color name="md_primary_container">#FFD3E3FD</color>
+    <color name="md_on_primary_container">#FF041E49</color>
+    <color name="md_secondary_container">#FFDAE2F9</color>
+    <color name="md_on_secondary_container">#FF131C2B</color>
+    <color name="md_tertiary">#FF8B5000</color>
+    <color name="md_surface">#FFF9F9FF</color>
+    <color name="md_surface_container">#FFEDEEF4</color>
+    <color name="md_surface_container_high">#FFE7E8EE</color>
+    <color name="md_on_surface">#FF191C20</color>
+    <color name="md_on_surface_variant">#FF44474E</color>
+    <color name="md_error">#FFBA1A1A</color>
+    <color name="md_error_container">#FFFFDAD6</color>
+    <color name="md_outline">#FF74777F</color>
+    <color name="md_outline_variant">#FFC4C6D0</color>
 </resources>

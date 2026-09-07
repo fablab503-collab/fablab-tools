@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Material 3 type scale in Interstate. Each role keeps the M3 size and line height of its
+        parent and only swaps the family (both fontFamily attributes: framework TextView reads
+        android:fontFamily, Material's TextAppearance parser used by Chip/Badge/Slider reads either)
+        and zeroes the letter spacing, which was tuned for Roboto and looks gappy on a condensed face.
+    -->
+    <style name="TextAppearance.VeloTrack.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.VeloTrack.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- Framework list-item appearance used by androidx.preference titles. -->
+    <style name="TextAppearance.VeloTrack.ListItem" parent="TextAppearance.AppCompat.Subhead">
+        <item name="fontFamily">@font/interstate</item>
+        <item name="android:fontFamily">@font/interstate</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Baseline Material 3 dark palette seeded from Google blue #4285F4. Used only when dynamic
+        colour (Material You, Android 12+) is unavailable; DynamicColors overrides these roles at
+        runtime otherwise. Layouts never reference these directly: they use ?attr/color* roles.
+    -->
+    <color name="md_primary">#FFA8C7FA</color>
+    <color name="md_on_primary">#FF062E6F</color>
+    <color name="md_primary_container">#FF0842A0</color>
+    <color name="md_on_primary_container">#FFD3E3FD</color>
+    <color name="md_secondary_container">#FF404659</color>
+    <color name="md_on_secondary_container">#FFDAE2F9</color>
+    <color name="md_tertiary">#FFFFB68F</color>
+    <color name="md_surface">#FF131314</color>
+    <color name="md_surface_container">#FF1E1F20</color>
+    <color name="md_surface_container_high">#FF282A2C</color>
+    <color name="md_on_surface">#FFE3E3E3</color>
+    <color name="md_on_surface_variant">#FFC4C7C5</color>
+    <color name="md_error">#FFF2B8B5</color>
+    <color name="md_error_container">#FF8C1D18</color>
+    <color name="md_outline">#FF8E918F</color>
+    <color name="md_outline_variant">#FF444746</color>
+</resources>

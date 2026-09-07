@@ -73,6 +73,13 @@ class MapController(
     /** Invoked whenever a user gesture moves the camera (the controller has already switched to FREE). */
     var onUserGesture: (() -> Unit)? = null
 
+    /**
+     * True to use the light map style (`assets/style_light.json`, light grey empty base), false for the
+     * dark one (`assets/style.json`, black). Read when [loadStyle] runs, so set it before loading or
+     * reloading the style; changing it afterwards has no effect until the next [loadStyle].
+     */
+    var lightMap: Boolean = false
+
     /** FOLLOW_3D | FOLLOW_2D | FREE. Setting a follow mode applies the camera immediately. */
     var cameraMode: CameraMode = prefs.followMode
         set(value) {
@@ -182,13 +189,14 @@ class MapController(
     }
 
     /**
-     * Loads `assets/style.json` with the band-file URLs substituted (`{MAP_URL_N}` for the N-th entry
-     * of [bandFiles], i.e. band0.mbtiles .. band3.mbtiles in order), adds the route/track/puck
-     * sources and layers, then calls [onDone] with `null` on success or an error message.
+     * Loads the style template (`assets/style_light.json` when [lightMap], else `assets/style.json`)
+     * with the band-file URLs substituted (`{MAP_URL_N}` for the N-th entry of [bandFiles], i.e.
+     * band0.mbtiles .. band3.mbtiles in order), adds the route/track/puck sources and layers, then
+     * calls [onDone] with `null` on success or an error message.
      *
      * A band file that does not exist yields a `null` URL, which [StyleTemplate.render] turns into an
      * empty `"tiles": []` source; when no band file exists at all (or the list is empty) a
-     * self-contained black base style is loaded instead.
+     * self-contained background-only base style ([emptyStyleJson]) is loaded instead.
      * Safe to call before [onMapReady]: the load is deferred until the map exists.
      */
     fun loadStyle(bandFiles: List<File>, onDone: (String?) -> Unit) {
@@ -197,10 +205,11 @@ class MapController(
             pendingLoad = Pair(bandFiles, onDone)
             return
         }
+        val styleAsset = if (lightMap) STYLE_ASSET_LIGHT else STYLE_ASSET
         val template = try {
-            context.assets.open(STYLE_ASSET).bufferedReader(Charsets.UTF_8).use { it.readText() }
+            context.assets.open(styleAsset).bufferedReader(Charsets.UTF_8).use { it.readText() }
         } catch (e: IOException) {
-            onDone("Cannot read $STYLE_ASSET: ${e.message}")
+            onDone("Cannot read $styleAsset: ${e.message}")
             return
         }
         val mapUrls = ArrayList<String?>(bandFiles.size)
@@ -219,9 +228,10 @@ class MapController(
         }
         // Without any map file the template's vector sources would all have to be emitted with an
         // empty "tiles" array, and MapLibre's TileLoader indexes tiles[0] unguarded (native abort on
-        // the first render). Use a self-contained black style instead; setupStyle adds the overlays.
+        // the first render). Use a self-contained background-only style instead; setupStyle adds the overlays.
         val hasAnyFile = mapUrls.any { it != null }
-        val json = if (hasAnyFile) StyleTemplate.render(template, mapUrls) else EMPTY_STYLE_JSON
+        val emptyJson = emptyStyleJson()
+        val json = if (hasAnyFile) StyleTemplate.render(template, mapUrls) else emptyJson
 
         val hadStyle = styleLoadedOnce
         styleReady = false
@@ -239,11 +249,11 @@ class MapController(
             }
             armStyleWatchdog(onDone)
         }
-        if (hadStyle && json != EMPTY_STYLE_JSON) {
+        if (hadStyle && json != emptyJson) {
             // MapLibre keeps sources whose definition did not change, together with the tiles it has
             // already fetched (including the "no content" ones from before a download). Passing
             // through a blank style forces every source to be recreated and its tiles re-read.
-            m.setStyle(Style.Builder().fromJson(EMPTY_STYLE_JSON)) { applyFinal() }
+            m.setStyle(Style.Builder().fromJson(emptyJson)) { applyFinal() }
         } else {
             applyFinal()
         }
@@ -581,6 +591,15 @@ class MapController(
 
     // ---------------------------------------------------------------- style setup
 
+    /**
+     * Base style used when no band file exists (and as the blank pass-through on a reload): no tile
+     * sources, a single background layer in light grey (`#F2F2F2`) when [lightMap], else black.
+     */
+    private fun emptyStyleJson(): String {
+        val color = if (lightMap) EMPTY_BACKGROUND_LIGHT else EMPTY_BACKGROUND_DARK
+        return """{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"$color"}}]}"""
+    }
+
     private fun setupStyle(style: Style) {
         val lineOptions = GeoJsonOptions().withBuffer(64).withTolerance(0.5f)
 
@@ -872,11 +891,14 @@ class MapController(
     }
 
     companion object {
+        /** Dark style template (Protomaps dark flavour, black earth), used when [lightMap] is false. */
         const val STYLE_ASSET = "style.json"
+        /** Light style template (Protomaps light flavour), used when [lightMap] is true. */
+        const val STYLE_ASSET_LIGHT = "style_light.json"
 
-        /** Base style used when no band file exists: no tile sources, black background. */
-        private const val EMPTY_STYLE_JSON =
-            """{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#000000"}}]}"""
+        /** Background colours of [emptyStyleJson]. */
+        private const val EMPTY_BACKGROUND_DARK = "#000000"
+        private const val EMPTY_BACKGROUND_LIGHT = "#F2F2F2"
 
         private const val STYLE_TIMEOUT_MS = 15_000L
         private const val STYLE_TIMEOUT_MESSAGE =
