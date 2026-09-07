@@ -75,6 +75,19 @@ toolchain and wants interactive iteration.
   `ActivityTaskManager START`) before blaming the app for unexpected screens or duplicate rides.
 - Android 15+ is edge-to-edge: pad HUD/controls with `ViewCompat.setOnApplyWindowInsetsListener`.
 
+## Offline map data lessons (in-app downloads)
+
+- MapLibre's MBTiles source returns "no content" for a missing tile and draws nothing (no parent
+  fallback); it only overzooms past a source's `maxzoom`. Sparse coverage needs one file per zoom
+  band (z0–6, 7–9, 10–12, 13–15), each its own style source with the layer set repeated.
+- Reloading the same style JSON keeps unchanged sources and their cached empty tiles: pass through a
+  blank style before the real one after the data changed.
+- PMTiles range extraction on-device works: header (127 B) + root dir (≈16 KB) + a few leaf dirs,
+  then only the tile blobs. Measured: 10 km z13–15 ≈ 16–50 MB, 100 km z10–12 ≈ 60 MB, France z7–9
+  ≈ 100 MB, world z0–6 = 45 MB. Reference implementation: `velotrack/tools/pmtiles_dryrun.py`.
+- Run the writer in a separate Android process (`android:process`) when MapLibre (own SQLite) reads
+  the same file; keep band files in WAL mode; `dataSync` foreground service for the download.
+
 ## Workflow-script gotchas
 
 - Shell text like `${GITHUB_RUN_NUMBER}` inside a JS template prompt is interpolated: write `\${…}`.
