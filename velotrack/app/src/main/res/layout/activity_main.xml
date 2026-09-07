@@ -379,12 +379,11 @@
             android:paddingEnd="@dimen/screen_margin"
             android:paddingBottom="@dimen/screen_margin">
 
-            <!-- Right-hand FAB stack: recenter above the 2D/3D toggle, kept clear of the action row -->
+            <!-- Left column: one vertical stack of equal round buttons, aligned to the start edge -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:layout_marginBottom="@dimen/fab_stack_bottom_margin"
+                android:layout_gravity="bottom|start"
                 android:orientation="vertical">
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -405,25 +404,23 @@
                     android:contentDescription="@string/cd_toggle_view"
                     app:fabCustomSize="@dimen/fab_standard_size"
                     app:srcCompat="@drawable/ic_3d_rotation" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnMenu"
+                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
+                    android:contentDescription="@string/cd_menu"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_more_vert" />
             </LinearLayout>
 
-            <!-- Bottom-left: overflow menu (small surface FAB, 48dp touch target) -->
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnMenu"
-                style="@style/Widget.Material3.FloatingActionButton.Surface"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|start"
-                android:contentDescription="@string/cd_menu"
-                app:fabCustomSize="@dimen/fab_small_size"
-                app:maxImageSize="@dimen/list_icon_size"
-                app:srcCompat="@drawable/ic_more_vert" />
-
-            <!-- Bottom-centre: primary action row. Visibility is driven by MainActivity.render. -->
+            <!-- Bottom-right: primary action. Visibility is driven by MainActivity.render. -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom|center_horizontal"
+                android:layout_gravity="bottom|end"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
