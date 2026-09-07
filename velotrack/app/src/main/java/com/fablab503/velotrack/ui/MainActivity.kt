@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
@@ -54,6 +55,7 @@ import com.fablab503.velotrack.storage.MapFileStore
 import com.fablab503.velotrack.storage.RouteStore
 import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -181,6 +183,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         mapView.getMapAsync { m ->
             map = m
             mapController.onMapReady(m)
+            applyMapThemeColors()
             showPendingTrack()
         }
 
@@ -314,9 +317,31 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         updateModeButton()
     }
 
+    /** The toggle shows the view it switches to: a flat map while in 3D, the 3D glyph while in 2D. */
     private fun updateModeButton() {
-        val label = if (prefs.followMode == CameraMode.FOLLOW_3D) R.string.btn_mode_3d else R.string.btn_mode_2d
-        binding.btnToggle3d.text = getString(label)
+        val in3d = prefs.followMode == CameraMode.FOLLOW_3D
+        binding.btnToggle3d.setImageResource(if (in3d) R.drawable.ic_map else R.drawable.ic_3d_rotation)
+        binding.btnToggle3d.contentDescription = getString(R.string.cd_toggle_view)
+    }
+
+    /** Hands the theme (dynamic colour when available) to the map so track, route and puck match the UI. */
+    private fun applyMapThemeColors() {
+        val root = binding.root
+        val primary = MaterialColors.getColor(root, androidx.appcompat.R.attr.colorPrimary)
+        mapController.setThemeColors(
+            trackColor = primary,
+            routeColor = MaterialColors.getColor(root, com.google.android.material.R.attr.colorTertiary),
+            puckColor = primary,
+            puckOnColor = MaterialColors.getColor(root, com.google.android.material.R.attr.colorOnPrimary),
+        )
+    }
+
+    /** Fills the status chip: text, leading icon and icon tint from a theme colour attribute. */
+    private fun setStatusChip(textRes: Int, iconRes: Int, tintAttr: Int) {
+        val chip = binding.statusText
+        chip.setText(textRes)
+        chip.setChipIconResource(iconRes)
+        chip.chipIconTint = ColorStateList.valueOf(MaterialColors.getColor(chip, tintAttr))
     }
 
     private fun showMenu() {
@@ -537,24 +562,18 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         binding.btnStop.isVisible = active
         if (active) {
             val paused = status == RecordingStatus.PAUSED
-            binding.btnPause.setImageResource(if (paused) R.drawable.ic_play else R.drawable.ic_pause)
-            binding.btnPause.contentDescription = getString(if (paused) R.string.btn_resume else R.string.btn_pause)
+            binding.btnPause.setIconResource(if (paused) R.drawable.ic_play else R.drawable.ic_pause)
+            binding.btnPause.text = getString(if (paused) R.string.btn_resume else R.string.btn_pause)
         }
 
         binding.statusText.isVisible = active
         when (status) {
-            RecordingStatus.RECORDING -> {
-                binding.statusText.text = getString(R.string.hud_status_recording)
-                binding.statusText.setTextColor(ContextCompat.getColor(this, R.color.record_red))
-            }
-            RecordingStatus.AUTO_PAUSED -> {
-                binding.statusText.text = getString(R.string.hud_status_auto_paused)
-                binding.statusText.setTextColor(ContextCompat.getColor(this, R.color.pause_amber))
-            }
-            RecordingStatus.PAUSED -> {
-                binding.statusText.text = getString(R.string.hud_status_paused)
-                binding.statusText.setTextColor(ContextCompat.getColor(this, R.color.pause_amber))
-            }
+            RecordingStatus.RECORDING ->
+                setStatusChip(R.string.status_recording, R.drawable.ic_recording_dot, androidx.appcompat.R.attr.colorError)
+            RecordingStatus.AUTO_PAUSED ->
+                setStatusChip(R.string.status_auto_paused, R.drawable.ic_pause_circle, com.google.android.material.R.attr.colorTertiary)
+            RecordingStatus.PAUSED ->
+                setStatusChip(R.string.status_paused, R.drawable.ic_pause, com.google.android.material.R.attr.colorOnSurfaceVariant)
             RecordingStatus.IDLE -> Unit
         }
 
@@ -785,7 +804,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
                 mapController.setRoute(loaded.second)
                 routeFollower = RouteFollower(loaded.second, thresholdM, OFF_ROUTE_DELAY_MS)
                 binding.routeText.isVisible = true
-                binding.routeText.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.hud_text))
+                binding.routeText.setTextColor(
+                    MaterialColors.getColor(binding.routeText, com.google.android.material.R.attr.colorOnSurface)
+                )
                 binding.routeText.text =
                     getString(R.string.route_remaining, Format.distance(loaded.first.distanceM, prefs.units))
             }
@@ -799,10 +820,12 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener {
         binding.routeText.isVisible = true
         if (progress.offRoute) {
             binding.routeText.text = getString(R.string.route_off_route, Format.distance(progress.distanceToRouteM, units))
-            binding.routeText.setTextColor(ContextCompat.getColor(this, R.color.warning))
+            binding.routeText.setTextColor(MaterialColors.getColor(binding.routeText, androidx.appcompat.R.attr.colorError))
         } else {
             binding.routeText.text = getString(R.string.route_remaining, Format.distance(progress.distanceRemainingM, units))
-            binding.routeText.setTextColor(ContextCompat.getColor(this, R.color.hud_text))
+            binding.routeText.setTextColor(
+                MaterialColors.getColor(binding.routeText, com.google.android.material.R.attr.colorOnSurface)
+            )
         }
         if (progress.offRoute != offRoute) {
             offRoute = progress.offRoute

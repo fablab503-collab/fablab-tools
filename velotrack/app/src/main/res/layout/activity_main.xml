@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mapContainer"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/black">
+    android:layout_height="match_parent">
 
     <!-- The MapView is created programmatically in MainActivity.onCreate and inserted at index 0. -->
 
@@ -14,387 +13,467 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Top: HUD + banners -->
+        <!-- Top: HUD card + GPS banner. MainActivity adds the status-bar inset to this panel's top padding. -->
         <LinearLayout
             android:id="@+id/topPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="top"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:paddingStart="@dimen/screen_margin"
+            android:paddingTop="@dimen/screen_margin"
+            android:paddingEnd="@dimen/screen_margin">
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/hudPanel"
+                style="@style/Widget.Material3.CardView.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_hud"
-                android:orientation="vertical"
-                android:paddingStart="14dp"
-                android:paddingTop="6dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="8dp">
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:cardCornerRadius="@dimen/card_corner">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/card_padding_horizontal"
+                    android:paddingTop="@dimen/card_padding_vertical"
+                    android:paddingEnd="@dimen/card_padding_horizontal"
+                    android:paddingBottom="@dimen/card_padding_vertical">
+
+                    <!-- Row 1: speed + unit on the left, clock / battery / GPS on the right -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/speedText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:text="@string/hud_speed_placeholder"
+                                android:textAppearance="?attr/textAppearanceDisplayLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="@dimen/hud_speed_text_size"
+                                tools:text="27.4" />
+
+                            <TextView
+                                android:id="@+id/speedUnit"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:maxLines="1"
+                                android:textAppearance="?attr/textAppearanceTitleMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="km/h" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top"
+                            android:layout_marginStart="8dp"
+                            android:gravity="end"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/clockText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="6:35 PM" />
+
+                            <TextView
+                                android:id="@+id/batteryText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="87%" />
+
+                            <TextView
+                                android:id="@+id/gpsText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@string/hud_gps_searching"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="GPS 9/14 · ±5 m" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Row 2: recording status chip (icon and tint set from code) -->
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/statusText"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        app:ensureMinTouchTargetSize="false"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:checkable="false"
+                        android:clickable="false"
+                        android:focusable="false"
+                        android:visibility="gone"
+                        app:chipIcon="@drawable/ic_recording_dot"
+                        app:chipIconVisible="true"
+                        tools:text="Recording"
+                        tools:visibility="visible" />
+
+                    <!-- Row 3: ride statistics -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:id="@+id/distanceText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@string/hud_no_value"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                app:autoSizeMaxTextSize="22sp"
+                                app:autoSizeMinTextSize="14sp"
+                                app:autoSizeStepGranularity="1sp"
+                                app:autoSizeTextType="uniform"
+                                tools:text="42.3 km" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:text="@string/hud_distance"
+                                android:textAppearance="?attr/textAppearanceLabelMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:id="@+id/movingTimeText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@string/hud_no_value"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                app:autoSizeMaxTextSize="22sp"
+                                app:autoSizeMinTextSize="14sp"
+                                app:autoSizeStepGranularity="1sp"
+                                app:autoSizeTextType="uniform"
+                                tools:text="1:23:45" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:text="@string/hud_moving_time"
+                                android:textAppearance="?attr/textAppearanceLabelMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:id="@+id/avgSpeedText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@string/hud_no_value"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                app:autoSizeMaxTextSize="22sp"
+                                app:autoSizeMinTextSize="14sp"
+                                app:autoSizeStepGranularity="1sp"
+                                app:autoSizeTextType="uniform"
+                                tools:text="24.1 km/h" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:text="@string/hud_avg_speed"
+                                android:textAppearance="?attr/textAppearanceLabelMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/elevationText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@string/hud_no_value"
+                                android:textAppearance="?attr/textAppearanceTitleLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                app:autoSizeMaxTextSize="22sp"
+                                app:autoSizeMinTextSize="14sp"
+                                app:autoSizeStepGranularity="1sp"
+                                app:autoSizeTextType="uniform"
+                                tools:text="320 m" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:text="@string/hud_elevation_gain"
+                                android:textAppearance="?attr/textAppearanceLabelMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/speedText"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/routeText"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:includeFontPadding="false"
-                        android:text="@string/hud_speed_placeholder"
-                        android:textColor="@color/hud_text"
-                        android:textSize="72sp"
-                        tools:text="27.4" />
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnSurface"
+                        android:visibility="gone"
+                        tools:text="Route: 12.3 km left"
+                        tools:visibility="visible" />
 
                     <TextView
-                        android:id="@+id/speedUnit"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/errorText"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="bottom"
-                        android:layout_marginStart="6dp"
-                        android:layout_marginBottom="10dp"
-                        android:textColor="@color/hud_label"
-                        android:textSize="18sp"
-                        tools:text="km/h" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="end"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/clockText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/hud_text"
-                            android:textSize="20sp"
-                            tools:text="10:15" />
-
-                        <TextView
-                            android:id="@+id/batteryText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/hud_label"
-                            android:textSize="14sp"
-                            tools:text="87%" />
-
-                        <TextView
-                            android:id="@+id/gpsText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/hud_gps_searching"
-                            android:textColor="@color/hud_label"
-                            android:textSize="12sp"
-                            tools:text="GPS 9/14 · ±5 m" />
-
-                        <TextView
-                            android:id="@+id/statusText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/record_red"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:visibility="gone"
-                            tools:text="Recording"
-                            tools:visibility="visible" />
-                    </LinearLayout>
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorError"
+                        android:visibility="gone"
+                        tools:text="Error: storage"
+                        tools:visibility="visible" />
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingEnd="6dp">
-
-                        <TextView
-                            android:id="@+id/distanceText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:maxLines="1"
-                            android:text="@string/hud_no_value"
-                            android:textColor="@color/hud_text"
-                            android:textSize="20sp"
-                            tools:text="42.3 km" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/hud_distance"
-                            android:textColor="@color/hud_label"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingEnd="6dp">
-
-                        <TextView
-                            android:id="@+id/movingTimeText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:maxLines="1"
-                            android:text="@string/hud_no_value"
-                            android:textColor="@color/hud_text"
-                            android:textSize="20sp"
-                            tools:text="1:23:45" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/hud_moving_time"
-                            android:textColor="@color/hud_label"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingEnd="6dp">
-
-                        <TextView
-                            android:id="@+id/avgSpeedText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:maxLines="1"
-                            android:text="@string/hud_no_value"
-                            android:textColor="@color/hud_text"
-                            android:textSize="20sp"
-                            tools:text="24.1 km/h" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/hud_avg_speed"
-                            android:textColor="@color/hud_label"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingEnd="6dp">
-
-                        <TextView
-                            android:id="@+id/elevationText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:maxLines="1"
-                            android:text="@string/hud_no_value"
-                            android:textColor="@color/hud_text"
-                            android:textSize="20sp"
-                            tools:text="320 m" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/hud_elevation_gain"
-                            android:textColor="@color/hud_label"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/routeText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/hud_text"
-                    android:textSize="16sp"
-                    android:visibility="gone"
-                    tools:text="Route: 12.3 km left"
-                    tools:visibility="visible" />
-
-                <TextView
-                    android:id="@+id/errorText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/warning"
-                    android:textSize="13sp"
-                    android:visibility="gone"
-                    tools:text="Error: storage"
-                    tools:visibility="visible" />
-            </LinearLayout>
-
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/gpsBanner"
+                style="@style/Widget.Material3.CardView.Filled"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_banner"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="12dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="4dp"
-                android:paddingBottom="4dp"
+                android:layout_marginTop="@dimen/fab_gap"
                 android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorErrorContainer"
+                app:cardCornerRadius="@dimen/card_corner_small"
                 tools:visibility="visible">
 
-                <TextView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/gps_off_banner"
-                    android:textColor="@color/hud_text"
-                    android:textSize="15sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/card_padding_horizontal"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="4dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnGpsSettings"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/btn_location_settings"
-                    android:textColor="@color/hud_text" />
-            </LinearLayout>
+                    <ImageView
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:importantForAccessibility="no"
+                        app:srcCompat="@drawable/ic_location_off"
+                        app:tint="?attr/colorOnErrorContainer" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/gps_off_banner"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnErrorContainer" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGpsSettings"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_location_settings"
+                        android:textColor="?attr/colorOnErrorContainer" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
         <!-- Centre: no-map overlay -->
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/noMapOverlay"
+            style="@style/Widget.Material3.CardView.Filled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:background="@drawable/bg_overlay"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:padding="20dp"
+            android:layout_marginStart="@dimen/overlay_padding"
+            android:layout_marginEnd="@dimen/overlay_padding"
             android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="@dimen/card_corner"
             tools:visibility="visible">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/no_map_title"
-                android:textColor="@color/hud_text"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/no_map_body"
-                android:textColor="@color/hud_label"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:padding="@dimen/overlay_padding">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMapFiles"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/btn_open_map_files" />
-        </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_map_title"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    android:textColor="?attr/colorOnSurface" />
 
-        <!-- Bottom: controls -->
-        <LinearLayout
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/no_map_body"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMapFiles"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="@dimen/screen_margin"
+                    android:text="@string/no_map_action"
+                    app:icon="@drawable/ic_add" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Bottom: controls. MainActivity adds the navigation-bar inset to this panel's bottom padding. -->
+        <FrameLayout
             android:id="@+id/controls"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="16dp">
+            android:paddingStart="@dimen/screen_margin"
+            android:paddingTop="@dimen/fab_gap"
+            android:paddingEnd="@dimen/screen_margin"
+            android:paddingBottom="@dimen/screen_margin">
 
+            <!-- Right-hand FAB stack: recenter above the 2D/3D toggle, kept clear of the action row -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="@dimen/fab_stack_bottom_margin"
+                android:orientation="vertical">
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnRecenter"
+                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/cd_recenter"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_my_location" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnToggle3d"
+                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
+                    android:contentDescription="@string/cd_toggle_view"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_3d_rotation" />
+            </LinearLayout>
+
+            <!-- Bottom-left: overflow menu (small surface FAB, 48dp touch target) -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/btnMenu"
+                style="@style/Widget.Material3.FloatingActionButton.Surface"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:contentDescription="@string/menu_more"
-                app:backgroundTint="@color/stop_grey"
-                app:fabSize="mini"
-                app:srcCompat="@drawable/ic_more_vert"
-                app:tint="@android:color/white" />
+                android:layout_gravity="bottom|start"
+                android:contentDescription="@string/cd_menu"
+                app:fabCustomSize="@dimen/fab_small_size"
+                app:maxImageSize="@dimen/list_icon_size"
+                app:srcCompat="@drawable/ic_more_vert" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnToggle3d"
-                style="@style/Widget.Material3.Button.TonalButton"
+            <!-- Bottom-centre: primary action row. Visibility is driven by MainActivity.render. -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:minWidth="56dp"
-                android:text="@string/btn_mode_3d" />
+                android:layout_gravity="bottom|center_horizontal"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+                <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                    android:id="@+id/btnRecord"
+                    style="@style/Widget.Material3.ExtendedFloatingActionButton.Icon.Primary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_record"
+                    app:icon="@drawable/ic_record" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnRecord"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/btn_record"
-                app:backgroundTint="@color/record_red"
-                app:srcCompat="@drawable/ic_record"
-                app:tint="@android:color/white" />
+                <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                    android:id="@+id/btnPause"
+                    style="@style/Widget.Material3.ExtendedFloatingActionButton.Icon.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_pause"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_pause"
+                    tools:visibility="visible" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnPause"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/btn_pause"
-                android:visibility="gone"
-                app:backgroundTint="@color/pause_amber"
-                app:srcCompat="@drawable/ic_pause"
-                app:tint="@android:color/black"
-                tools:visibility="visible" />
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnStop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:contentDescription="@string/btn_stop"
-                android:visibility="gone"
-                app:backgroundTint="@color/stop_grey"
-                app:srcCompat="@drawable/ic_stop"
-                app:tint="@android:color/white"
-                tools:visibility="visible" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnRecenter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/btn_recenter"
-                app:backgroundTint="@color/primary"
-                app:fabSize="mini"
-                app:srcCompat="@drawable/ic_my_location"
-                app:tint="@android:color/black" />
-        </LinearLayout>
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnStop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/fab_gap"
+                    android:contentDescription="@string/cd_stop"
+                    android:visibility="gone"
+                    app:backgroundTint="?attr/colorErrorContainer"
+                    app:fabCustomSize="@dimen/fab_standard_size"
+                    app:srcCompat="@drawable/ic_stop"
+                    app:tint="?attr/colorOnErrorContainer"
+                    tools:visibility="visible" />
+            </LinearLayout>
+        </FrameLayout>
     </FrameLayout>
 </FrameLayout>

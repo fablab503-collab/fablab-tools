@@ -3,16 +3,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
+    android:background="?attr/colorSurface"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.Material3.Toolbar.Surface"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@android:color/black"
-        app:title="@string/title_settings" />
+        android:background="?attr/colorSurface"
+        app:title="@string/title_settings"
+        app:titleTextAppearance="?attr/textAppearanceTitleLarge" />
 
     <FrameLayout
         android:id="@+id/settingsContainer"

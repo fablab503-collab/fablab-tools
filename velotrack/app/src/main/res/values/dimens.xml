@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 spacing grid -->
+    <dimen name="screen_margin">16dp</dimen>
+    <dimen name="fab_gap">8dp</dimen>
+    <dimen name="card_corner">28dp</dimen>
+    <dimen name="card_corner_small">16dp</dimen>
+    <dimen name="card_padding_horizontal">16dp</dimen>
+    <dimen name="card_padding_vertical">12dp</dimen>
+    <dimen name="overlay_padding">24dp</dimen>
+
+    <!-- Main screen -->
+    <dimen name="hud_speed_text_size">64sp</dimen>
+    <dimen name="fab_small_size">48dp</dimen>
+    <dimen name="fab_standard_size">56dp</dimen>
+    <!-- 56dp action row + 16dp gap. Measured from the same bottom edge as the action row inside the
+         padded controls panel, so the screen margin is not added here. -->
+    <dimen name="fab_stack_bottom_margin">72dp</dimen>
+
+    <!-- Lists -->
+    <dimen name="list_row_min_height">72dp</dimen>
+    <dimen name="list_icon_circle">40dp</dimen>
+    <dimen name="list_icon_size">24dp</dimen>
+    <dimen name="list_touch_target">48dp</dimen>
+    <!-- Room under the last row for the Extended FAB. -->
+    <dimen name="list_bottom_clearance">88dp</dimen>
+</resources>

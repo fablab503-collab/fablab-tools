@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Adaptive launcher icon background (Google blue). The only hard-coded colour outside the theme. -->
+    <color name="ic_launcher_bg">#FF4285F4</color>
+</resources>

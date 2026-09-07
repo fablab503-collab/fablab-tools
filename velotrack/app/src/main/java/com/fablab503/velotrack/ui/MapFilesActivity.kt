@@ -2,7 +2,6 @@ package com.fablab503.velotrack.ui
 
 import android.net.Uri
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +9,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityMapFilesBinding
+import com.fablab503.velotrack.databinding.ItemListRowBinding
 import com.fablab503.velotrack.settings.Prefs
 import com.fablab503.velotrack.storage.MapFileStore
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -25,9 +25,10 @@ class MapFilesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMapFilesBinding
     private lateinit var prefs: Prefs
     private lateinit var store: MapFileStore
-    private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var adapter: ListRowAdapter<File>
 
     private var files: List<File> = emptyList()
+    private var activePath: String? = null
     private var progress: ProgressDialogHandle? = null
 
     private val importLauncher =
@@ -45,7 +46,7 @@ class MapFilesActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        adapter = ArrayAdapter(this, R.layout.item_list_row, R.id.text1, mutableListOf<String>())
+        adapter = ListRowAdapter(this) { row, file -> bindRow(row, file) }
         binding.list.adapter = adapter
         binding.list.setOnItemClickListener { _, _, position, _ ->
             files.getOrNull(position)?.let { file ->
@@ -88,21 +89,28 @@ class MapFilesActivity : AppCompatActivity() {
                 runCatching { store.listMaps() to store.activeMap() }.getOrDefault(emptyList<File>() to null)
             }
             files = list
-            adapter.clear()
-            adapter.addAll(list.map { describe(it, active) })
-            adapter.notifyDataSetChanged()
-            binding.emptyText.isVisible = list.isEmpty()
+            activePath = active?.absolutePath
+            adapter.items = list
+            val empty = list.isEmpty()
+            binding.emptyText.isVisible = empty
+            binding.emptyHint.isVisible = empty
         }
     }
 
-    private fun describe(file: File, active: File?): String {
-        val marker = if (active != null && active.absolutePath == file.absolutePath) {
-            getString(R.string.map_file_active_marker)
+    private fun bindRow(row: ItemListRowBinding, file: File) {
+        row.leadingIcon.setImageResource(R.drawable.ic_map)
+        row.title.text = file.name
+        row.subtitle.text = getString(R.string.map_file_size_mb, formatMb(file.length()))
+        val isActive = activePath != null && activePath == file.absolutePath
+        row.trailingIcon.setOnClickListener(null)
+        row.trailingIcon.isClickable = false
+        row.trailingIcon.isVisible = isActive
+        if (isActive) {
+            row.trailingIcon.setImageResource(R.drawable.ic_check)
+            row.trailingIcon.contentDescription = getString(R.string.cd_active_map)
         } else {
-            ""
+            row.trailingIcon.contentDescription = null
         }
-        val size = getString(R.string.map_file_size_mb, formatMb(file.length()))
-        return getString(R.string.map_file_item, marker + file.name, size)
     }
 
     private fun formatMb(bytes: Long): String =

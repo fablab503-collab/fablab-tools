@@ -40,6 +40,7 @@ import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.io.File
 import java.io.IOException
+import kotlin.math.roundToInt
 
 /**
  * Owns everything MapLibre-related for the main screen: style loading with the local tile archive,
@@ -80,11 +81,21 @@ class MapController(
     private val zoomController = ZoomController()
 
     // Style objects (valid only while styleReady).
+    private var style: Style? = null
     private var routeSource: GeoJsonSource? = null
     private var historySource: GeoJsonSource? = null
     private var liveSource: GeoJsonSource? = null
     private var puckSource: GeoJsonSource? = null
+    private var routeLayer: LineLayer? = null
+    private var historyLayer: LineLayer? = null
+    private var liveLayer: LineLayer? = null
     private var puckLayer: SymbolLayer? = null
+
+    // Theme colours (ARGB). Defaults match the pre-Material-3 look; MainActivity overrides them from the theme.
+    private var trackColor: Int = DEFAULT_TRACK_COLOR
+    private var routeColor: Int = DEFAULT_ROUTE_COLOR
+    private var puckColor: Int = DEFAULT_PUCK_COLOR
+    private var puckOnColor: Int = DEFAULT_PUCK_ON_COLOR
 
     // Data kept so that a style reload re-applies it.
     private var routePoints: List<LatLon>? = null
@@ -345,6 +356,26 @@ class MapController(
         pushRoute()
     }
 
+    // ---------------------------------------------------------------- theme colours
+
+    /**
+     * Sets the ARGB colours of the track lines, the route line and the puck. Safe to call at any time:
+     * the colours are stored and re-applied on every style (re)load; if the style is already loaded the
+     * line layers are updated in place and the puck image is replaced.
+     */
+    fun setThemeColors(trackColor: Int, routeColor: Int, puckColor: Int, puckOnColor: Int) {
+        this.trackColor = trackColor
+        this.routeColor = routeColor
+        this.puckColor = puckColor
+        this.puckOnColor = puckOnColor
+        if (!styleReady) return
+        routeLayer?.setProperties(lineColor(routeColor))
+        historyLayer?.setProperties(lineColor(trackColor))
+        liveLayer?.setProperties(lineColor(trackColor))
+        // addImage with an existing name replaces the image; the symbol layer keeps referencing it.
+        style?.addImage(IMAGE_PUCK, drawPuckBitmap())
+    }
+
     // ---------------------------------------------------------------- style setup
 
     private fun setupStyle(style: Style) {
@@ -360,30 +391,27 @@ class MapController(
         style.addSource(puck)
 
         // Added in order: route below the track lines, puck on top.
-        style.addLayer(
-            LineLayer(LAYER_ROUTE, SOURCE_ROUTE).withProperties(
-                lineColor(ROUTE_COLOR),
-                lineWidth(6f),
-                lineCap(Property.LINE_CAP_ROUND),
-                lineJoin(Property.LINE_JOIN_ROUND),
-            )
+        val routeLine = LineLayer(LAYER_ROUTE, SOURCE_ROUTE).withProperties(
+            lineColor(routeColor),
+            lineWidth(6f),
+            lineCap(Property.LINE_CAP_ROUND),
+            lineJoin(Property.LINE_JOIN_ROUND),
         )
-        style.addLayer(
-            LineLayer(LAYER_TRACK_HISTORY, SOURCE_TRACK_HISTORY).withProperties(
-                lineColor(TRACK_COLOR),
-                lineWidth(5f),
-                lineCap(Property.LINE_CAP_ROUND),
-                lineJoin(Property.LINE_JOIN_ROUND),
-            )
+        val historyLine = LineLayer(LAYER_TRACK_HISTORY, SOURCE_TRACK_HISTORY).withProperties(
+            lineColor(trackColor),
+            lineWidth(5f),
+            lineCap(Property.LINE_CAP_ROUND),
+            lineJoin(Property.LINE_JOIN_ROUND),
         )
-        style.addLayer(
-            LineLayer(LAYER_TRACK_LIVE, SOURCE_TRACK_LIVE).withProperties(
-                lineColor(TRACK_COLOR),
-                lineWidth(5f),
-                lineCap(Property.LINE_CAP_ROUND),
-                lineJoin(Property.LINE_JOIN_ROUND),
-            )
+        val liveLine = LineLayer(LAYER_TRACK_LIVE, SOURCE_TRACK_LIVE).withProperties(
+            lineColor(trackColor),
+            lineWidth(5f),
+            lineCap(Property.LINE_CAP_ROUND),
+            lineJoin(Property.LINE_JOIN_ROUND),
         )
+        style.addLayer(routeLine)
+        style.addLayer(historyLine)
+        style.addLayer(liveLine)
 
         style.addImage(IMAGE_PUCK, drawPuckBitmap())
         val puckSymbol = SymbolLayer(LAYER_PUCK, SOURCE_PUCK).withProperties(
@@ -396,18 +424,26 @@ class MapController(
         )
         style.addLayer(puckSymbol)
 
+        this.style = style
         routeSource = route
         historySource = history
         liveSource = live
         puckSource = puck
+        routeLayer = routeLine
+        historyLayer = historyLine
+        liveLayer = liveLine
         puckLayer = puckSymbol
     }
 
     private fun clearStyleRefs() {
+        style = null
         routeSource = null
         historySource = null
         liveSource = null
         puckSource = null
+        routeLayer = null
+        historyLayer = null
+        liveLayer = null
         puckLayer = null
     }
 
@@ -446,41 +482,53 @@ class MapController(
     }
 
     /**
-     * 96x96 px puck: a semi-transparent blue disc with a white, black-outlined arrow pointing up
-     * (north before rotation). Drawn in code so no drawable resource is needed.
+     * Google-Maps-style puck on a 40dp canvas (density-aware): a soft [puckColor] halo, a [puckColor]
+     * disc with a 2dp [puckOnColor] ring and a [puckOnColor] chevron pointing up (north before
+     * rotation). Drawn in code so no drawable resource is needed.
      */
     private fun drawPuckBitmap(): Bitmap {
-        val size = PUCK_SIZE_PX
+        val density = context.resources.displayMetrics.density
+        val size = (PUCK_SIZE_DP * density).roundToInt().coerceAtLeast(1)
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val cx = size / 2f
         val cy = size / 2f
+        val dp = density
+
+        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = (puckColor and 0x00FFFFFF) or (PUCK_HALO_ALPHA shl 24)
+        }
+        canvas.drawCircle(cx, cy, PUCK_HALO_RADIUS_DP * dp, halo)
 
         val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = Color.argb(0x55, 0x42, 0xA5, 0xF5)
+            color = puckColor
         }
-        canvas.drawCircle(cx, cy, size * 0.42f, disc)
+        canvas.drawCircle(cx, cy, PUCK_DISC_RADIUS_DP * dp, disc)
 
-        val arrow = Path().apply {
-            moveTo(cx, size * 0.10f)                 // tip
-            lineTo(size * 0.78f, size * 0.74f)       // right base
-            lineTo(cx, size * 0.58f)                 // notch
-            lineTo(size * 0.22f, size * 0.74f)       // left base
+        val ringWidth = PUCK_RING_WIDTH_DP * dp
+        val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = ringWidth
+            color = puckOnColor
+        }
+        // Stroke is centred on the radius, so pull it in by half its width to keep the outer edge at 11dp.
+        canvas.drawCircle(cx, cy, PUCK_DISC_RADIUS_DP * dp - ringWidth / 2f, ring)
+
+        val half = PUCK_CHEVRON_HEIGHT_DP * dp / 2f
+        val chevron = Path().apply {
+            moveTo(cx, cy - half)                    // tip
+            lineTo(cx + half, cy + half)             // right base
+            lineTo(cx, cy + half * 0.45f)            // notch
+            lineTo(cx - half, cy + half)             // left base
             close()
         }
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val chevronFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = Color.WHITE
+            color = puckOnColor
         }
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = size * 0.035f
-            strokeJoin = Paint.Join.ROUND
-            color = Color.BLACK
-        }
-        canvas.drawPath(arrow, fill)
-        canvas.drawPath(arrow, stroke)
+        canvas.drawPath(chevron, chevronFill)
         return bitmap
     }
 
@@ -505,8 +553,11 @@ class MapController(
         const val LAYER_PUCK = "puck-layer"
         const val IMAGE_PUCK = "puck"
 
-        private const val ROUTE_COLOR = "#FF9800"
-        private const val TRACK_COLOR = "#42A5F5"
+        // ARGB defaults (Long literals narrowed to Int; not const because of the conversion call).
+        private val DEFAULT_TRACK_COLOR: Int = 0xFF42A5F5.toInt()
+        private val DEFAULT_ROUTE_COLOR: Int = 0xFFFF9800.toInt()
+        private val DEFAULT_PUCK_COLOR: Int = 0xFF42A5F5.toInt()
+        private val DEFAULT_PUCK_ON_COLOR: Int = Color.WHITE
 
         private const val MAX_FPS = 30
         private const val EASE_MS = 1000
@@ -515,7 +566,12 @@ class MapController(
         private const val INITIAL_ZOOM_IDLE = 15.0
         private const val ZOOM_2D = 15.5
         private const val PUCK_TOP_PADDING_FRACTION = 0.55
-        private const val PUCK_SIZE_PX = 96
+        private const val PUCK_SIZE_DP = 40f
+        private const val PUCK_HALO_RADIUS_DP = 20f
+        private const val PUCK_DISC_RADIUS_DP = 11f
+        private const val PUCK_RING_WIDTH_DP = 2f
+        private const val PUCK_CHEVRON_HEIGHT_DP = 10f
+        private const val PUCK_HALO_ALPHA = 0x33
         private const val HISTORY_TOLERANCE_M = 2.0
         private const val LIVE_CAP = 500
     }

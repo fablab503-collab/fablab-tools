@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
@@ -15,6 +14,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityTracksBinding
+import com.fablab503.velotrack.databinding.ItemListRowBinding
 import com.fablab503.velotrack.gpx.GpxWriter
 import com.fablab503.velotrack.model.TrackSummary
 import com.fablab503.velotrack.model.Units
@@ -29,14 +29,14 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-/** List of recorded rides: tap to view on the map, long-press for rename / export / delete. */
+/** List of recorded rides: tap to view on the map, trailing menu or long-press for rename / export / delete. */
 class TracksActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTracksBinding
     private lateinit var prefs: Prefs
     private lateinit var db: TrackDatabase
     private lateinit var repo: TrackRepository
-    private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var adapter: ListRowAdapter<TrackSummary>
 
     private var tracks: List<TrackSummary> = emptyList()
     private var pendingSaveFile: File? = null
@@ -60,7 +60,7 @@ class TracksActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        adapter = ArrayAdapter(this, R.layout.item_list_row, R.id.text1, mutableListOf<String>())
+        adapter = ListRowAdapter(this) { row, track -> bindRow(row, track) }
         binding.list.adapter = adapter
         binding.list.setOnItemClickListener { _, _, position, _ ->
             tracks.getOrNull(position)?.let { openOnMap(it) }
@@ -97,28 +97,32 @@ class TracksActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val list = withContext(Dispatchers.IO) { runCatching { repo.listTracks() }.getOrDefault(emptyList()) }
             tracks = list
-            val units = prefs.units
-            adapter.clear()
-            adapter.addAll(list.map { describe(it, units) })
-            adapter.notifyDataSetChanged()
-            binding.emptyText.isVisible = list.isEmpty()
+            adapter.items = list
+            val empty = list.isEmpty()
+            binding.emptyText.isVisible = empty
+            binding.emptyHint.isVisible = empty
         }
     }
 
-    private fun describe(t: TrackSummary, units: Units): String {
-        val name = if (t.state == TrackSummary.STATE_RECORDING) {
+    private fun bindRow(row: ItemListRowBinding, t: TrackSummary) {
+        val units: Units = prefs.units
+        row.leadingIcon.setImageResource(R.drawable.ic_directions_bike)
+        row.title.text = if (t.state == TrackSummary.STATE_RECORDING) {
             "${t.name} ${getString(R.string.track_recording_suffix)}"
         } else {
             t.name
         }
-        return getString(
-            R.string.track_item,
-            name,
+        row.subtitle.text = getString(
+            R.string.track_subtitle,
             Format.dateTime(t.startedAtMs),
             Format.distance(t.distanceM, units),
             Format.duration(t.movingMs),
             Format.elevation(t.elevationGainM, units),
         )
+        row.trailingIcon.setImageResource(R.drawable.ic_more_vert)
+        row.trailingIcon.contentDescription = getString(R.string.cd_track_actions)
+        row.trailingIcon.isVisible = true
+        row.trailingIcon.setOnClickListener { showActions(t) }
     }
 
     private fun openOnMap(t: TrackSummary) {

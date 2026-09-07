@@ -1,12 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/text1"
+<!-- Material 3 two-line list item: leading icon in a 40dp circle, headline + supporting text, optional trailing icon. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="56dp"
-    android:paddingStart="16dp"
-    android:paddingTop="12dp"
-    android:paddingEnd="16dp"
-    android:paddingBottom="12dp"
-    android:textColor="@color/hud_text"
-    android:textSize="16sp" />
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/list_row_min_height"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/screen_margin"
+    android:paddingTop="@dimen/fab_gap"
+    android:paddingEnd="@dimen/fab_gap"
+    android:paddingBottom="@dimen/fab_gap">
+
+    <FrameLayout
+        android:layout_width="@dimen/list_icon_circle"
+        android:layout_height="@dimen/list_icon_circle"
+        android:background="@drawable/bg_icon_circle">
+
+        <ImageView
+            android:id="@+id/leadingIcon"
+            android:layout_width="@dimen/list_icon_size"
+            android:layout_height="@dimen/list_icon_size"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            app:tint="?attr/colorOnSecondaryContainer"
+            tools:srcCompat="@drawable/ic_directions_bike" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/screen_margin"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="Ride 2026-09-07 17:55" />
+
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="2026-09-07 17:55 · 12.4 km · 0:41:09 · ↑ 120 m" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/trailingIcon"
+        android:layout_width="@dimen/list_touch_target"
+        android:layout_height="@dimen/list_touch_target"
+        android:layout_marginStart="@dimen/fab_gap"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="12dp"
+        android:visibility="gone"
+        app:tint="?attr/colorOnSurfaceVariant"
+        tools:srcCompat="@drawable/ic_more_vert"
+        tools:visibility="visible" />
+</LinearLayout>
