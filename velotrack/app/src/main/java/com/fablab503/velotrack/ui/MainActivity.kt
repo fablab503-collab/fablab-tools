@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -1287,7 +1288,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
         placeQueriedAtMs = nowMs
         placeQueriedAt = fix.latLon
-        val name = runCatching { mapController.placeNameAt(fix.latLon) }.getOrNull()?.takeIf { it.isNotBlank() }
+        val name = runCatching { mapController.placeNameAt(fix.latLon) }
+            .onFailure { Log.w(TAG, "place lookup failed", it) }
+            .getOrNull()?.takeIf { it.isNotBlank() }
         placeName = name
         binding.placeText.isVisible = name != null
         if (name != null) binding.placeText.text = name
@@ -1317,6 +1320,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         private const val MIN_BOUNDS_DEG = 1e-5
         private const val FRAME_PADDING_DP = 32f
         private const val FRAME_EASE_MS = 800
+        private const val TAG = "VeloMain"
         private const val PLACE_MIN_INTERVAL_MS = 2_000L
         private const val PLACE_MIN_MOVE_M = 10.0
 

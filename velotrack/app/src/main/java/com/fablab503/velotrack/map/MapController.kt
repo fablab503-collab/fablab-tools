@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.os.SystemClock
+import android.util.Log
 import androidx.appcompat.content.res.AppCompatResources
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.geo.Simplify
@@ -39,12 +40,17 @@ import org.maplibre.android.style.layers.PropertyFactory.lineDasharray
 import org.maplibre.android.style.layers.PropertyFactory.lineJoin
 import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.sources.GeoJsonOptions
 import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.android.style.sources.VectorSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Geometry
 import org.maplibre.geojson.LineString
+import org.maplibre.geojson.MultiPolygon
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
 import java.io.File
 import java.io.IOException
 import kotlin.math.roundToInt
@@ -431,14 +437,110 @@ class MapController(
         val screen = m.projection.toScreenLocation(LatLng(latLon.lat, latLon.lon))
         val r = PLACE_QUERY_RADIUS_PX
         val box = RectF(screen.x - r, screen.y - r, screen.x + r, screen.y + r)
-        for (group in PLACE_LAYER_GROUPS) {
-            val features = m.queryRenderedFeatures(box, *group)
-            for (feature in features) {
-                val name = nameOf(feature)
-                if (name != null) return name
+        // 1. Named roads, most detailed band first.
+        for (band in PLACE_BANDS) {
+            val roads = m.queryRenderedFeatures(box, *withBand(ROAD_LAYER_BASES, listOf(band)))
+            if (DEBUG_PLACE) Log.d(TAG, "roads b$band: ${roads.size} in $box ${roads.firstOrNull()?.properties()}")
+            for (road in roads) nameOf(road)?.let { return it }
+        }
+        // 2. Green areas. Protomaps landuse polygons carry no name: the name sits on a POI point inside
+        //    the polygon, so look it up in the same band's source (else fall back to the kind of area).
+        for (band in PLACE_BANDS) {
+            val greens = m.queryRenderedFeatures(box, *withBand(GREEN_LAYER_BASES, listOf(band)))
+            if (DEBUG_PLACE) Log.d(TAG, "green b$band: ${greens.size} ${greens.firstOrNull()?.properties()}")
+            for (green in greens) {
+                nameOf(green)?.let { return it }
+                greenNameFromPois(band, green, latLon)?.let { return it }
             }
         }
+        // 3. Named water, 4. locality.
+        for (bases in listOf(WATER_LAYER_BASES, LOCALITY_LAYER_BASES)) {
+            val features = m.queryRenderedFeatures(box, *withBand(bases, PLACE_BANDS))
+            for (feature in features) nameOf(feature)?.let { return it }
+        }
         return null
+    }
+
+    /**
+     * Name of a park-like POI point lying inside [green] (a rendered landuse polygon of band [band]),
+     * the nearest one to [at] when several qualify; else a generic label for the polygon's kind.
+     * The polygon geometry MapLibre returns is clipped to its tile, so a POI in a neighbouring tile is
+     * not found and the kind label is shown instead.
+     */
+    private fun greenNameFromPois(band: Int, green: Feature, at: LatLon): String? {
+        val rings = outerRings(green.geometry())
+        if (rings.isNotEmpty()) {
+            val source = style?.getSourceAs<VectorSource>("band$band")
+            val pois: List<Feature> = try {
+                source?.querySourceFeatures(arrayOf(SOURCE_LAYER_POIS), GREEN_POI_FILTER) ?: emptyList()
+            } catch (e: RuntimeException) {
+                emptyList()
+            }
+            if (DEBUG_PLACE) Log.d(TAG, "pois b$band: ${pois.size} rings=${rings.size}")
+            var best: String? = null
+            var bestD = Double.MAX_VALUE
+            for (poi in pois) {
+                val name = nameOf(poi) ?: continue
+                val point = poi.geometry() as? Point ?: continue
+                val pt = LatLon(point.latitude(), point.longitude())
+                if (rings.none { ring -> pointInRing(pt, ring) }) continue
+                val d = Geo.distanceM(at, pt)
+                if (d < bestD) {
+                    bestD = d
+                    best = name
+                }
+            }
+            if (best != null) return best
+        }
+        return kindLabel(green)
+    }
+
+    private fun outerRings(geometry: Geometry?): List<List<Point>> = when (geometry) {
+        is Polygon -> listOfNotNull(geometry.coordinates().firstOrNull())
+        is MultiPolygon -> geometry.coordinates().mapNotNull { it.firstOrNull() }
+        else -> emptyList()
+    }
+
+    /** Ray casting on lon/lat; good enough for park-sized polygons. */
+    private fun pointInRing(p: LatLon, ring: List<Point>): Boolean {
+        if (ring.size < 3) return false
+        var inside = false
+        var j = ring.size - 1
+        for (i in ring.indices) {
+            val xi = ring[i].longitude()
+            val yi = ring[i].latitude()
+            val xj = ring[j].longitude()
+            val yj = ring[j].latitude()
+            val crosses = (yi > p.lat) != (yj > p.lat) &&
+                p.lon < (xj - xi) * (p.lat - yi) / (yj - yi) + xi
+            if (crosses) inside = !inside
+            j = i
+        }
+        return inside
+    }
+
+    /** Generic label for an unnamed green polygon from its Protomaps `kind`, or null for kinds not worth naming. */
+    private fun kindLabel(green: Feature): String? {
+        val kind = try {
+            if (green.hasNonNullValueForProperty(PROPERTY_KIND)) green.getStringProperty(PROPERTY_KIND) else null
+        } catch (e: RuntimeException) {
+            null
+        } ?: return null
+        val res = when (kind) {
+            "park", "dog_park", "village_green", "recreation_ground" -> R.string.place_kind_park
+            "golf_course" -> R.string.place_kind_golf_course
+            "forest", "wood" -> R.string.place_kind_forest
+            "garden" -> R.string.place_kind_garden
+            "cemetery" -> R.string.place_kind_cemetery
+            "beach", "sand" -> R.string.place_kind_beach
+            "pitch" -> R.string.place_kind_pitch
+            "playground" -> R.string.place_kind_playground
+            "nature_reserve", "protected_area", "national_park" -> R.string.place_kind_nature_reserve
+            "wetland" -> R.string.place_kind_wetland
+            "grass", "scrub", "grassland", "meadow", "farmland", "orchard", "allotments" -> R.string.place_kind_green
+            else -> return null
+        }
+        return context.getString(res)
     }
 
     /** The feature's `name` property when it is a non-blank string; tile data is untrusted, so never throw. */
@@ -795,7 +897,11 @@ class MapController(
         /** Marker image ids are `target-<kind key>`, e.g. `target-home`. */
         const val IMAGE_TARGET_PREFIX = "target-"
 
+        private const val TAG = "VeloMap"
+        private const val DEBUG_PLACE = true
         private const val PROPERTY_NAME = "name"
+        private const val PROPERTY_KIND = "kind"
+        private const val SOURCE_LAYER_POIS = "pois"
         private const val PLACE_QUERY_RADIUS_PX = 18f
         private const val GUIDANCE_LINE_WIDTH = 3f
         private const val TARGET_DISC_DP = 32f
@@ -814,17 +920,15 @@ class MapController(
         private val GREEN_LAYER_BASES = listOf("landuse_park", "landuse_urban_green")
         private val WATER_LAYER_BASES = listOf("water")
         private val LOCALITY_LAYER_BASES = listOf("places_locality")
-
-        /**
-         * Layer-id groups queried by [placeNameAt] in priority order: roads of band 3, band 2, band 1,
-         * then green areas, water and localities (each across bands 3, 2, 1).
-         */
-        private val PLACE_LAYER_GROUPS: List<Array<String>> = buildList {
-            for (band in PLACE_BANDS) add(withBand(ROAD_LAYER_BASES, listOf(band)))
-            add(withBand(GREEN_LAYER_BASES, PLACE_BANDS))
-            add(withBand(WATER_LAYER_BASES, PLACE_BANDS))
-            add(withBand(LOCALITY_LAYER_BASES, PLACE_BANDS))
-        }
+        private val GREEN_POI_KINDS = listOf(
+            "park", "dog_park", "village_green", "recreation_ground", "golf_course", "forest", "wood", "garden",
+            "cemetery", "beach", "pitch", "playground", "nature_reserve", "protected_area", "national_park",
+            "wetland", "grass", "scrub", "grassland", "meadow", "allotments", "zoo", "theme_park", "marina",
+        )
+        /** POI points that can name a green area; evaluated by MapLibre inside the loaded tiles. */
+        private val GREEN_POI_FILTER: Expression = Expression.any(
+            *GREEN_POI_KINDS.map { Expression.eq(Expression.get(PROPERTY_KIND), Expression.literal(it)) }.toTypedArray()
+        )
 
         private fun withBand(bases: List<String>, bands: List<Int>): Array<String> {
             val ids = ArrayList<String>(bases.size * bands.size)

@@ -259,4 +259,17 @@
     <!-- About -->
     <string name="about_title">About VeloTrack</string>
     <string name="about_body">Version %1$s\n\nMap data © OpenStreetMap contributors (ODbL) — https://www.openstreetmap.org/copyright. Style: Protomaps (BSD-3). Renderer: MapLibre Native (BSD-2). Fonts: Noto Sans (OFL 1.1).\n\nVeloTrack uses the network only while you download map data from the Download map screen. The map, GPS and recordings work fully offline; everything is stored on this phone.</string>
+
+    <!-- Where am I: generic labels for unnamed green areas -->
+    <string name="place_kind_park">Park</string>
+    <string name="place_kind_golf_course">Golf course</string>
+    <string name="place_kind_forest">Forest</string>
+    <string name="place_kind_garden">Garden</string>
+    <string name="place_kind_cemetery">Cemetery</string>
+    <string name="place_kind_beach">Beach</string>
+    <string name="place_kind_pitch">Sports field</string>
+    <string name="place_kind_playground">Playground</string>
+    <string name="place_kind_nature_reserve">Nature reserve</string>
+    <string name="place_kind_wetland">Wetland</string>
+    <string name="place_kind_green">Green space</string>
 </resources>
