@@ -35,6 +35,7 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
@@ -294,6 +295,18 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
         setupButtons()
         setHudHidden(prefs.hudHidden, animate = false)
+        // Landscape puts the statistics panel over the left of the map: tell the camera how much.
+        binding.topPanel.doOnLayout { panel ->
+            val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            mapController.cameraPaddingLeftPx = if (landscape) panel.width.toDouble() else 0.0
+        }
+        // Rotation recreates this activity; guidance to a favourite must not be lost with it.
+        savedInstanceState?.getLong(KEY_GUIDANCE_FAV, -1L)?.takeIf { it >= 0 }?.let { id ->
+            lifecycleScope.launch {
+                val fav = withContext(Dispatchers.IO) { runCatching { favorites.get(id) }.getOrNull() }
+                if (fav != null && !isFinishing && !isDestroyed && guidanceTarget == null) startGuidance(fav)
+            }
+        }
         updateModeButton()
         pendingViewTrackId = viewTrackIdFrom(intent)
         mapController.lightMap = !isNightUi()
@@ -381,6 +394,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         mapView.onSaveInstanceState(outState)
+        guidanceTarget?.let { outState.putLong(KEY_GUIDANCE_FAV, it.id) }
     }
 
     override fun onLowMemory() {
@@ -409,14 +423,17 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         val controls = binding.controls
         val showHud = binding.btnShowHud
         val basePaddingTop = topPanel.paddingTop
+        val basePaddingLeft = topPanel.paddingLeft
         val basePaddingBottom = controls.paddingBottom
+        val basePaddingRight = controls.paddingRight
         val baseShowHudMargin = (showHud.layoutParams as ViewGroup.MarginLayoutParams).topMargin
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
             )
-            topPanel.updatePadding(top = basePaddingTop + bars.top)
-            controls.updatePadding(bottom = basePaddingBottom + bars.bottom)
+            // In landscape the panel and the button column also meet the side bars and cut-outs.
+            topPanel.updatePadding(top = basePaddingTop + bars.top, left = basePaddingLeft + bars.left)
+            controls.updatePadding(bottom = basePaddingBottom + bars.bottom, right = basePaddingRight + bars.right)
             // The chevron is a sibling of the panels, so it carries the inset as a margin.
             showHud.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 topMargin = baseShowHudMargin + bars.top + basePaddingTop
@@ -1645,6 +1662,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         private const val RIDING_MIN_RECHECK_MS = 100L
         /** Fold / unfold of the statistics card. */
         private const val HUD_FOLD_MS = 220L
+
+        /** Instance-state key: id of the favourite being guided to, so rotation keeps the arrow. */
+        private const val KEY_GUIDANCE_FAV = "guidance_fav_id"
 
         private const val RIDING_SPEED_STALE_MS = 5_000L
         private const val NIGHT_CHECK_SLACK_MS = 60_000L

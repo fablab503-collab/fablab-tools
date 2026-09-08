@@ -19,6 +19,10 @@
          padded controls panel, so the screen margin is not added here. -->
     <dimen name="fab_stack_bottom_margin">72dp</dimen>
 
+    <!-- Landscape: the statistics panel down the left, and where the map area starts after it. -->
+    <dimen name="hud_land_width">340dp</dimen>
+    <dimen name="hud_land_map_inset">356dp</dimen>
+
     <!-- Lists -->
     <dimen name="list_row_min_height">72dp</dimen>
     <dimen name="list_icon_circle">40dp</dimen>

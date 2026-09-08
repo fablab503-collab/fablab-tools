@@ -138,6 +138,18 @@ class MapController(
     // Camera bookkeeping.
     private var cameraApplied = false
     private var appliedPaddingTop: Double? = null
+    private var appliedPaddingLeft: Double? = null
+
+    /**
+     * Pixels of map hidden behind a panel on the left (the landscape statistics panel), so the
+     * follow camera keeps the puck centred in the map the rider can actually see. 0 in portrait.
+     */
+    var cameraPaddingLeftPx: Double = 0.0
+        set(value) {
+            val changed = field != value
+            field = value
+            if (changed) applyCameraNow()
+        }
     private var lastNowMs: Long = 0L
     private var lastNowElapsedMs: Long = 0L
 
@@ -349,11 +361,12 @@ class MapController(
             }
             CameraMode.FREE -> return null
         }
-        if (appliedPaddingTop != desiredPaddingTop) {
+        if (appliedPaddingTop != desiredPaddingTop || appliedPaddingLeft != cameraPaddingLeftPx) {
             // Padding persists across later camera moves, so it is only sent when it changes
-            // (mode switch, first fix, or a layout change of the MapView).
-            builder.padding(0.0, desiredPaddingTop, 0.0, 0.0)
+            // (mode switch, first fix, a layout change of the MapView, or the landscape panel).
+            builder.padding(cameraPaddingLeftPx, desiredPaddingTop, 0.0, 0.0)
             appliedPaddingTop = desiredPaddingTop
+            appliedPaddingLeft = cameraPaddingLeftPx
         }
         return builder.build()
     }

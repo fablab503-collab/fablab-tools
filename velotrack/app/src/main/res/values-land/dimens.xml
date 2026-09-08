@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Landscape overrides. The statistics panel sits on the left and the screen is short, so the speed
+     comes down a step; everything else keeps the portrait values from values/dimens.xml. -->
+<resources>
+    <dimen name="hud_speed_text_size">56sp</dimen>
+</resources>
