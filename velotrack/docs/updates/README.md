@@ -1,0 +1,81 @@
+# Update log
+
+One page per build, written when the build is made. The point is not ceremony: when a rider says
+"the Home button stopped working again", the fastest way back to the cause is a page that says
+what changed in that build, why, and how it was checked. A commit message says what was edited; a
+page here says what a rider would notice and what was actually proven on a device.
+
+The build number is the GitHub Actions run number, which is also the `versionCode` in the Play
+Console and the `velotrack-v<n>` tag in this repo — one number, the same everywhere. Documentation
+commits do not consume one: since build 31 the workflow ignores changes under `velotrack/**.md`,
+`velotrack/store/**` and `velotrack/docs/**`, so writing these pages is free.
+
+Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. Start from
+[`TEMPLATE.md`](TEMPLATE.md).
+
+## Builds
+
+| Build | Date | What a rider would notice | Page |
+|---|---|---|---|
+| 39 | 8 Sep 2026 | Buttons vibrate under the finger; Home answers a tap with the distance; the no-map card sits under the statistics | [039-touch-feedback.md](039-touch-feedback.md) |
+| 38 | 8 Sep 2026 | The place picker names the street straight away instead of after the first drag | [038-place-picker-names-the-street.md](038-place-picker-names-the-street.md) |
+| 37 | 8 Sep 2026 | In landscape the Record button no longer sits under the location puck; holding Home opens the picker on the existing pin | [037-landscape-record-button.md](037-landscape-record-button.md) |
+| 36 | 8 Sep 2026 | Landscape is a real layout instead of a stretched portrait one — and it stops crashing on rotation | [036-landscape.md](036-landscape.md) |
+| 35 | 8 Sep 2026 | Nothing visible. Every push now uploads to the Play testing tracks by itself | — |
+| 34 | 8 Sep 2026 | Flat controls, a statistics card that folds away, a map picker for Home/Work/favourites, plain-language download presets | — |
+| 33 | 8 Sep 2026 | Nothing visible. CI prints each test result so a test that stops being discovered cannot look like a pass | — |
+| 32 | 8 Sep 2026 | Nothing visible. A test replays a 180,000-point ride (1000 km) through simplification, statistics and GPX export | — |
+| 31 | 8 Sep 2026 | Nothing visible. Documentation commits stop burning a version code; the Play upload step is added, dormant | — |
+| 30 | 8 Sep 2026 | Nothing visible. Records that Google approved the first Play submission | — |
+| 29 | 8 Sep 2026 | Nothing visible. Play Console status notes | — |
+| 28 | 8 Sep 2026 | Nothing visible. Adds the screen recording Play requires for the foreground-service declaration | — |
+
+Builds 1–27 predate this log. They are recoverable from the `velotrack-v<n>` tags:
+`git ls-remote --tags origin 'refs/tags/velotrack-v*'` gives the authoritative build-to-commit
+mapping, and `git show --stat <sha>` the change. Tags exist for v21 and v23–v39; build 22 consumed
+a run number without producing a commit, so there is nothing behind it.
+
+## How a build gets made and checked
+
+The Mac now has a full Android SDK and the JDK that ships inside Android Studio, so a build no
+longer has to go through GitHub Actions to be testable. [`../../tools/ship.sh`](../../tools/ship.sh)
+does the whole loop:
+
+```
+tools/ship.sh                 build, install on every attached device, launch, screenshot, read the
+                              crash buffer, and fail loudly if any of that did not happen
+tools/ship.sh --build-only    build only
+tools/ship.sh --play FILE     skip the build and install a Play-signed APK instead
+```
+
+It builds the **debug** variant. That matters: `app/build.gradle.kts` gives the debug build type an
+`applicationIdSuffix` of `.debug`, so it installs as a second app next to the Play copy — two
+icons, two data directories, no signature clash, and a rider's recorded rides are never at risk
+from a test build.
+
+Two things it cannot do on its own, both device switches rather than code:
+
+- **MIUI / HyperOS refuses installs over USB** until *Settings → Additional settings → Developer
+  options → Install via USB* is on. Without it every install route returns
+  `INSTALL_FAILED_USER_RESTRICTED`, including `adb push` followed by `pm install`. It is a device
+  security setting, so it has to be flipped on the phone.
+- **The Google Play Store ignores synthetic taps.** Nothing on this machine can press "Update".
+
+## Replacing the rider's own copy
+
+A locally built APK can never update a Play install: Play App Signing re-signs every release with
+Google's key, and ours is only the upload key, so `adb install` returns
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE`. The way around it is to fetch the artefact Google itself
+signed:
+
+Play Console → **App bundle explorer** → pick the version → **Downloads** → **Signed, universal
+APK**. That file carries `CN=Android, O=Google Inc.` — verify with
+`apksigner verify --print-certs` — so `tools/ship.sh --play <file>` installs it straight over the
+Play copy, in place, with the rider's rides and downloaded maps intact and without anyone touching
+the Play Store.
+
+## Writing a page
+
+Keep it to what a person needs six weeks later: the symptom, the cause, the fix, and the evidence.
+"Verified" means a screenshot, a log line or a test — name it. If something was left undone, say
+so; a page that only lists wins is the one nobody trusts when hunting a regression.
