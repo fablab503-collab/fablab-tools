@@ -90,6 +90,16 @@ templates and sandbox workarounds. This skill adds the product and process knowl
   files) → brief with per-module file ownership and exact signatures → 5 implementers → 3 reviewers →
   apply the "minor" findings yourself (they were real behaviour bugs: toast-before-start, stale
   speed, dialog races) → push.
+- A feature that needs a *file* (GPX import) is testable end to end: `adb push` it to
+  `/sdcard/Download/`, broadcast `MEDIA_SCANNER_SCAN_FILE`, and the `OpenDocument` picker opens on
+  Downloads with the file already visible — no navigation needed.
+- Test a geometry feature with geometry you control: lay the route along the exact line
+  `speed.sh` drives (constant latitude, moving east), then a second script that drifts perpendicular
+  and *holds* position. Holding matters — an off-route rule with a delay only trips if fixes keep
+  arriving from the same wrong place; a single jump proves nothing. Reading back "159 m away"
+  against a simulated 160 m offset validates the projection maths, not just the alert.
+- Verify a share/export path by opening the sheet and stopping there. The sheet listing the right
+  file name proves the FileProvider grant; actually sending it would publish the user's data.
 
 ## Going public checklist (done 2026-09-08)
 
@@ -112,6 +122,21 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 - Play needs an `.aab`: add `bundleRelease` to the gradle step and publish
   `app/build/outputs/bundle/release/*.aab` next to the APK. Our CI key is the *upload* key; Play
   App Signing holds the store key.
+- Answer Play's warnings from the artefact, not from memory: `unzip -l app.aab` shows whether
+  `BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map` is there (AGP adds it whenever
+  R8 is on, so the "deobfuscation" half is usually already solved). For the "native debug symbols"
+  half, read the ELF section headers of the bundled `.so` (40 lines of `struct.unpack` beats
+  installing binutils): if there is no `.symtab` and no `.debug_*`, the dependency shipped it
+  stripped and `ndk.debugSymbolLevel` would only drag a whole NDK into CI to package nothing.
+  MapLibre 13.6.0 is in exactly that state — leave the warning alone and write down why.
+- Automate the upload with `r0adkll/upload-google-play@v1.1.5` (`serviceAccountJsonPlainText`,
+  `releaseFiles` glob, `track: internal`, `whatsNewDirectory` holding a `whatsnew-en-GB` file under
+  500 chars). Keep it dormant: the `secrets` context is unreadable from a step-level `if`, so have
+  an earlier step write `have=true/false` to `$GITHUB_OUTPUT` and gate on that. The service-account
+  JSON is a credential the account owner must create and paste as a secret themselves.
+- Filter the build trigger so documentation cannot cut a release: `paths` accepts `!` exclusions
+  after the positive pattern (`velotrack/**`, then `!velotrack/**.md`, `!velotrack/store/**`).
+  Without this, editing a store markdown file bumps versionCode and publishes a GitHub release.
 - Store assets without design tools: SVG → `qlmanage -t -s 1024 -o . file.svg` (unsandboxed via
   osascript; thumbnails come out square, so draw a 1024x1024 SVG and `sips --cropToHeightWidth`
   to 1024x500) and `sips --cropToHeightWidth 2160 1080` for phone screenshots (Play rejects
