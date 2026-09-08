@@ -195,7 +195,7 @@ jobs:
           set -euo pipefail
           if [ -n "${PLAY_JSON:-}" ]; then
             echo "have=true" >> "$GITHUB_OUTPUT"
-            echo "Play service account present: the bundle will be uploaded to the internal test track"
+            echo "Play service account present: this build goes straight to the testers"
           else
             echo "have=false" >> "$GITHUB_OUTPUT"
             echo "No PLAY_SERVICE_ACCOUNT_JSON secret: skipping the Google Play upload (see velotrack/store/PLAY_STORE.md)"
@@ -212,7 +212,10 @@ jobs:
           } | cut -c 1-480 > "$RUNNER_TEMP/whatsnew/whatsnew-en-GB"
           cat "$RUNNER_TEMP/whatsnew/whatsnew-en-GB"
 
-      - name: Upload the bundle to Google Play (internal testing)
+      # Internal testing takes an upload immediately, with no review, so this is the track that
+      # keeps up with a day of rapid changes. Testers on it get the update through Google Play
+      # within minutes and never sideload anything.
+      - name: Send the build to the internal testers
         if: steps.playcreds.outputs.have == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: r0adkll/upload-google-play@v1.1.5
         with:
@@ -222,3 +225,34 @@ jobs:
           track: internal
           status: completed
           whatsNewDirectory: ${{ runner.temp }}/whatsnew
+
+      # The twelve testers Google requires before production live on the closed track, so they get
+      # the build too. This one is allowed to fail: the track only exists once a closed test has
+      # been created, and a missing track must never turn a good build red.
+      - name: Send the build to the closed testers as well
+        id: closedupload
+        continue-on-error: true
+        if: steps.playcreds.outputs.have == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.fablab503.velotrack
+          releaseFiles: velotrack/app/build/outputs/bundle/release/*.aab
+          track: alpha
+          status: completed
+          whatsNewDirectory: ${{ runner.temp }}/whatsnew
+
+      - name: Say where the build went
+        if: steps.playcreds.outputs.have == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          {
+            echo "### Sent to testers"
+            echo
+            echo "- Internal testing: build ${GITHUB_RUN_NUMBER} is live."
+            if [ "${{ steps.closedupload.outcome }}" = "success" ]; then
+              echo "- Closed testing (alpha): build ${GITHUB_RUN_NUMBER} is live."
+            else
+              echo "- Closed testing (alpha): skipped. Create the closed track, or check its id is 'alpha'."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
