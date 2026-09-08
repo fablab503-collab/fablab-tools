@@ -17,6 +17,7 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
+| 41 | 8 Sep 2026 | Nothing. The build is warning-free for the first time | [041-clean-build.md](041-clean-build.md) |
 | 40 | 8 Sep 2026 | Nothing. Builds now happen on this Mac in 8 seconds and install straight onto a phone; this log begins | [040-build-and-install-from-this-mac.md](040-build-and-install-from-this-mac.md) |
 | 39 | 8 Sep 2026 | Buttons vibrate under the finger; Home answers a tap with the distance; the no-map card sits under the statistics | [039-touch-feedback.md](039-touch-feedback.md) |
 | 38 | 8 Sep 2026 | The place picker names the street straight away instead of after the first drag | [038-place-picker-names-the-street.md](038-place-picker-names-the-street.md) |

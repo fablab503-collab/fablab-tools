@@ -275,7 +275,6 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             .attributionEnabled(false)
             .logoEnabled(false)
             .compassEnabled(false)
-            .setPrefetchesTiles(false)
             // Four band sources carry the same labels; without this, one band's labels would suppress another's.
             .crossSourceCollisions(false)
         mapView = MapView(this, options)
@@ -290,6 +289,11 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         mapController.onUserGesture = { updateModeButton() }
         mapView.getMapAsync { m ->
             map = m
+            // setPrefetchesTiles(false) is deprecated in favour of setPrefetchZoomDelta; a delta
+            // of 0 is the documented way to disable prefetching outright. Off because every tile
+            // here comes from a bundled offline file, so there is nothing to usefully prefetch
+            // and no network to spend doing it.
+            m.setPrefetchZoomDelta(0)
             mapController.onMapReady(m)
             applyMapThemeColors()
             showPendingTrack()

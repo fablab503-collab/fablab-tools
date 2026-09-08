@@ -87,15 +87,15 @@ object AddFavoriteDialog {
                 }
                 b.nameLayout.error = null
 
-                val kind = if (fixedKind && existing != null) {
-                    existing.kind
-                } else {
-                    when (b.kindGroup.checkedChipId) {
-                        R.id.chipRestaurant -> FavoriteKind.RESTAURANT
-                        R.id.chipTheatre -> FavoriteKind.THEATRE
-                        R.id.chipPlace -> FavoriteKind.PLACE
-                        else -> FavoriteKind.PERSON
-                    }
+                // fixedKind (line 46) is already `existing != null && ...`, so `existing?.kind`
+                // is non-null exactly when fixedKind is true; this reads the same as the old
+                // `if (fixedKind && existing != null) existing.kind else ...` without the
+                // redundant null check the compiler flagged.
+                val kind = existing?.kind?.takeIf { fixedKind } ?: when (b.kindGroup.checkedChipId) {
+                    R.id.chipRestaurant -> FavoriteKind.RESTAURANT
+                    R.id.chipTheatre -> FavoriteKind.THEATRE
+                    R.id.chipPlace -> FavoriteKind.PLACE
+                    else -> FavoriteKind.PERSON
                 }
                 val description = b.descriptionInput.text?.toString()?.trim() ?: ""
 

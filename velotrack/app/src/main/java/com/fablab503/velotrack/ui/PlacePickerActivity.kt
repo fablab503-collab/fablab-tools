@@ -76,7 +76,6 @@ class PlacePickerActivity : AppCompatActivity() {
             .attributionEnabled(false)
             .logoEnabled(false)
             .compassEnabled(false)
-            .setPrefetchesTiles(false)
             .crossSourceCollisions(false)
         mapView = MapView(this, options)
         binding.mapContainer.addView(
@@ -93,6 +92,9 @@ class PlacePickerActivity : AppCompatActivity() {
 
         mapView.getMapAsync { m ->
             map = m
+            // See MainActivity's onCreate: setPrefetchesTiles(false) is deprecated in favour of
+            // setPrefetchZoomDelta(0), the documented way to disable prefetching outright.
+            m.setPrefetchZoomDelta(0)
             mapController.onMapReady(m)
             applyMapThemeColors()
             val camera = CameraPosition.Builder()
