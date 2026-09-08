@@ -570,12 +570,14 @@
                     app:srcCompat="@drawable/ic_more_vert" />
             </LinearLayout>
 
-            <!-- Primary action, bottom centre of the map area. Visibility is driven by MainActivity.render. -->
+            <!-- Primary action, bottom-right of the map area, clear of the button column. The bottom
+                 centre is where the follow camera puts the puck, so the button must not sit there.
+                 Visibility is driven by MainActivity.render. -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginEnd="@dimen/fab_small_size"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="@dimen/fab_standard_size"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 

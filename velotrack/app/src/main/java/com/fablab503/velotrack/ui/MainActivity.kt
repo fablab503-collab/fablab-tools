@@ -1411,7 +1411,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             val existing = withContext(Dispatchers.IO) { runCatching { favorites.getByKind(kind) }.getOrNull() }
             if (isFinishing || isDestroyed) return@launch
             val name = existing?.name ?: fixedName(kind)
-            val items = mutableListOf(getString(R.string.fav_set_here), getString(R.string.fav_set_map_centre))
+            // Same choices as the first-time dialog: here, or the map picker (which opens on the
+            // current pin, so moving Home is a nudge rather than a hunt).
+            val items = mutableListOf(getString(R.string.fav_set_here), getString(R.string.fav_choose_on_map))
             if (existing != null) items += getString(R.string.fav_clear)
             MaterialAlertDialogBuilder(this@MainActivity)
                 .setTitle(name)
@@ -1421,9 +1423,8 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                             val pos = currentPosition()
                             if (pos == null) toast(R.string.fav_no_position) else saveFixedFavorite(kind, name, pos)
                         }
-                        1 -> {
-                            val centre = mapCentre()
-                            if (centre == null) toast(R.string.fav_no_map_centre) else saveFixedFavorite(kind, name, centre)
+                        1 -> launchPlacePicker(name, name, existing?.latLon) { at, picked ->
+                            saveFixedFavorite(kind, picked.ifEmpty { name }, at)
                         }
                         2 -> existing?.let { deleteFavorite(it, null) }
                     }
