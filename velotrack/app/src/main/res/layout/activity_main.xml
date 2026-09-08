@@ -377,6 +377,67 @@
                         android:textColor="?attr/colorOnErrorContainer" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+            <!-- No map yet. Sits under the statistics, full width and centred, so the button
+                 column can never overlap it and it reads as part of the status stack. -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/noMapOverlay"
+                style="@style/Widget.VeloTrack.Card.Flat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/fab_gap"
+                android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                app:cardCornerRadius="@dimen/card_corner"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/screen_margin">
+
+                    <ImageView
+                        android:id="@+id/noMapImage"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/img3d_explorer" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/no_map_title"
+                            android:textAppearance="?attr/textAppearanceTitleLarge"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/no_map_body"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDownloadMap"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/no_map_action"
+                            app:icon="@drawable/ic_download" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
         <!-- Shown only while the statistics card is folded away. MainActivity pads it for the status bar. -->
@@ -392,61 +453,6 @@
             app:maxImageSize="24dp"
             app:srcCompat="@drawable/ic_expand_more"
             tools:visibility="visible" />
-
-        <!-- Centre: no-map overlay -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/noMapOverlay"
-            style="@style/Widget.VeloTrack.Card.Flat"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginStart="@dimen/overlay_margin_start"
-            android:layout_marginEnd="@dimen/screen_margin"
-            android:visibility="gone"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-            app:cardCornerRadius="@dimen/card_corner"
-            tools:visibility="visible">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="@dimen/overlay_padding">
-
-                <ImageView
-                    android:id="@+id/noMapImage"
-                    android:layout_width="96dp"
-                    android:layout_height="96dp"
-                    android:layout_marginBottom="16dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/img3d_explorer" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/no_map_title"
-                    android:textAppearance="?attr/textAppearanceTitleLarge"
-                    android:textColor="?attr/colorOnSurface" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/no_map_body"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDownloadMap"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="@dimen/screen_margin"
-                    android:text="@string/no_map_action"
-                    app:icon="@drawable/ic_download" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
         <!-- Bottom: controls. MainActivity adds the navigation-bar inset to this panel's bottom padding. -->
         <FrameLayout

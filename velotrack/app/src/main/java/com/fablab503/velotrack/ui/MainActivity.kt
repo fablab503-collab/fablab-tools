@@ -24,6 +24,8 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
 import android.text.format.DateFormat
+import android.view.HapticFeedbackConstants
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -444,40 +446,55 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     private fun setupButtons() {
-        binding.btnRecord.setOnClickListener { onRecordClicked() }
-        binding.btnPause.setOnClickListener {
+        binding.btnRecord.onTapWithFeedback { onRecordClicked() }
+        binding.btnPause.onTapWithFeedback {
             if (RideSession.state.value.status == RecordingStatus.PAUSED) {
                 RideController.resume(this)
             } else {
                 RideController.pause(this)
             }
         }
-        binding.btnStop.setOnClickListener { confirmStop() }
-        binding.btnRecenter.setOnClickListener {
+        binding.btnStop.onTapWithFeedback { confirmStop() }
+        binding.btnRecenter.onTapWithFeedback {
             mapController.recenter()
             updateModeButton()
         }
-        binding.btnToggle3d.setOnClickListener { toggleFollowMode() }
-        binding.btnMenu.setOnClickListener { showMenu() }
+        binding.btnToggle3d.onTapWithFeedback { toggleFollowMode() }
+        binding.btnMenu.onTapWithFeedback { showMenu() }
         // The statistics card covers the top of the map; a tap folds it away, the chevron restores it.
-        binding.hudPanel.setOnClickListener { setHudHidden(true, animate = true) }
-        binding.btnShowHud.setOnClickListener { setHudHidden(false, animate = true) }
+        binding.hudPanel.onTapWithFeedback { setHudHidden(true, animate = true) }
+        binding.btnShowHud.onTapWithFeedback { setHudHidden(false, animate = true) }
         binding.btnGpsSettings.setOnClickListener { openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) }
-        binding.btnDownloadMap.setOnClickListener { openDownloadMap() }
+        binding.btnDownloadMap.onTapWithFeedback { openDownloadMap() }
 
-        binding.btnHome.setOnClickListener { onFixedFavoriteClicked(FavoriteKind.HOME) }
-        binding.btnHome.setOnLongClickListener {
-            showFixedFavoriteMenu(FavoriteKind.HOME)
-            true
-        }
-        binding.btnWork.setOnClickListener { onFixedFavoriteClicked(FavoriteKind.WORK) }
-        binding.btnWork.setOnLongClickListener {
-            showFixedFavoriteMenu(FavoriteKind.WORK)
-            true
-        }
-        binding.btnFavorites.setOnClickListener { showFavoritesSheet() }
-        binding.btnStopGuidance.setOnClickListener { stopGuidance() }
+        binding.btnHome.onTapWithFeedback { onFixedFavoriteClicked(FavoriteKind.HOME) }
+        binding.btnHome.onHoldWithFeedback { showFixedFavoriteMenu(FavoriteKind.HOME) }
+        binding.btnWork.onTapWithFeedback { onFixedFavoriteClicked(FavoriteKind.WORK) }
+        binding.btnWork.onHoldWithFeedback { showFixedFavoriteMenu(FavoriteKind.WORK) }
+        binding.btnFavorites.onTapWithFeedback { showFavoritesSheet() }
+        binding.btnStopGuidance.onTapWithFeedback { stopGuidance() }
         binding.guidanceText.setOnClickListener { stopGuidance() }
+    }
+
+    /**
+     * A click that answers the finger. The map controls are used at speed, with gloves, without
+     * looking, so every one of them ticks. Android routes this through the system's touch-feedback
+     * setting, so a rider who turns haptics off keeps them off.
+     */
+    private fun View.onTapWithFeedback(action: () -> Unit) {
+        setOnClickListener {
+            it.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            action()
+        }
+    }
+
+    /** Long press with the heavier tick Android uses for held gestures. */
+    private fun View.onHoldWithFeedback(action: () -> Unit) {
+        setOnLongClickListener {
+            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            action()
+            true
+        }
     }
 
     private fun toggleFollowMode() {
@@ -1285,11 +1302,34 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     /** Home / Work tap: set the place when unset, otherwise start guidance to it. */
+    /**
+     * Tap Home or Work: say where it is. Guidance lives inside the statistics card, so a rider who
+     * folded that card away used to see nothing at all happen; unfold it, and say the distance out
+     * loud as well so the tap is acknowledged before the first fix arrives. Not set yet: ask where
+     * it is. Holding the button opens the menu that moves it (see [showFixedFavoriteMenu]).
+     */
     private fun onFixedFavoriteClicked(kind: FavoriteKind) {
         lifecycleScope.launch {
             val fav = withContext(Dispatchers.IO) { runCatching { favorites.getByKind(kind) }.getOrNull() }
             if (isFinishing || isDestroyed) return@launch
-            if (fav == null) showPlacePicker(kind) else startGuidance(fav)
+            if (fav == null) {
+                showPlacePicker(kind)
+                return@launch
+            }
+            if (prefs.hudHidden) setHudHidden(false, animate = true)
+            startGuidance(fav)
+            val fix = currentFix()
+            val message = if (fix == null) {
+                getString(R.string.guidance_no_position, fav.name)
+            } else {
+                getString(
+                    R.string.guidance_format,
+                    fav.name,
+                    Format.distance(Geo.distanceM(fix.latLon, fav.latLon), prefs.units),
+                    directionLabel(Geo.bearingDeg(fix.latLon, fav.latLon), currentHeading()),
+                )
+            }
+            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         }
     }
 
