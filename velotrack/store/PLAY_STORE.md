@@ -15,8 +15,10 @@ package `com.fablab503.velotrack`):
   (hello@danielscreatesparis.com, fablab503@gmail.com). Join link:
   https://play.google.com/apps/internaltest/4701706777077520379 (open it on the phone with one
   of those Google accounts, accept, then install from Google Play).
-- **Closed testing (Alpha)**: release 26 saved with all countries and the same tester list; the
-  whole set of 15 changes was **sent to Google for review** (typically up to 7 days).
+- **Closed testing (Alpha)**: release 26, all countries, same tester list.
+- **Google's review of all 15 changes finished on 8 September 2026 and was approved.** Both the
+  internal and the closed Alpha track show release 26 as "Available on Google Play", full roll-out.
+  Nothing is pending in Publishing overview.
 
 Still to do, by the account owner:
 
