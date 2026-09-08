@@ -1,5 +1,33 @@
 # Publishing VeloTrack on Google Play
 
+## Status (8 September 2026)
+
+Done in the Play Console (developer account "danielgmadac", app id 4974445438640549327,
+package `com.fablab503.velotrack`):
+
+- App created ("VeloTrack: offline bike GPS", free, app), all App content declarations filled
+  (privacy policy, app access, ads, content rating IARC "All other app types" with all "No",
+  target audience 18+, data safety "no data collected", advertising ID no, government no,
+  financial no, health "Activity and fitness", foreground services data sync + location with the
+  screen recording as demo video), store listing with texts, icon, feature graphic and six
+  screenshots, category Maps & navigation, contact e-mail.
+- **Internal testing**: release 26 (1.0.26) is live. Testers list "VeloTrack testers"
+  (hello@danielscreatesparis.com, fablab503@gmail.com). Join link:
+  https://play.google.com/apps/internaltest/4701706777077520379 (open it on the phone with one
+  of those Google accounts, accept, then install from Google Play).
+- **Closed testing (Alpha)**: release 26 saved with all countries and the same tester list; the
+  whole set of 15 changes was **sent to Google for review** (typically up to 7 days).
+
+Still to do, by the account owner:
+
+1. Recruit at least 12 testers, add their Google e-mails to the "VeloTrack testers" list
+   (Play Console -> Testing -> Closed testing -> Alpha -> Testers), share the opt-in link shown
+   there, and keep the test running for 14 days with 12 opted-in testers.
+2. Then Dashboard -> "Apply for production", answer Google's questions about the test, and
+   promote release 26 (or a newer build) to Production.
+3. New builds: every push to `main` produces `velotrack-latest.aab`; upload it to the track with
+   "Create new release" (Add from library after uploading) and roll out.
+
 Everything Play Console needs is in this folder; this file is the order to do it in. Google
 requires the forms below to be filled in the Console by the account owner: they cannot be
 submitted from a script.
