@@ -236,10 +236,19 @@ folder at the repository root documents that process so it can be repeated.
 
 ## Google Play
 
-The store listing texts, graphics and the step-by-step checklist for publishing on Google Play are
-in [store/](store/PLAY_STORE.md); the privacy policy the listing points to is
-[PRIVACY.md](PRIVACY.md). Every CI build also produces the Android App Bundle
-(`velotrack-latest.aab`) that the Play Console takes.
+VeloTrack is on Google Play as **VeloTrack: offline bike GPS**, in testing. Google approved the
+listing on 8 September 2026, and the app is live on the internal and closed test tracks. It is not
+yet in public search: Google requires a new developer account to run a closed test with at least
+twelve testers for fourteen days before the production track opens.
+
+Until then the APK on the [releases page](https://github.com/fablab503-collab/fablab-tools/releases/tag/velotrack-latest)
+is the way to install it, and it is the same build.
+
+The store listing texts, graphics, the publishing checklist and the current Play status are in
+[store/](store/PLAY_STORE.md); the privacy policy the listing points to is [PRIVACY.md](PRIVACY.md).
+Every CI build also produces the Android App Bundle (`velotrack-latest.aab`) that the Play Console
+takes, and the workflow can upload it to the internal test track by itself once a Play service
+account key is stored as a repository secret.
 
 ## Licences
 
