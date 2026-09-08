@@ -103,6 +103,9 @@ class PlacePickerActivity : AppCompatActivity() {
                 .build()
             m.moveCamera(CameraUpdateFactory.newCameraPosition(camera))
             m.addOnCameraIdleListener { refreshPlaceName() }
+            // The first lookup usually runs before any tile has drawn and finds nothing; once the
+            // renderer goes idle the tiles are there, so ask again regardless of movement.
+            mapView.addOnDidBecomeIdleListener { refreshPlaceName(force = true) }
             loadMapData()
         }
 
@@ -138,12 +141,15 @@ class PlacePickerActivity : AppCompatActivity() {
         finish()
     }
 
-    /** Names the point under the crosshair, but only once the camera has moved a useful distance. */
-    private fun refreshPlaceName() {
+    /**
+     * Names the point under the crosshair, but only once the camera has moved a useful distance,
+     * unless [force] says the map itself changed (style loaded, tiles finished drawing).
+     */
+    private fun refreshPlaceName(force: Boolean = false) {
         val centre = map?.cameraPosition?.target ?: return
         val at = LatLon(centre.latitude, centre.longitude)
         val previous = lastNamedAt
-        if (previous != null && Geo.distanceM(previous, at) < MIN_MOVE_M) return
+        if (!force && previous != null && Geo.distanceM(previous, at) < MIN_MOVE_M) return
         lastNamedAt = at
         val name = mapController.placeNameAt(at)
         val text = name ?: getString(R.string.picker_unknown_place)
@@ -167,7 +173,7 @@ class PlacePickerActivity : AppCompatActivity() {
                 Bands.ALL.map { band -> mapLibrary.bandFile(band) }
             }
             mapController.lightMap = !isNightUi()
-            mapController.loadStyle(files) { refreshPlaceName() }
+            mapController.loadStyle(files) { refreshPlaceName(force = true) }
         }
     }
 
