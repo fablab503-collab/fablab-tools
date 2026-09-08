@@ -84,11 +84,36 @@ submitted from a script.
 Every push to `main` produces a new `.aab` with a higher versionCode. Upload it to the same track
 and roll out; the Play Console keeps the store listing.
 
-## Optional: automated uploads
+## Automated uploads to the internal test track
 
-Play Console -> Setup -> API access lets you link a Google Cloud project and create a service
-account with "Release manager" rights. Store its JSON key as the repository secret
-`PLAY_SERVICE_ACCOUNT_JSON` and a workflow step with `r0adkll/upload-google-play@v1`
-(`packageName: com.fablab503.velotrack`, `track: internal`, `releaseFiles: velotrack/app/build/outputs/bundle/release/*.aab`)
-can push each build automatically. Not enabled yet because the service account can only be created
-by the account owner in the Console.
+The build workflow already contains the upload step. It stays dormant until the repository secret
+`PLAY_SERVICE_ACCOUNT_JSON` exists; from then on every push to `main` that changes app code puts the
+new bundle straight onto the internal testing track, with the commit subject as the release note.
+
+Creating the key is the account owner's job, because it needs the Play Console and Google Cloud:
+
+1. Play Console -> Setup -> API access -> link (or create) a Google Cloud project.
+2. In that project, create a service account. Google Cloud takes you to IAM; no Cloud role is
+   needed, so create it and come back.
+3. On the service account, create a key of type JSON and download it. Treat the file like a
+   password: anyone holding it can publish as you.
+4. Back in Play Console -> Users and permissions, invite the service account's e-mail address and
+   grant it, for this app only, "Release to testing tracks" (Release manager also works).
+5. Paste the whole JSON file into a new repository secret named `PLAY_SERVICE_ACCOUNT_JSON`
+   (GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret).
+
+The first upload through the API must follow at least one manual upload of the same package, which
+has already happened, so it will work immediately. Promoting a build from internal testing to the
+closed or production track stays a manual step in the Console.
+
+## About the "no debug symbols" warning
+
+Play shows this warning on every upload and it cannot usefully be fixed here. The Kotlin side is
+already covered: R8 obfuscation is on and the bundle carries
+`BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map`, so crash reports from testers
+come back with real class and method names.
+
+The warning refers to the native library, `libmaplibre.so`. MapLibre publishes it already stripped:
+it has no symbol table and no debug sections, only the dynamic symbol table. Turning on
+`ndk.debugSymbolLevel` in Gradle would make the build download a full Android NDK and then package
+a symbol file with nothing in it. That trade is not worth taking, so the warning stays.
