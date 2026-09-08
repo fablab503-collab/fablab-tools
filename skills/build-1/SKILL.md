@@ -64,6 +64,10 @@ toolchain and wants interactive iteration.
   `do shell script "…/platform-tools/adb devices"`. Each call must finish in under ~30 s and exit 0
   (append `; exit 0`); put longer sequences in a script under `/tmp/claude-501/…` and start it with
   `nohup … &`, then wait on its log with a background `until grep` loop.
+- With the user's phone also plugged in over USB, a bare `adb` call fails with "more than one
+  device/emulator": always pass `-s emulator-5554`. Reusable helpers (screenshot, constant-speed
+  ride, perpendicular drift-and-hold, install, push a document into the picker) are in
+  `templates/emulator-verify.sh`.
 - The user creates the AVD in Android Studio (Device Manager); no system images or cmdline-tools are
   installed otherwise. Emulator default position is Mountain View (37.422, -122.084); extract a
   test map around it. `adb push file.mbtiles /sdcard/Android/data/<pkg>/files/maps/` works and the
