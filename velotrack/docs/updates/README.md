@@ -17,6 +17,7 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
+| 40 | 8 Sep 2026 | Nothing. Builds now happen on this Mac in 8 seconds and install straight onto a phone; this log begins | [040-build-and-install-from-this-mac.md](040-build-and-install-from-this-mac.md) |
 | 39 | 8 Sep 2026 | Buttons vibrate under the finger; Home answers a tap with the distance; the no-map card sits under the statistics | [039-touch-feedback.md](039-touch-feedback.md) |
 | 38 | 8 Sep 2026 | The place picker names the street straight away instead of after the first drag | [038-place-picker-names-the-street.md](038-place-picker-names-the-street.md) |
 | 37 | 8 Sep 2026 | In landscape the Record button no longer sits under the location puck; holding Home opens the picker on the existing pin | [037-landscape-record-button.md](037-landscape-record-button.md) |
@@ -55,11 +56,17 @@ from a test build.
 
 Two things it cannot do on its own, both device switches rather than code:
 
-- **MIUI / HyperOS refuses installs over USB** until *Settings → Additional settings → Developer
-  options → Install via USB* is on. Without it every install route returns
-  `INSTALL_FAILED_USER_RESTRICTED`, including `adb push` followed by `pm install`. It is a device
-  security setting, so it has to be flipped on the phone.
-- **The Google Play Store ignores synthetic taps.** Nothing on this machine can press "Update".
+- **MIUI / HyperOS refuses installs of a *new* package over USB** until *Settings → Additional
+  settings → Developer options → Install via USB* is on. Without it every route returns
+  `INSTALL_FAILED_USER_RESTRICTED`, including `adb push` followed by `pm install`. Updating a
+  package that is already there, with a matching signature, is allowed — which is why
+  `--play` works on the Xiaomi today and the side-by-side `.debug` copy does not.
+- **MIUI ignores synthetic input.** `input tap` and `input keyevent` do not reach the app on the
+  Xiaomi — not just in the Play Store, everywhere. *Developer options → USB debugging (Security
+  settings)* is the switch that permits it. Until it is on, the emulator is where the interface can
+  be exercised and the phone is where a build is installed and photographed.
+
+Both are device security settings and have to be set on the phone itself.
 
 ## Replacing the rider's own copy
 
