@@ -150,7 +150,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/fav_map_centre"
+                android:text="@string/fav_choose_on_map"
                 app:icon="@drawable/ic_map" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 

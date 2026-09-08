@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The fixed centre mark on the place picker. A ring with a gap at each compass point and a solid
+    dot in the middle, so the exact point stays visible over a road line of any colour.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+  <!-- four arms -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M23,2h2v10h-2zM23,36h2v10h-2zM2,23h10v2h-10zM36,23h10v2h-10z"/>
+  <!-- ring -->
+  <path
+      android:strokeColor="@android:color/white"
+      android:strokeWidth="2"
+      android:fillColor="@android:color/transparent"
+      android:pathData="M24,10a14,14 0 1,0 0.1,0z"/>
+  <!-- centre dot -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M24,20a4,4 0 1,0 0.1,0z"/>
+</vector>

@@ -24,11 +24,15 @@
             android:paddingTop="@dimen/screen_margin"
             android:paddingEnd="@dimen/screen_margin">
 
+            <!-- Tapping anywhere on this card folds it away; btnShowHud below brings it back. -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/hudPanel"
-                style="@style/Widget.Material3.CardView.Elevated"
+                style="@style/Widget.VeloTrack.Card.Flat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/cd_hide_hud"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer"
                 app:cardCornerRadius="@dimen/card_corner">
 
@@ -329,7 +333,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/gpsBanner"
-                style="@style/Widget.Material3.CardView.Filled"
+                style="@style/Widget.VeloTrack.Card.Flat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/fab_gap"
@@ -375,10 +379,24 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
+        <!-- Shown only while the statistics card is folded away. MainActivity pads it for the status bar. -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnShowHud"
+            style="@style/Widget.VeloTrack.Fab.Surface"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:contentDescription="@string/cd_show_hud"
+            android:visibility="gone"
+            app:fabCustomSize="@dimen/fab_small_size"
+            app:maxImageSize="24dp"
+            app:srcCompat="@drawable/ic_expand_more"
+            tools:visibility="visible" />
+
         <!-- Centre: no-map overlay -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/noMapOverlay"
-            style="@style/Widget.Material3.CardView.Filled"
+            style="@style/Widget.VeloTrack.Card.Flat"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical|end"
@@ -450,7 +468,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnHome"
-                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    style="@style/Widget.VeloTrack.Fab.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:contentDescription="@string/cd_home"
@@ -459,7 +477,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnWork"
-                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    style="@style/Widget.VeloTrack.Fab.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/fab_gap"
@@ -469,7 +487,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnFavorites"
-                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    style="@style/Widget.VeloTrack.Fab.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/fab_gap"
@@ -479,7 +497,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnRecenter"
-                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    style="@style/Widget.VeloTrack.Fab.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/fab_gap"
@@ -489,7 +507,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnToggle3d"
-                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    style="@style/Widget.VeloTrack.Fab.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/fab_gap"
@@ -499,7 +517,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnMenu"
-                    style="@style/Widget.Material3.FloatingActionButton.Surface"
+                    style="@style/Widget.VeloTrack.Fab.Surface"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/fab_gap"
@@ -518,7 +536,7 @@
 
                 <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                     android:id="@+id/btnRecord"
-                    style="@style/Widget.Material3.ExtendedFloatingActionButton.Icon.Primary"
+                    style="@style/Widget.VeloTrack.Fab.Primary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/btn_record"
@@ -526,7 +544,7 @@
 
                 <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                     android:id="@+id/btnPause"
-                    style="@style/Widget.Material3.ExtendedFloatingActionButton.Icon.Secondary"
+                    style="@style/Widget.VeloTrack.Fab.Secondary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/btn_pause"
@@ -536,6 +554,7 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnStop"
+                    style="@style/Widget.VeloTrack.Fab.Plain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/fab_gap"

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Widget styles shared by the map overlay. These reference theme attributes only, so there is no
+    -night variant: the colours follow whichever theme is active.
+
+    Everything here is flat on purpose. On the black night map a Material shadow reads as a grey
+    smudge around each button rather than as depth, so the controls sit on the map with no
+    elevation at all and are separated from it by their surface colour alone.
+-->
+<resources>
+
+    <style name="Widget.VeloTrack.Fab.Surface" parent="Widget.Material3.FloatingActionButton.Surface">
+        <item name="elevation">0dp</item>
+        <item name="hoveredFocusedTranslationZ">0dp</item>
+        <item name="pressedTranslationZ">0dp</item>
+    </style>
+
+    <style name="Widget.VeloTrack.Fab.Primary" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Primary">
+        <item name="elevation">0dp</item>
+        <item name="hoveredFocusedTranslationZ">0dp</item>
+        <item name="pressedTranslationZ">0dp</item>
+    </style>
+
+    <style name="Widget.VeloTrack.Fab.Secondary" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Secondary">
+        <item name="elevation">0dp</item>
+        <item name="hoveredFocusedTranslationZ">0dp</item>
+        <item name="pressedTranslationZ">0dp</item>
+    </style>
+
+    <!-- The stop button: same flatness, its own error colouring is set in the layout. -->
+    <style name="Widget.VeloTrack.Fab.Plain" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="elevation">0dp</item>
+        <item name="hoveredFocusedTranslationZ">0dp</item>
+        <item name="pressedTranslationZ">0dp</item>
+    </style>
+
+    <!-- Cards over the map: filled, no shadow, so they match the flat buttons. -->
+    <style name="Widget.VeloTrack.Card.Flat" parent="Widget.Material3.CardView.Filled">
+        <item name="cardElevation">0dp</item>
+        <item name="cardCornerRadius">@dimen/card_corner</item>
+    </style>
+
+</resources>

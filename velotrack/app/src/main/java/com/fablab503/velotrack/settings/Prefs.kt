@@ -86,6 +86,11 @@ class Prefs(context: Context) {
             }
         }
 
+    /** True while the rider has folded the statistics card away; survives restarts on purpose. */
+    var hudHidden: Boolean
+        get() = sp.getBoolean(KEY_HUD_HIDDEN, false)
+        set(value) = sp.edit().putBoolean(KEY_HUD_HIDDEN, value).apply()
+
     var batterySaverWarningShown: Boolean
         get() = sp.getBoolean(KEY_SAVER_WARNED, false)
         set(value) = sp.edit().putBoolean(KEY_SAVER_WARNED, value).apply()
@@ -126,6 +131,7 @@ class Prefs(context: Context) {
         const val KEY_ACTIVE_ROUTE = "active_route_id"
         const val KEY_FOLLOW_MODE = "follow_mode"
         const val KEY_SAVER_WARNED = "battery_saver_warned"
+        const val KEY_HUD_HIDDEN = "hud_hidden"
         const val KEY_LAST_LAT = "last_lat"
         const val KEY_LAST_LON = "last_lon"
         const val KEY_PLANET_URL = "planet_url"

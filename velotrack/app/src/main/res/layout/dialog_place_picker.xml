@@ -2,6 +2,7 @@
 <!-- Body of the "Set Home / Work" dialog: a short explanation and the name field. The two ways of
      picking the location (my position / map centre) are the dialog's buttons. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -34,4 +35,14 @@
             android:maxLines="1"
             tools:text="Home" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Opens PlacePickerActivity; the dialog closes and the point comes back through MainActivity. -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnChooseOnMap"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/screen_margin"
+        android:text="@string/fav_choose_on_map"
+        app:icon="@drawable/ic_map" />
 </LinearLayout>

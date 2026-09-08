@@ -88,7 +88,7 @@
     <string name="fav_set_map_centre">Set from map centre</string>
     <string name="fav_clear">Clear</string>
     <string name="fav_set_title">Set %1$s</string>
-    <string name="fav_set_body">Where is %1$s? Use my position, or pan the map to the spot first and use the map centre.</string>
+    <string name="fav_set_body">Where is %1$s? Use where you are standing now, or choose the exact spot on a map.</string>
     <string name="fav_edit_title">Edit favourite</string>
     <string name="fav_name_hint">Name</string>
     <string name="fav_description_hint">Description (optional)</string>
@@ -194,7 +194,7 @@
     <!-- Map data (MapFilesActivity) -->
     <string name="map_data_total">%1$s on this phone</string>
     <string name="map_data_total_label">Map data</string>
-    <string name="map_data_band_line">%1$s · z%2$d–%3$d · %4$s</string>
+    <string name="map_data_band_line">%1$s · %2$s</string>
     <string name="map_data_empty">No map data</string>
     <string name="map_data_empty_hint">Tap Download map to fetch the area you ride in</string>
     <string name="map_data_import_file">Import file</string>
@@ -202,29 +202,40 @@
     <string name="map_data_clear_all_title">Clear all map data?</string>
     <string name="map_data_clear_all_body">Every downloaded region is removed from this phone. Rides and routes are kept.</string>
     <string name="map_data_clear_all_action">Clear all</string>
-    <string name="map_region_subtitle">%1$s · z%2$d–%3$d · %4$s · %5$s</string>
+    <string name="map_region_subtitle">%1$s · %2$s · %3$s</string>
     <string name="map_region_delete_title">Delete region?</string>
     <string name="map_region_delete_body">The tiles of %1$s will be removed from this phone.</string>
     <string name="map_import_progress">Importing… %1$s</string>
     <string name="map_import_progress_total">Importing… %1$s of %2$s</string>
     <string name="map_import_failed">Import failed: %1$s</string>
     <string name="map_import_done">Import finished</string>
-    <string name="band_label_0">Overview</string>
-    <string name="band_label_1">Region</string>
-    <string name="band_label_2">Roads</string>
-    <string name="band_label_3">Streets</string>
+    <string name="band_label_0">Whole world</string>
+    <string name="band_label_1">Wide area</string>
+    <string name="band_label_2">Main roads</string>
+    <string name="band_label_3">Every street</string>
 
     <!-- Download map (DownloadMapActivity) -->
     <string name="download_centre_label">Centre</string>
     <string name="download_my_position">My position</string>
     <string name="download_map_centre">Map centre</string>
+    <!-- Place picker: choose a point by dragging the map under a fixed crosshair. -->
+    <string name="picker_title">Choose a place</string>
+    <string name="picker_hint">Drag the map so the crosshair sits on the spot.</string>
+    <string name="picker_unknown_place">No name here</string>
+    <string name="picker_save">Save here</string>
+    <string name="fav_choose_on_map">Choose on map</string>
+
+    <!-- Folding the statistics card away -->
+    <string name="cd_hide_hud">Hide the ride statistics</string>
+    <string name="cd_show_hud">Show the ride statistics</string>
+
     <string name="download_area_label">Area</string>
     <string name="download_presets_label">Presets</string>
-    <string name="download_chip_10km">10 km · streets · z13–15</string>
-    <string name="download_chip_100km">100 km · roads · z10–12</string>
-    <string name="download_chip_1000km">1000 km · region · z7–9</string>
-    <string name="download_chip_world">World · overview · z0–6</string>
-    <string name="download_chip_france">France · region · z7–9</string>
+    <string name="download_chip_10km">Nearby · 10 km · every street</string>
+    <string name="download_chip_100km">Around here · 100 km · main roads</string>
+    <string name="download_chip_1000km">Wide area · 1000 km · big roads only</string>
+    <string name="download_chip_world">Whole world · coastlines only</string>
+    <string name="download_chip_france">All of France · big roads only</string>
     <string name="download_name_hint">Name</string>
     <string name="download_name_around_me">Around me %1$s</string>
     <string name="download_name_map_centre">Map centre %1$s</string>

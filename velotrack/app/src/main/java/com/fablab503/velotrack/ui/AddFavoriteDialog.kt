@@ -29,7 +29,10 @@ object AddFavoriteDialog {
     /**
      * @param existing the favourite being edited, or null to add a new one
      * @param myPosition the rider's last fix, or null when there is none yet
-     * @param mapCentre the camera target, or null before the map is ready
+     * @param mapCentre where the map picker should open, or null before the map is ready
+     * @param onSave the favourite is complete and can be written
+     * @param onPickOnMap the rider chose "Choose on map": everything but the location is decided,
+     *   and the caller opens [PlacePickerActivity] and saves once a point comes back
      */
     fun show(
         context: Context,
@@ -37,6 +40,7 @@ object AddFavoriteDialog {
         myPosition: LatLon?,
         mapCentre: LatLon?,
         onSave: (FavoriteInput) -> Unit,
+        onPickOnMap: (name: String, description: String, kind: FavoriteKind, startAt: LatLon?) -> Unit,
     ) {
         val b = DialogAddFavoriteBinding.inflate(LayoutInflater.from(context))
         val fixedKind = existing != null && (existing.kind == FavoriteKind.HOME || existing.kind == FavoriteKind.WORK)
@@ -60,11 +64,10 @@ object AddFavoriteDialog {
         )
 
         b.btnLocHere.isEnabled = myPosition != null
-        b.btnLocCentre.isEnabled = mapCentre != null
         when {
             existing != null -> b.locationGroup.check(R.id.btnLocKeep)
             myPosition != null -> b.locationGroup.check(R.id.btnLocHere)
-            mapCentre != null -> b.locationGroup.check(R.id.btnLocCentre)
+            else -> b.locationGroup.check(R.id.btnLocCentre)
         }
         b.locationGroup.addOnButtonCheckedListener { _, _, _ -> b.locationHint.isVisible = false }
 
@@ -84,24 +87,6 @@ object AddFavoriteDialog {
                 }
                 b.nameLayout.error = null
 
-                val location: LatLon? = when (b.locationGroup.checkedButtonId) {
-                    R.id.btnLocKeep -> existing?.latLon
-                    R.id.btnLocHere -> myPosition
-                    R.id.btnLocCentre -> mapCentre
-                    else -> null
-                }
-                if (location == null) {
-                    b.locationHint.setText(
-                        if (b.locationGroup.checkedButtonId == R.id.btnLocCentre) {
-                            R.string.fav_no_map_centre
-                        } else {
-                            R.string.fav_no_position
-                        }
-                    )
-                    b.locationHint.isVisible = true
-                    return@setOnClickListener
-                }
-
                 val kind = if (fixedKind && existing != null) {
                     existing.kind
                 } else {
@@ -113,6 +98,25 @@ object AddFavoriteDialog {
                     }
                 }
                 val description = b.descriptionInput.text?.toString()?.trim() ?: ""
+
+                if (b.locationGroup.checkedButtonId == R.id.btnLocCentre) {
+                    // Hand over to the map picker; the caller saves when a point comes back.
+                    dialog.dismiss()
+                    onPickOnMap(name, description, kind, existing?.latLon ?: mapCentre ?: myPosition)
+                    return@setOnClickListener
+                }
+
+                val location: LatLon? = when (b.locationGroup.checkedButtonId) {
+                    R.id.btnLocKeep -> existing?.latLon
+                    R.id.btnLocHere -> myPosition
+                    else -> null
+                }
+                if (location == null) {
+                    b.locationHint.setText(R.string.fav_no_position)
+                    b.locationHint.isVisible = true
+                    return@setOnClickListener
+                }
+
                 onSave(FavoriteInput(name, description, kind, location))
                 dialog.dismiss()
             }

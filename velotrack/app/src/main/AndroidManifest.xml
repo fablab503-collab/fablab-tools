@@ -65,6 +65,13 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.PlacePickerActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"
+            android:label="@string/picker_title"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:label="@string/title_settings" />

@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -190,6 +191,24 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
      * feet. This activity is stopped while they are on top, so [downloadReceiver] misses the
      * service's `done` broadcast; the result is the reliable signal to rebuild the map.
      */
+    /**
+     * Set while [PlacePickerActivity] is on top: what to do with the point the rider chose. Cleared
+     * on every result, including a cancel, so a stale callback can never fire against a later pick.
+     */
+    private var onPlacePicked: ((LatLon, String) -> Unit)? = null
+
+    private val placePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val handler = onPlacePicked
+            onPlacePicked = null
+            if (result.resultCode != RESULT_OK || handler == null) return@registerForActivityResult
+            val data = result.data ?: return@registerForActivityResult
+            val lat = data.getDoubleExtra(PlacePickerActivity.EXTRA_LAT, Double.NaN)
+            val lon = data.getDoubleExtra(PlacePickerActivity.EXTRA_LON, Double.NaN)
+            if (lat.isNaN() || lon.isNaN()) return@registerForActivityResult
+            handler(LatLon(lat, lon), data.getStringExtra(PlacePickerActivity.EXTRA_NAME).orEmpty())
+        }
+
     private val mapDataLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) onMapDataChanged()
@@ -274,6 +293,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
 
         setupButtons()
+        setHudHidden(prefs.hudHidden, animate = false)
         updateModeButton()
         pendingViewTrackId = viewTrackIdFrom(intent)
         mapController.lightMap = !isNightUi()
@@ -387,14 +407,20 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     private fun applySystemBarInsets() {
         val topPanel = binding.topPanel
         val controls = binding.controls
+        val showHud = binding.btnShowHud
         val basePaddingTop = topPanel.paddingTop
         val basePaddingBottom = controls.paddingBottom
+        val baseShowHudMargin = (showHud.layoutParams as ViewGroup.MarginLayoutParams).topMargin
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
             )
             topPanel.updatePadding(top = basePaddingTop + bars.top)
             controls.updatePadding(bottom = basePaddingBottom + bars.bottom)
+            // The chevron is a sibling of the panels, so it carries the inset as a margin.
+            showHud.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = baseShowHudMargin + bars.top + basePaddingTop
+            }
             insets
         }
         ViewCompat.requestApplyInsets(binding.root)
@@ -416,6 +442,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
         binding.btnToggle3d.setOnClickListener { toggleFollowMode() }
         binding.btnMenu.setOnClickListener { showMenu() }
+        // The statistics card covers the top of the map; a tap folds it away, the chevron restores it.
+        binding.hudPanel.setOnClickListener { setHudHidden(true, animate = true) }
+        binding.btnShowHud.setOnClickListener { setHudHidden(false, animate = true) }
         binding.btnGpsSettings.setOnClickListener { openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) }
         binding.btnDownloadMap.setOnClickListener { openDownloadMap() }
 
@@ -1248,6 +1277,69 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     /** "Set Home / Work": name field plus two ways to pick the location (my position, map centre). */
+    // ---------------------------------------------------------------- folding the statistics card
+
+    /**
+     * Shows or hides the statistics card. The card slides up behind the status bar and fades out;
+     * the chevron takes its place. [animate] is false on start-up, where the card must simply be in
+     * the state the rider left it without a visible jump.
+     */
+    private fun setHudHidden(hidden: Boolean, animate: Boolean) {
+        prefs.hudHidden = hidden
+        val card = binding.hudPanel
+        val chevron = binding.btnShowHud
+        card.animate().cancel()
+        chevron.animate().cancel()
+
+        if (!animate) {
+            card.isVisible = !hidden
+            card.alpha = 1f
+            card.translationY = 0f
+            chevron.isVisible = hidden
+            chevron.alpha = 1f
+            return
+        }
+
+        if (hidden) {
+            card.animate()
+                .alpha(0f)
+                .translationY(-card.height.toFloat())
+                .setDuration(HUD_FOLD_MS)
+                .withEndAction {
+                    card.isVisible = false
+                    card.translationY = 0f
+                    chevron.alpha = 0f
+                    chevron.isVisible = true
+                    chevron.animate().alpha(1f).setDuration(HUD_FOLD_MS).start()
+                }
+                .start()
+        } else {
+            chevron.animate()
+                .alpha(0f)
+                .setDuration(HUD_FOLD_MS)
+                .withEndAction {
+                    chevron.isVisible = false
+                    card.alpha = 0f
+                    card.translationY = -card.height.toFloat()
+                    card.isVisible = true
+                    card.animate().alpha(1f).translationY(0f).setDuration(HUD_FOLD_MS).start()
+                }
+                .start()
+        }
+    }
+
+    // ---------------------------------------------------------------- choosing a place on a map
+
+    /**
+     * Opens the map picker. [onPicked] receives the chosen point and the label the rider typed
+     * (or the name the map gave the spot when they typed nothing).
+     */
+    private fun launchPlacePicker(title: String, name: String, at: LatLon?, onPicked: (LatLon, String) -> Unit) {
+        onPlacePicked = onPicked
+        showControlsForDialog()
+        placePickerLauncher.launch(PlacePickerActivity.intent(this, title, name, at ?: currentPosition() ?: mapCentre()))
+    }
+
     private fun showPlacePicker(kind: FavoriteKind) {
         showControlsForDialog()
         val defaultName = fixedName(kind)
@@ -1259,9 +1351,24 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             .setTitle(getString(R.string.fav_set_title, defaultName))
             .setView(b.root)
             .setPositiveButton(R.string.fav_my_position, null)
-            .setNeutralButton(R.string.fav_map_centre, null)
             .setNegativeButton(R.string.dialog_cancel, null)
             .create()
+        b.btnChooseOnMap.setOnClickListener {
+            val typed = b.nameInput.text?.toString()?.trim().orEmpty()
+            val label = typed.ifEmpty { defaultName }
+            dialog.dismiss()
+            lifecycleScope.launch {
+                // Start the picker where this place already is, so moving Home nudges the existing
+                // pin instead of hunting for it again; otherwise start at the rider or the map.
+                val existing = withContext(Dispatchers.IO) {
+                    runCatching { favorites.getByKind(kind) }.getOrNull()
+                }?.latLon
+                if (isFinishing || isDestroyed) return@launch
+                launchPlacePicker(getString(R.string.fav_set_title, defaultName), label, existing) { at, name ->
+                    saveFixedFavorite(kind, name.ifEmpty { label }, at)
+                }
+            }
+        }
         dialog.setOnShowListener {
             fun enteredName(): String {
                 val typed = b.nameInput.text?.toString()?.trim() ?: ""
@@ -1274,15 +1381,6 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                     return@setOnClickListener
                 }
                 saveFixedFavorite(kind, enteredName(), pos)
-                dialog.dismiss()
-            }
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                val centre = mapCentre()
-                if (centre == null) {
-                    toast(R.string.fav_no_map_centre)
-                    return@setOnClickListener
-                }
-                saveFixedFavorite(kind, enteredName(), centre)
                 dialog.dismiss()
             }
         }
@@ -1388,11 +1486,34 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     override fun onAddFavorite(sheet: FavoritesSheet) {
-        AddFavoriteDialog.show(this, null, currentPosition(), mapCentre()) { input -> saveFavorite(null, input, sheet) }
+        showFavoriteDialog(null, sheet)
     }
 
     override fun onEditFavorite(sheet: FavoritesSheet, fav: Favorite) {
-        AddFavoriteDialog.show(this, fav, currentPosition(), mapCentre()) { input -> saveFavorite(fav, input, sheet) }
+        showFavoriteDialog(fav, sheet)
+    }
+
+    /**
+     * The add / edit dialog, with its "Choose on map" branch wired to the picker. The typed name,
+     * description and kind survive the trip: only the location comes back from the map.
+     */
+    private fun showFavoriteDialog(existing: Favorite?, sheet: FavoritesSheet) {
+        AddFavoriteDialog.show(
+            context = this,
+            existing = existing,
+            myPosition = currentPosition(),
+            mapCentre = mapCentre(),
+            onSave = { input -> saveFavorite(existing, input, sheet) },
+            onPickOnMap = { name, description, kind, startAt ->
+                launchPlacePicker(getString(R.string.picker_title), name, startAt) { at, pickedName ->
+                    saveFavorite(
+                        existing,
+                        FavoriteInput(name.ifEmpty { pickedName }, description, kind, at),
+                        sheet,
+                    )
+                }
+            },
+        )
     }
 
     override fun onDeleteFavorite(sheet: FavoritesSheet, fav: Favorite) {
@@ -1522,6 +1643,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         private const val PLACE_MIN_MOVE_M = 10.0
         private const val FADE_MS = 200L
         private const val RIDING_MIN_RECHECK_MS = 100L
+        /** Fold / unfold of the statistics card. */
+        private const val HUD_FOLD_MS = 220L
+
         private const val RIDING_SPEED_STALE_MS = 5_000L
         private const val NIGHT_CHECK_SLACK_MS = 60_000L
 

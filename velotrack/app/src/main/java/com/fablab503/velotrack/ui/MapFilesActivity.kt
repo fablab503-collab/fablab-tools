@@ -174,8 +174,6 @@ class MapFilesActivity : AppCompatActivity() {
                 getString(
                     R.string.map_data_band_line,
                     bandLabel(band.index),
-                    band.minZoom,
-                    band.maxZoom,
                     Format.bytes(sizes.getOrElse(band.index) { 0L }),
                 )
             }
@@ -192,8 +190,6 @@ class MapFilesActivity : AppCompatActivity() {
         row.subtitle.text = getString(
             R.string.map_region_subtitle,
             bandLabel(band.index),
-            band.minZoom,
-            band.maxZoom,
             Format.bytes(region.bytes),
             Format.date(region.createdAt),
         )
