@@ -117,9 +117,21 @@ templates and sandbox workarounds. This skill adds the product and process knowl
   to 1024x500) and `sips --cropToHeightWidth 2160 1080` for phone screenshots (Play rejects
   aspect ratios above 2:1; the emulator's 1080x2424 is 2.24:1).
 - Texts, privacy policy and the console checklist live in `velotrack/store/` and
-  `velotrack/PRIVACY.md`; the console forms (content rating, data safety, foreground-service
-  declaration with a screen recording, 12-tester closed test for new personal accounts) cannot be
-  scripted — the user or Claude in Chrome must do them.
+  `velotrack/PRIVACY.md`. The console forms were driven end to end with Claude in Chrome
+  (2026-09-08). Lessons: direct URLs work for `app-content/<page>`, `main-store-listing`,
+  `store-settings`, `tracks/internal-testing`, `closed-testing`, `publishing`; the side-nav is
+  collapsible and unreliable. `form_input` does not trigger the console's (Angular) validation
+  and can silently fill hidden duplicate inputs — click + type + Tab for anything that must
+  validate, and reload the page if a hidden field goes "invalid". Release notes must keep the
+  `<en-GB> … </en-GB>` tags. Graphics: `Add assets` opens an asset library; upload through the
+  hidden `input[type=file]` (find it after clicking, ref appears as a file button), then hover the
+  asset row → arrow → **Add**. Bundles > 10 MB cannot go through the extension's file_upload:
+  push the .aab to a temporary branch, `fetch()` it in-page from raw.githubusercontent.com
+  (CORS `*`; loopback servers are blocked by Chrome's private-network rule), build a `File`, set
+  `input.files` via `DataTransfer`, dispatch `change`, then delete the branch. The FGS
+  declaration accepts a GitHub blob URL of an .mp4 as the demo video. New personal accounts: setup
+  → internal test → closed test (all countries + tester list) → "Send 15 changes for review" only
+  unlocks after the closed-test release is saved; production needs 12 testers for 14 days.
 
 ## Where things are
 
