@@ -73,6 +73,15 @@ android {
     }
 }
 
+// Name every test in the CI log. Without this a green build only proves the task ran, not which
+// tests ran, and a test that silently stops being discovered looks exactly like a passing one.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
