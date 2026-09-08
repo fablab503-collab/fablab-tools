@@ -20,6 +20,19 @@ package `com.fablab503.velotrack`):
   internal and the closed Alpha track show release 26 as "Available on Google Play", full roll-out.
   Nothing is pending in Publishing overview.
 
+**Testers join through a Google Group (set up 8 September 2026).** Google locks open testing until
+production access exists, and a plain internal or closed test link only works for accounts on a list,
+so the closed Alpha track now takes its testers from the group
+`velotrack-testers@googlegroups.com` (owner fablab503@gmail.com). Anyone who joins the group is a
+tester and counts toward the twelve. Share two links, in this order:
+
+1. Join the group: https://groups.google.com/g/velotrack-testers
+2. Then install from the store page: https://play.google.com/store/apps/details?id=com.fablab503.velotrack
+
+The switch to group-managed testers was sent to Google for review the same day. Check the group's
+Settings -> "Who can join group" reads "Anyone on the web can join"; if it still says "Invited users
+only", change it there, or people will have to be approved one by one.
+
 Still to do, by the account owner:
 
 1. Recruit at least 12 testers, add their Google e-mails to the "VeloTrack testers" list
