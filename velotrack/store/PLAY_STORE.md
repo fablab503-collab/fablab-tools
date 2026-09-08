@@ -84,27 +84,35 @@ submitted from a script.
 Every push to `main` produces a new `.aab` with a higher versionCode. Upload it to the same track
 and roll out; the Play Console keeps the store listing.
 
-## Automated uploads to the internal test track
+## Automatic delivery to testers
 
-The build workflow already contains the upload step. It stays dormant until the repository secret
-`PLAY_SERVICE_ACCOUNT_JSON` exists; from then on every push to `main` that changes app code puts the
-new bundle straight onto the internal testing track, with the commit subject as the release note.
+The build workflow already does everything except hold the credential. Once the repository secret
+`PLAY_SERVICE_ACCOUNT_JSON` exists, every push to `main` that changes app code goes straight to the
+internal testing track, and to the closed Alpha track as well, with the commit subject as the
+release note. Internal testing needs no review, so an update reaches a tester's phone through
+Google Play within minutes; push as often as you like.
 
-Creating the key is the account owner's job, because it needs the Play Console and Google Cloud:
+Creating the key is the account owner's job, because it is a credential. Checked on 8 September
+2026: the old **Setup -> API access** page no longer exists in this console (both its direct URLs
+redirect to Home), so the flow is now:
 
-1. Play Console -> Setup -> API access -> link (or create) a Google Cloud project.
-2. In that project, create a service account. Google Cloud takes you to IAM; no Cloud role is
-   needed, so create it and come back.
-3. On the service account, create a key of type JSON and download it. Treat the file like a
-   password: anyone holding it can publish as you.
-4. Back in Play Console -> Users and permissions, invite the service account's e-mail address and
-   grant it, for this app only, "Release to testing tracks" (Release manager also works).
-5. Paste the whole JSON file into a new repository secret named `PLAY_SERVICE_ACCOUNT_JSON`
-   (GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret).
+1. Go to https://console.cloud.google.com, create or pick a project, and enable the
+   **Google Play Android Developer API** for it.
+2. In that project: **IAM & Admin -> Service accounts -> Create service account**. No Cloud role is
+   needed. Give it a name like `velotrack-ci`.
+3. On the new service account, **Keys -> Add key -> Create new key -> JSON**, and download it. Treat
+   the file like a password: anyone holding it can publish as you.
+4. Back in Play Console -> **Users and permissions -> Invite new users**, paste the service
+   account's e-mail address, and grant it, for VeloTrack only, **Release to testing tracks**.
+5. Store the JSON as the repository secret `PLAY_SERVICE_ACCOUNT_JSON` (GitHub -> Settings ->
+   Secrets and variables -> Actions -> New repository secret). From a terminal that is
+   `gh secret set PLAY_SERVICE_ACCOUNT_JSON < the-key.json`.
 
-The first upload through the API must follow at least one manual upload of the same package, which
-has already happened, so it will work immediately. Promoting a build from internal testing to the
-closed or production track stays a manual step in the Console.
+The API has already seen a manual upload of this package, which is the usual precondition, so the
+first automated upload will work. Promoting a build from testing to production stays manual.
+
+If the closed-track upload is ever skipped, its track id is not `alpha`; the build stays green and
+the run summary says so.
 
 ## About the "no debug symbols" warning
 
