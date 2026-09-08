@@ -92,21 +92,24 @@ internal testing track, and to the closed Alpha track as well, with the commit s
 release note. Internal testing needs no review, so an update reaches a tester's phone through
 Google Play within minutes; push as often as you like.
 
-Creating the key is the account owner's job, because it is a credential. Checked on 8 September
-2026: the old **Setup -> API access** page no longer exists in this console (both its direct URLs
-redirect to Home), so the flow is now:
+Done on 8 September 2026, checked in both consoles:
 
-1. Go to https://console.cloud.google.com, create or pick a project, and enable the
-   **Google Play Android Developer API** for it.
-2. In that project: **IAM & Admin -> Service accounts -> Create service account**. No Cloud role is
-   needed. Give it a name like `velotrack-ci`.
-3. On the new service account, **Keys -> Add key -> Create new key -> JSON**, and download it. Treat
-   the file like a password: anyone holding it can publish as you.
-4. Back in Play Console -> **Users and permissions -> Invite new users**, paste the service
-   account's e-mail address, and grant it, for VeloTrack only, **Release to testing tracks**.
-5. Store the JSON as the repository secret `PLAY_SERVICE_ACCOUNT_JSON` (GitHub -> Settings ->
-   Secrets and variables -> Actions -> New repository secret). From a terminal that is
-   `gh secret set PLAY_SERVICE_ACCOUNT_JSON < the-key.json`.
+- Google Cloud project `plenary-song-476520-i8` ("My First Project") has the **Google Play Android
+  Developer API enabled**.
+- Service account **`velotrack-ci@plenary-song-476520-i8.iam.gserviceaccount.com`** exists in that
+  project (no Cloud role; none is needed).
+- It is invited in Play Console -> Users and permissions with, for VeloTrack only, **Release apps to
+  testing tracks** plus the two read-only defaults.
+
+The one step left is the credential, which the account owner must create, because it is a password
+in a file:
+
+1. Open the service account's Keys tab:
+   https://console.cloud.google.com/iam-admin/serviceaccounts/details/117820474536330066715/keys?project=plenary-song-476520-i8
+2. **Add key -> Create new key -> JSON -> Create.** The browser downloads one `.json` file. Treat it
+   like a password: anyone holding it can publish as you.
+3. Store it as the repository secret `PLAY_SERVICE_ACCOUNT_JSON`. From a terminal:
+   `gh secret set PLAY_SERVICE_ACCOUNT_JSON < ~/Downloads/plenary-song-476520-i8-XXXX.json`
 
 The API has already seen a manual upload of this package, which is the usual precondition, so the
 first automated upload will work. Promoting a build from testing to production stays manual.
