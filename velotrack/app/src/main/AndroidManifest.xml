@@ -19,9 +19,20 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
 
+    <!--
+        Recording a ride needs GPS, but reviewing rides, importing and browsing offline maps and
+        exporting GPX do not. Requiring the hardware kept the app off every Chromebook, Wi-Fi-only
+        tablet and headset in the Play catalogue. GpsSource already treats a missing provider as
+        "no fix" rather than an error, and the status dot says so on screen.
+    -->
     <uses-feature
         android:name="android.hardware.location.gps"
-        android:required="true" />
+        android:required="false" />
+
+    <!-- Chromebooks and desktop-mode devices drive the app with a mouse or trackpad. -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
 
     <application
         android:name=".VeloTrackApp"
