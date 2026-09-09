@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VeloTrack</string>
+
+    <!-- Two short words beat a sentence: at 384 px a round screen clips anything longer. -->
+    <string name="wear_waiting_for_phone">No phone</string>
+    <string name="wear_searching">Searching for GPS</string>
+    <string name="wear_ready">Ready</string>
+    <string name="wear_recording">Recording</string>
+    <string name="wear_paused">Paused</string>
+    <string name="wear_auto_paused">Auto paused</string>
+
+    <string name="wear_start">Start</string>
+    <string name="wear_pause">Pause</string>
+    <string name="wear_resume">Resume</string>
+    <string name="wear_stop">Finish ride</string>
+
+    <string name="wear_no_value">–</string>
+    <string name="wear_separator">·</string>
+
+    <!-- Distance and its unit, e.g. "12.40 km". -->
+    <string name="wear_distance_value">%1$s %2$s</string>
+</resources>

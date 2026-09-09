@@ -105,6 +105,24 @@
             android:foregroundServiceType="dataSync"
             android:process=":download" />
 
+        <!--
+            Started by Play Services when a paired watch sends a button tap, so a ride can be begun
+            from the wrist while the phone is asleep. exported="true" is required: the caller is
+            Play Services, a different process. The Data Layer only delivers between apps that share
+            an application ID and a signing certificate, so nothing else on the device can reach it.
+        -->
+        <service
+            android:name=".wear.WearCommandService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/velotrack"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

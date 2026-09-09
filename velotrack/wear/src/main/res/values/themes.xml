@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Watches are OLED and worn outdoors: a black background costs almost no battery and stays
+        readable in sunlight. There is no light variant on purpose.
+    -->
+    <color name="wear_background">#FF000000</color>
+    <color name="wear_text">#FFFFFFFF</color>
+    <color name="wear_dim">#FFB0B8C4</color>
+    <color name="wear_stop">#FFFF8A80</color>
+
+    <style name="Theme.VeloTrackWear" parent="@android:style/Theme.DeviceDefault">
+        <item name="android:colorBackground">@color/wear_background</item>
+        <item name="android:windowBackground">@color/wear_background</item>
+    </style>
+</resources>

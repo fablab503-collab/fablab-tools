@@ -1,26 +1,30 @@
 plugins {
-    alias(libs.plugins.android.application) // built-in Kotlin (AGP 9); no org.jetbrains.kotlin.android
+    alias(libs.plugins.android.application)
 }
 
-// Signing: release builds are signed with the PKCS12 keystore named by KEYSTORE_FILE, using
-// KEYSTORE_PASSWORD and KEY_ALIAS from the environment; CI decodes it from a repository secret.
-// Without those variables the release APK falls back to the debug signature (fine for a local
-// sideload, but it will not install over a copy signed with the release key).
+// The watch app is a separate artifact under the same Play listing, not a library inside the phone
+// APK. Play routes it to watches by the `android.hardware.type.watch` feature in its manifest.
+//
+// The application ID and signing certificate must match the phone app exactly, or the Data Layer
+// silently refuses to deliver anything between them. That is why the debug build carries the same
+// `.debug` suffix the phone uses: a debug watch pairs with a debug phone, a release watch with a
+// release phone, and the two pairs never cross.
 val keystoreFile: File? = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
 val keystorePassword: String = System.getenv("KEYSTORE_PASSWORD") ?: ""
 val keystoreAlias: String = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "velotrack"
 val hasReleaseKey = keystoreFile?.exists() == true && keystorePassword.isNotEmpty()
 
-// versionCode comes from the GitHub Actions run number so every CI build is installable over the previous one.
 val ciRunNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
 
 android {
-    namespace = "com.fablab503.velotrack"
+    namespace = "com.fablab503.velotrack.wear"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.fablab503.velotrack"
-        minSdk = 26
+        // Wear OS 3. Earlier watches run a different, much older platform that this UI does not
+        // target, and they are a vanishing share of the installed base.
+        minSdk = 30
         targetSdk = 36
         versionCode = ciRunNumber
         versionName = "1.0.$ciRunNumber"
@@ -32,7 +36,7 @@ android {
                 storeFile = keystoreFile!!
                 storePassword = keystorePassword
                 keyAlias = keystoreAlias
-                keyPassword = keystorePassword // PKCS12: key password must equal store password
+                keyPassword = keystorePassword
                 storeType = "pkcs12"
                 enableV1Signing = false
                 enableV2Signing = true
@@ -43,9 +47,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // No shrinking here. The watch app is a few hundred kilobytes of layout and one
+            // activity; R8 would buy nothing and could strip the Data Layer callbacks.
+            isMinifyEnabled = false
             signingConfig = if (hasReleaseKey) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
         debug {
@@ -60,21 +64,12 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
-    }
-
-    packaging {
-        // The glyph PBF files are already compressed; keep them stored to speed up asset reads.
-        resources.excludes += setOf("META-INF/*.version", "META-INF/LICENSE*", "META-INF/NOTICE*")
-    }
-
-    testOptions {
-        unitTests.isReturnDefaultValues = true
+        viewBinding = false
     }
 }
 
-// Name every test in the CI log. Without this a green build only proves the task ran, not which
-// tests ran, and a test that silently stops being discovered looks exactly like a passing one.
+// Same reason as the phone module: a green build otherwise proves only that the task ran, not
+// which tests ran, and a test that stops being discovered looks exactly like a passing one.
 tasks.withType<Test>().configureEach {
     testLogging {
         events("passed", "skipped", "failed")
@@ -85,20 +80,13 @@ tasks.withType<Test>().configureEach {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.lifecycle.service)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.maplibre.opengl)
-    implementation(libs.okhttp)
-    // Mirrors the ride onto a paired Wear OS watch. Adds no permission: the Data Layer talks to
-    // Play Services on the same device, never to the network.
     implementation(libs.play.services.wearable)
+    implementation(libs.kotlinx.coroutines.play.services)
+    // BoxInsetLayout: keeps content inside the square that fits within a round screen.
+    implementation(libs.androidx.wear)
     implementation(project(":sync"))
 
     testImplementation(libs.junit)
-    testImplementation(libs.json)
 }
