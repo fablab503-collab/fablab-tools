@@ -170,7 +170,10 @@ function bandLayers(index, lang, flavorName, flavor) {
   const source = `band${index}`;
   const suffix = `_b${index}`;
   let out = layers(source, flavor, { lang });
-  out = out.filter((l) => l.type !== "background" && !l.id.startsWith("pois"));
+  // POIs are kept. The tiles already carry the `pois` layer (name, kind, kind_detail, elevation)
+  // and the bundled v4 sprite sheet already has the icons for it, so dropping them threw away
+  // detail that was downloaded and paid for: cafes, water, bike shops, viewpoints, stations.
+  out = out.filter((l) => l.type !== "background");
   let sawEarth = false;
   for (const l of out) {
     if (l.id === "earth") {
