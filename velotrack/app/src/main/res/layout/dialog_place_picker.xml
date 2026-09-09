@@ -58,11 +58,21 @@
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- The search hit. Styled as a row you can press, because tapping the answer is what a rider
+         reaches for first; the dialog button does the same thing further down. -->
     <TextView
         android:id="@+id/addressResult"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackground"
+        android:focusable="true"
+        android:minHeight="48dp"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
         android:textAppearance="?attr/textAppearanceBodySmall"
         android:textColor="?attr/colorPrimary"
         android:visibility="gone"

@@ -1523,12 +1523,23 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             .create()
 
         var searching = false
+
+        /** Drops a previous hit so a later failed search cannot leave the old one tappable. */
+        fun clearFoundAddress() {
+            foundAt = null
+            foundName = null
+            b.addressResult.setOnClickListener(null)
+            b.addressResult.isClickable = false
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setText(R.string.fav_my_position)
+        }
+
         fun runAddressSearch() {
             val query = b.addressInput.text?.toString()?.trim().orEmpty()
             if (query.isEmpty() || searching) return
             searching = true
             b.addressResult.isVisible = true
             b.addressResult.text = getString(R.string.picker_search_searching)
+            clearFoundAddress()
             lifecycleScope.launch {
                 val results = withContext(Dispatchers.IO) {
                     runCatching { Geocoder.search(placeSearchClient, query) }.getOrNull()
@@ -1537,13 +1548,32 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 if (isFinishing || isDestroyed) return@launch
                 val first = results?.firstOrNull()
                 when {
-                    results == null -> b.addressResult.setText(R.string.picker_search_failed)
-                    first == null -> b.addressResult.setText(R.string.picker_search_no_results)
+                    results == null -> {
+                        b.addressResult.setText(R.string.picker_search_failed)
+                        clearFoundAddress()
+                    }
+                    first == null -> {
+                        b.addressResult.setText(R.string.picker_search_no_results)
+                        clearFoundAddress()
+                    }
                     else -> {
                         foundAt = first.at
                         foundName = first.name
                         b.addressResult.text = getString(R.string.fav_address_found, first.name)
-                        // The button now saves the address, not the rider's position.
+                        // Tapping the result is the obvious thing to do once it appears, so make it
+                        // work: it saves the place there and then. The button below still does the
+                        // same, but a rider should not have to scroll past the answer to find it.
+                        b.addressResult.isClickable = true
+                        b.addressResult.setOnClickListener {
+                            val typed = b.nameInput.text?.toString()?.trim().orEmpty()
+                            saveFixedFavorite(
+                                kind,
+                                typed.ifEmpty { defaultName },
+                                first.at,
+                                customEmoji ?: chipEmoji,
+                            )
+                            dialog.dismiss()
+                        }
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setText(R.string.fav_use_address)
                     }
                 }
