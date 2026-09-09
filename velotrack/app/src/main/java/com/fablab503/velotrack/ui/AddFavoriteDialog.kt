@@ -1,7 +1,10 @@
 package com.fablab503.velotrack.ui
 
 import android.content.Context
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
+import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import com.fablab503.velotrack.R
@@ -17,6 +20,8 @@ data class FavoriteInput(
     val description: String,
     val kind: FavoriteKind,
     val location: LatLon,
+    /** Marker emoji, or null to keep drawing [kind]'s own icon on the map. */
+    val emoji: String? = null,
 )
 
 /**
@@ -40,7 +45,7 @@ object AddFavoriteDialog {
         myPosition: LatLon?,
         mapCentre: LatLon?,
         onSave: (FavoriteInput) -> Unit,
-        onPickOnMap: (name: String, description: String, kind: FavoriteKind, startAt: LatLon?) -> Unit,
+        onPickOnMap: (name: String, description: String, kind: FavoriteKind, emoji: String?, startAt: LatLon?) -> Unit,
     ) {
         val b = DialogAddFavoriteBinding.inflate(LayoutInflater.from(context))
         val fixedKind = existing != null && (existing.kind == FavoriteKind.HOME || existing.kind == FavoriteKind.WORK)
@@ -62,6 +67,33 @@ object AddFavoriteDialog {
                 else -> R.id.chipPerson
             }
         )
+
+        // The custom field only ever holds an emoji that is NOT one of the quick-pick chips --
+        // otherwise editing a favourite whose emoji is a suggestion would show it twice.
+        var customEmoji = existing?.emoji?.takeIf { it !in EmojiPicker.SUGGESTIONS }
+        var chipEmoji = existing?.emoji?.takeIf { it in EmojiPicker.SUGGESTIONS }
+        b.emojiCustomInput.setText(customEmoji.orEmpty())
+        EmojiPicker.populate(b.emojiGroup, chipEmoji) { picked ->
+            chipEmoji = picked
+            if (picked != null) {
+                // Picking a suggestion clears any custom text so the two cannot disagree.
+                customEmoji = null
+                b.emojiCustomInput.setText("")
+            }
+        }
+        b.emojiCustomInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                val typed = s?.toString()?.trim().orEmpty()
+                customEmoji = typed.ifEmpty { null }
+                if (typed.isNotEmpty() && b.emojiGroup.checkedChipId != View.NO_ID) {
+                    // Typing a custom emoji clears the chip selection the same way round.
+                    chipEmoji = null
+                    b.emojiGroup.clearCheck()
+                }
+            }
+        })
 
         b.btnLocHere.isEnabled = myPosition != null
         when {
@@ -98,11 +130,12 @@ object AddFavoriteDialog {
                     else -> FavoriteKind.PERSON
                 }
                 val description = b.descriptionInput.text?.toString()?.trim() ?: ""
+                val emoji = customEmoji ?: chipEmoji
 
                 if (b.locationGroup.checkedButtonId == R.id.btnLocCentre) {
                     // Hand over to the map picker; the caller saves when a point comes back.
                     dialog.dismiss()
-                    onPickOnMap(name, description, kind, existing?.latLon ?: mapCentre ?: myPosition)
+                    onPickOnMap(name, description, kind, emoji, existing?.latLon ?: mapCentre ?: myPosition)
                     return@setOnClickListener
                 }
 
@@ -117,7 +150,7 @@ object AddFavoriteDialog {
                     return@setOnClickListener
                 }
 
-                onSave(FavoriteInput(name, description, kind, location))
+                onSave(FavoriteInput(name, description, kind, location, emoji))
                 dialog.dismiss()
             }
         }

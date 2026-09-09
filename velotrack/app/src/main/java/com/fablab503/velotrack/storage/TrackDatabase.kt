@@ -35,11 +35,17 @@ class TrackDatabase private constructor(context: Context) :
             // Version 3: favourite places (Home, Work and custom favourites).
             db.execSQL(CREATE_FAVORITES)
         }
+        if (oldVersion == 3) {
+            // Version 4: an optional emoji to draw on the map marker instead of the kind's icon.
+            // Only needed when favorites already existed without it -- an upgrade from before
+            // version 3 just created the table fresh, above, already including this column.
+            db.execSQL("ALTER TABLE favorites ADD COLUMN emoji TEXT")
+        }
     }
 
     companion object {
         const val DB_NAME = "velotrack.db"
-        const val DB_VERSION = 3
+        const val DB_VERSION = 4
 
         @Volatile
         private var instance: TrackDatabase? = null
@@ -132,7 +138,8 @@ class TrackDatabase private constructor(context: Context) :
                 kind TEXT NOT NULL,
                 lat REAL NOT NULL,
                 lon REAL NOT NULL,
-                created_at INTEGER NOT NULL
+                created_at INTEGER NOT NULL,
+                emoji TEXT
             )
         """
     }

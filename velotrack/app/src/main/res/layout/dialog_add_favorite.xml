@@ -110,6 +110,46 @@
         </com.google.android.material.chip.ChipGroup>
 
         <TextView
+            android:id="@+id/emojiLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/screen_margin"
+            android:text="@string/fav_emoji_label"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <!-- Picking one of these sets the marker's emoji; picking none keeps the kind's own icon.
+             Chip text is the emoji itself, large, so the row doubles as its own preview. -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/emojiGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:chipSpacingHorizontal="4dp"
+            app:selectionRequired="false"
+            app:singleLine="false"
+            app:singleSelection="true" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/emojiCustomLayout"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:hint="@string/fav_emoji_custom_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/emojiCustomInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="text"
+                android:maxLength="8"
+                android:maxLines="1"
+                tools:text="🚲" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/screen_margin"

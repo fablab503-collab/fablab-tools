@@ -16,6 +16,7 @@ import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.geo.Simplify
 import com.fablab503.velotrack.geo.ZoomController
 import com.fablab503.velotrack.model.CameraMode
+import com.fablab503.velotrack.model.Favorite
 import com.fablab503.velotrack.model.FavoriteKind
 import com.fablab503.velotrack.model.GpsFix
 import com.fablab503.velotrack.model.LatLon
@@ -117,6 +118,8 @@ class MapController(
     private var guidanceSource: GeoJsonSource? = null
     private var targetLayer: SymbolLayer? = null
     private var guidanceLayer: LineLayer? = null
+    private var favoritesSource: GeoJsonSource? = null
+    private var favoritesLayer: SymbolLayer? = null
 
     // Theme colours (ARGB). Defaults match the pre-Material-3 look; MainActivity overrides them from the theme.
     private var trackColor: Int = DEFAULT_TRACK_COLOR
@@ -134,6 +137,11 @@ class MapController(
     private var targetKind: FavoriteKind? = null
     private var guidanceFrom: LatLon? = null
     private var guidanceTo: LatLon? = null
+    private var favoritePoints: List<Favorite> = emptyList()
+
+    /** Marker images already added to the current style, by [favoriteImageName]; cleared on every
+     *  style (re)load since [Style.addImage] does not survive one. */
+    private val favoriteImagesAdded = HashSet<String>()
 
     // Camera bookkeeping.
     private var cameraApplied = false
@@ -439,6 +447,17 @@ class MapController(
     }
 
     /**
+     * Draws every saved place (Home, Work, every favourite) as a small marker on the map, always
+     * on -- not only while actively guiding to one. Each marker uses the favourite's own [Favorite.emoji]
+     * when it has one, else [FavoriteKind]'s own glyph, same as [setTarget]'s highlighted pin. Call
+     * this after any add, edit or delete; it replaces the whole set, it does not merge into it.
+     */
+    fun setFavorites(favorites: List<Favorite>) {
+        favoritePoints = favorites
+        pushFavorites()
+    }
+
+    /**
      * Draws the dashed straight guidance line between [from] and [to] (route colour, 3 px, dash 2/2);
      * either null clears the line. Kept across style reloads.
      */
@@ -622,12 +641,14 @@ class MapController(
         val puck = GeoJsonSource(SOURCE_PUCK, puckCollection())
         val guidance = GeoJsonSource(SOURCE_GUIDANCE, guidanceCollection())
         val target = GeoJsonSource(SOURCE_TARGET, targetCollection())
+        val favoritesGeo = GeoJsonSource(SOURCE_FAVORITES, favoritesCollection())
         style.addSource(route)
         style.addSource(history)
         style.addSource(live)
         style.addSource(puck)
         style.addSource(guidance)
         style.addSource(target)
+        style.addSource(favoritesGeo)
 
         // Added in order: route below the track lines, then the guidance line, puck, target marker on top.
         val routeLine = LineLayer(LAYER_ROUTE, SOURCE_ROUTE).withProperties(
@@ -660,6 +681,20 @@ class MapController(
         style.addLayer(liveLine)
         style.addLayer(guidanceLine)
 
+        // Favourite markers first (so the puck and the highlighted guidance pin, added next, sit
+        // on top of them): the shared target-<kind> images cover every favourite with no emoji,
+        // and each one that has an emoji gets its own tiny bitmap.
+        addTargetImages(style)
+        for (fav in favoritePoints) ensureFavoriteImage(style, fav)
+        val favoritesSymbol = SymbolLayer(LAYER_FAVORITES, SOURCE_FAVORITES).withProperties(
+            iconImage(Expression.get(PROPERTY_IMAGE)),
+            iconAnchor(Property.ICON_ANCHOR_CENTER),
+            iconAllowOverlap(true),
+            iconIgnorePlacement(true),
+            iconSize(1f),
+        )
+        style.addLayer(favoritesSymbol)
+
         style.addImage(IMAGE_PUCK, drawPuckBitmap())
         val puckSymbol = SymbolLayer(LAYER_PUCK, SOURCE_PUCK).withProperties(
             iconImage(IMAGE_PUCK),
@@ -671,7 +706,6 @@ class MapController(
         )
         style.addLayer(puckSymbol)
 
-        addTargetImages(style)
         val targetSymbol = SymbolLayer(LAYER_TARGET, SOURCE_TARGET).withProperties(
             iconImage(targetImageName(targetKind)),
             iconAnchor(Property.ICON_ANCHOR_BOTTOM),
@@ -688,12 +722,14 @@ class MapController(
         puckSource = puck
         guidanceSource = guidance
         targetSource = target
+        favoritesSource = favoritesGeo
         routeLayer = routeLine
         historyLayer = historyLine
         liveLayer = liveLine
         puckLayer = puckSymbol
         guidanceLayer = guidanceLine
         targetLayer = targetSymbol
+        favoritesLayer = favoritesSymbol
     }
 
     private fun clearStyleRefs() {
@@ -710,6 +746,9 @@ class MapController(
         puckLayer = null
         guidanceLayer = null
         targetLayer = null
+        favoritesSource = null
+        favoritesLayer = null
+        favoriteImagesAdded.clear()
     }
 
     private fun pushRoute() {
@@ -737,6 +776,24 @@ class MapController(
         if (!styleReady) return
         targetLayer?.setProperties(iconImage(targetImageName(targetKind)))
         targetSource?.setGeoJson(targetCollection())
+    }
+
+    private fun pushFavorites() {
+        if (!styleReady) return
+        val s = style ?: return
+        for (fav in favoritePoints) ensureFavoriteImage(s, fav)
+        favoritesSource?.setGeoJson(favoritesCollection())
+    }
+
+    /** One point Feature per favourite, carrying [PROPERTY_IMAGE] for the layer's data-driven icon. */
+    private fun favoritesCollection(): FeatureCollection {
+        if (favoritePoints.isEmpty()) return FeatureCollection.fromFeatures(emptyList<Feature>())
+        val features = favoritePoints.map { fav ->
+            Feature.fromGeometry(Point.fromLngLat(fav.lon, fav.lat)).apply {
+                addStringProperty(PROPERTY_IMAGE, favoriteImageName(fav))
+            }
+        }
+        return FeatureCollection.fromFeatures(features)
     }
 
     private fun pushGuidance() {
@@ -886,21 +943,98 @@ class MapController(
         // Stroke is centred on the radius, so pull it in by half its width to keep the outer edge at 16dp.
         canvas.drawCircle(cx, cy, radius - ringWidth / 2f, ring)
 
+        drawMarkerGlyph(canvas, cx, cy, dp, TARGET_GLYPH_DP, kind, emoji = null, tint = Color.WHITE)
+        return bitmap
+    }
+
+    // ---------------------------------------------------------------- favourite markers (all, always on)
+
+    /**
+     * Image id for [fav]'s marker: the emoji itself when it has one (each distinct emoji only
+     * needs one bitmap, however many favourites share it), else the same `target-<kind key>`
+     * image [drawTargetBitmap] already draws and [addTargetImages] already keeps current.
+     */
+    private fun favoriteImageName(fav: Favorite): String =
+        fav.emoji?.let { IMAGE_FAVORITE_EMOJI_PREFIX + it } ?: targetImageName(fav.kind)
+
+    /** Adds [fav]'s marker image the first time it is needed; a no-op for the shared kind images
+     *  (already added by [addTargetImages]) and for an emoji already drawn for an earlier favourite. */
+    private fun ensureFavoriteImage(style: Style, fav: Favorite) {
+        val emoji = fav.emoji ?: return
+        val name = favoriteImageName(fav)
+        if (!favoriteImagesAdded.add(name)) return
+        style.addImage(name, drawFavoriteBitmap(emoji))
+    }
+
+    /**
+     * Small marker for a favourite carrying its own emoji: a 24 dp disc in [colorSurfaceContainer]
+     * -- a neutral bookmark colour, deliberately not [routeColor], so a rider can tell "a saved
+     * place" apart from "the place I am currently being guided to" ([drawTargetBitmap]'s bigger,
+     * coloured, tailed pin) even when they are the same spot -- with a thin outline and the emoji
+     * centred, anchored at its own centre rather than a tail-to-point bottom anchor.
+     */
+    private fun drawFavoriteBitmap(emoji: String): Bitmap {
+        val dp = context.resources.displayMetrics.density
+        val size = (FAVORITE_DISC_DP * dp).roundToInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val radius = FAVORITE_DISC_DP * dp / 2f
+        val cx = size / 2f
+        val cy = size / 2f
+
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = FAVORITE_MARKER_FILL
+        }
+        val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = TARGET_RING_WIDTH_DP * dp
+            color = FAVORITE_MARKER_RING
+        }
+        canvas.drawCircle(cx, cy, radius, fill)
+        canvas.drawCircle(cx, cy, radius - ring.strokeWidth / 2f, ring)
+        drawMarkerGlyph(canvas, cx, cy, dp, FAVORITE_GLYPH_DP, kind = null, emoji = emoji, tint = FAVORITE_MARKER_RING)
+        return bitmap
+    }
+
+    /**
+     * Centres either [emoji] (as text, colour emoji render as-is regardless of [tint]) or, when
+     * null, [kind]'s Material glyph tinted [tint], in a [sizeDp] box at ([cx], [cy]). Used by both
+     * the highlighted guidance pin and the small always-on favourite markers so the two stay
+     * visually related.
+     */
+    private fun drawMarkerGlyph(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        dp: Float,
+        sizeDp: Float,
+        kind: FavoriteKind?,
+        emoji: String?,
+        tint: Int,
+    ) {
+        val sizePx = sizeDp * dp
+        if (emoji != null) {
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = sizePx
+                textAlign = Paint.Align.CENTER
+            }
+            val baseline = cy - (paint.ascent() + paint.descent()) / 2f
+            canvas.drawText(emoji, cx, baseline, paint)
+            return
+        }
         val glyph = try {
-            AppCompatResources.getDrawable(context, glyphRes(kind))
+            AppCompatResources.getDrawable(context, glyphRes(kind ?: FavoriteKind.PLACE))
         } catch (e: Resources.NotFoundException) {
             null
-        }
-        if (glyph != null) {
-            val d = glyph.mutate()
-            d.setTint(Color.WHITE)
-            val glyphPx = (TARGET_GLYPH_DP * dp).roundToInt().coerceAtLeast(1)
-            val left = (cx - glyphPx / 2f).roundToInt()
-            val top = (cy - glyphPx / 2f).roundToInt()
-            d.setBounds(left, top, left + glyphPx, top + glyphPx)
-            d.draw(canvas)
-        }
-        return bitmap
+        } ?: return
+        val d = glyph.mutate()
+        d.setTint(tint)
+        val glyphPx = sizePx.roundToInt().coerceAtLeast(1)
+        val left = (cx - glyphPx / 2f).roundToInt()
+        val top = (cy - glyphPx / 2f).roundToInt()
+        d.setBounds(left, top, left + glyphPx, top + glyphPx)
+        d.draw(canvas)
     }
 
     companion object {
@@ -932,11 +1066,16 @@ class MapController(
         const val LAYER_GUIDANCE = "guidance-line"
         /** Marker image ids are `target-<kind key>`, e.g. `target-home`. */
         const val IMAGE_TARGET_PREFIX = "target-"
+        const val SOURCE_FAVORITES = "favorites"
+        const val LAYER_FAVORITES = "favorites-layer"
+        /** One emoji marker image is shared by every favourite using that emoji. */
+        const val IMAGE_FAVORITE_EMOJI_PREFIX = "favorite-emoji-"
 
         private const val TAG = "VeloMap"
         private const val DEBUG_PLACE = false
         private const val PROPERTY_NAME = "name"
         private const val PROPERTY_KIND = "kind"
+        private const val PROPERTY_IMAGE = "image"
         private const val SOURCE_LAYER_POIS = "pois"
         private const val PLACE_QUERY_RADIUS_PX = 18f
         private const val GUIDANCE_LINE_WIDTH = 3f
@@ -945,6 +1084,11 @@ class MapController(
         private const val TARGET_RING_WIDTH_DP = 2f
         private const val TARGET_GLYPH_DP = 18f
         private const val TARGET_TAIL_HALF_WIDTH_DP = 5f
+        /** Smaller and plainer than the guidance target pin: a bookmark, not "go here now". */
+        private const val FAVORITE_DISC_DP = 22f
+        private const val FAVORITE_GLYPH_DP = 13f
+        private const val FAVORITE_MARKER_FILL = Color.WHITE
+        private const val FAVORITE_MARKER_RING = Color.DKGRAY
 
         /** Bands searched by [placeNameAt], most detailed first (band 0 is the low-zoom overview). */
         private val PLACE_BANDS = listOf(3, 2, 1)

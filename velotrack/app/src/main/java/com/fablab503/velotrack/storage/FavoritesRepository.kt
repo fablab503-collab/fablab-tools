@@ -38,31 +38,41 @@ class FavoritesRepository(private val db: TrackDatabase) {
         ).use { c -> if (c.moveToFirst()) read(c) else null }
 
     /** Replaces any existing row of [kind] (HOME / WORK) with a fresh one; description is ''. */
-    fun upsertFixed(kind: FavoriteKind, name: String, lat: Double, lon: Double): Favorite {
+    fun upsertFixed(kind: FavoriteKind, name: String, lat: Double, lon: Double, emoji: String? = null): Favorite {
         val w = db.writableDatabase
         val createdAt = System.currentTimeMillis()
         w.beginTransaction()
         try {
+            // A rider re-setting Home/Work without touching the emoji field keeps whatever emoji
+            // was there before, rather than losing it to the delete-then-insert below.
+            val kept = emoji ?: getByKind(kind)?.emoji
             w.delete(TrackDatabase.TABLE_FAVORITES, "kind = ?", arrayOf(kind.key))
-            val id = w.insertOrThrow(TrackDatabase.TABLE_FAVORITES, null, values(name, "", kind, lat, lon, createdAt))
+            val id = w.insertOrThrow(TrackDatabase.TABLE_FAVORITES, null, values(name, "", kind, lat, lon, createdAt, kept))
             w.setTransactionSuccessful()
-            return Favorite(id, name, "", kind, lat, lon, createdAt)
+            return Favorite(id, name, "", kind, lat, lon, createdAt, kept)
         } finally {
             w.endTransaction()
         }
     }
 
-    fun add(name: String, description: String, kind: FavoriteKind, lat: Double, lon: Double): Favorite {
+    fun add(
+        name: String,
+        description: String,
+        kind: FavoriteKind,
+        lat: Double,
+        lon: Double,
+        emoji: String? = null,
+    ): Favorite {
         val createdAt = System.currentTimeMillis()
         val id = db.writableDatabase.insertOrThrow(
             TrackDatabase.TABLE_FAVORITES,
             null,
-            values(name, description, kind, lat, lon, createdAt),
+            values(name, description, kind, lat, lon, createdAt, emoji),
         )
-        return Favorite(id, name, description, kind, lat, lon, createdAt)
+        return Favorite(id, name, description, kind, lat, lon, createdAt, emoji)
     }
 
-    /** Writes name, description, kind and position of [fav]; `created_at` is left unchanged. */
+    /** Writes name, description, kind, position and emoji of [fav]; `created_at` is left unchanged. */
     fun update(fav: Favorite) {
         val values = ContentValues().apply {
             put("name", fav.name)
@@ -70,6 +80,7 @@ class FavoritesRepository(private val db: TrackDatabase) {
             put("kind", fav.kind.key)
             put("lat", fav.lat)
             put("lon", fav.lon)
+            put("emoji", fav.emoji)
         }
         db.writableDatabase.update(TrackDatabase.TABLE_FAVORITES, values, "id = ?", arrayOf(fav.id.toString()))
     }
@@ -85,6 +96,7 @@ class FavoritesRepository(private val db: TrackDatabase) {
         lat: Double,
         lon: Double,
         createdAt: Long,
+        emoji: String?,
     ): ContentValues = ContentValues().apply {
         put("name", name)
         put("description", description)
@@ -92,6 +104,7 @@ class FavoritesRepository(private val db: TrackDatabase) {
         put("lat", lat)
         put("lon", lon)
         put("created_at", createdAt)
+        put("emoji", emoji)
     }
 
     private fun read(c: Cursor): Favorite = Favorite(
@@ -102,10 +115,11 @@ class FavoritesRepository(private val db: TrackDatabase) {
         lat = c.getDouble(4),
         lon = c.getDouble(5),
         createdAt = c.getLong(6),
+        emoji = c.getString(7)?.takeIf { it.isNotBlank() },
     )
 
     private companion object {
         const val SQL_SELECT =
-            "SELECT id, name, description, kind, lat, lon, created_at FROM ${TrackDatabase.TABLE_FAVORITES}"
+            "SELECT id, name, description, kind, lat, lon, created_at, emoji FROM ${TrackDatabase.TABLE_FAVORITES}"
     }
 }

@@ -96,6 +96,8 @@
     <string name="fav_description_hint">Description (optional)</string>
     <string name="fav_name_required">Enter a name</string>
     <string name="fav_kind_label">Kind</string>
+    <string name="fav_emoji_label">Icon on the map</string>
+    <string name="fav_emoji_custom_hint">Or type any emoji</string>
     <string name="fav_location_label">Location</string>
     <string name="fav_location_keep">Keep</string>
     <string name="fav_my_position">My position</string>

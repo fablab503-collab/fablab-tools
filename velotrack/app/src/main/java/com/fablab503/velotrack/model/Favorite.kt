@@ -12,6 +12,8 @@ data class Favorite(
     val lat: Double,
     val lon: Double,
     val createdAt: Long,
+    /** Rider-chosen emoji for the map marker, or null to use [kind]'s own icon. */
+    val emoji: String? = null,
 ) {
     val latLon: LatLon get() = LatLon(lat, lon)
 }

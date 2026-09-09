@@ -23,6 +23,8 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.text.format.DateFormat
 import android.view.HapticFeedbackConstants
 import android.view.View
@@ -306,6 +308,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             mapController.onMapReady(m)
             applyMapThemeColors()
             showPendingTrack()
+            refreshFavoriteMarkers()
         }
 
         setupButtons()
@@ -1470,6 +1473,32 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         b.bodyText.text = getString(R.string.fav_set_body, defaultName)
         b.nameInput.setText(defaultName)
         b.nameInput.setSelection(defaultName.length)
+
+        // Leaving both emoji fields untouched means null here, and FavoritesRepository.upsertFixed
+        // then keeps whatever emoji this kind already had -- so "didn't touch the icon" correctly
+        // means "no change" rather than "clear it back to the kind's own icon."
+        var customEmoji: String? = null
+        var chipEmoji: String? = null
+        EmojiPicker.populate(b.emojiGroup, null) { picked ->
+            chipEmoji = picked
+            if (picked != null) {
+                customEmoji = null
+                b.emojiCustomInput.setText("")
+            }
+        }
+        b.emojiCustomInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                val typed = s?.toString()?.trim().orEmpty()
+                customEmoji = typed.ifEmpty { null }
+                if (typed.isNotEmpty() && b.emojiGroup.checkedChipId != View.NO_ID) {
+                    chipEmoji = null
+                    b.emojiGroup.clearCheck()
+                }
+            }
+        })
+
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.fav_set_title, defaultName))
             .setView(b.root)
@@ -1479,6 +1508,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         b.btnChooseOnMap.setOnClickListener {
             val typed = b.nameInput.text?.toString()?.trim().orEmpty()
             val label = typed.ifEmpty { defaultName }
+            val emoji = customEmoji ?: chipEmoji
             dialog.dismiss()
             lifecycleScope.launch {
                 // Start the picker where this place already is, so moving Home nudges the existing
@@ -1488,7 +1518,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 }?.latLon
                 if (isFinishing || isDestroyed) return@launch
                 launchPlacePicker(getString(R.string.fav_set_title, defaultName), label, existing) { at, name ->
-                    saveFixedFavorite(kind, name.ifEmpty { label }, at)
+                    saveFixedFavorite(kind, name.ifEmpty { label }, at, emoji)
                 }
             }
         }
@@ -1503,7 +1533,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                     toast(R.string.fav_no_position)
                     return@setOnClickListener
                 }
-                saveFixedFavorite(kind, enteredName(), pos)
+                saveFixedFavorite(kind, enteredName(), pos, customEmoji ?: chipEmoji)
                 dialog.dismiss()
             }
         }
@@ -1539,10 +1569,10 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
     }
 
-    private fun saveFixedFavorite(kind: FavoriteKind, name: String, at: LatLon) {
+    private fun saveFixedFavorite(kind: FavoriteKind, name: String, at: LatLon, emoji: String? = null) {
         lifecycleScope.launch {
             val saved = withContext(Dispatchers.IO) {
-                runCatching { favorites.upsertFixed(kind, name, at.lat, at.lon) }.getOrNull()
+                runCatching { favorites.upsertFixed(kind, name, at.lat, at.lon, emoji) }.getOrNull()
             }
             if (isFinishing || isDestroyed) return@launch
             if (saved == null) {
@@ -1552,6 +1582,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             Toast.makeText(this@MainActivity, getString(R.string.fav_saved, saved.name), Toast.LENGTH_SHORT).show()
             // Guidance to a place that just moved follows it.
             if (guidanceTarget?.kind == kind) startGuidance(saved)
+            refreshFavoriteMarkers()
         }
     }
 
@@ -1561,7 +1592,10 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             val saved = withContext(Dispatchers.IO) {
                 runCatching {
                     if (existing == null) {
-                        favorites.add(input.name, input.description, input.kind, input.location.lat, input.location.lon)
+                        favorites.add(
+                            input.name, input.description, input.kind,
+                            input.location.lat, input.location.lon, input.emoji,
+                        )
                     } else {
                         val updated = existing.copy(
                             name = input.name,
@@ -1569,6 +1603,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                             kind = input.kind,
                             lat = input.location.lat,
                             lon = input.location.lon,
+                            emoji = input.emoji,
                         )
                         favorites.update(updated)
                         updated
@@ -1582,6 +1617,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             }
             if (guidanceTarget?.id == saved.id) startGuidance(saved)
             if (sheet.isAdded) sheet.reload()
+            refreshFavoriteMarkers()
         }
     }
 
@@ -1592,6 +1628,16 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             if (guidanceTarget?.id == fav.id) stopGuidance()
             Toast.makeText(this@MainActivity, getString(R.string.fav_cleared, fav.name), Toast.LENGTH_SHORT).show()
             if (sheet != null && sheet.isAdded) sheet.reload()
+            refreshFavoriteMarkers()
+        }
+    }
+
+    /** Redraws every saved place's marker on the map; call after any add, edit or delete. */
+    private fun refreshFavoriteMarkers() {
+        lifecycleScope.launch {
+            val list = withContext(Dispatchers.IO) { runCatching { favorites.list() }.getOrDefault(emptyList()) }
+            if (isFinishing || isDestroyed) return@launch
+            mapController.setFavorites(list)
         }
     }
 
@@ -1628,11 +1674,11 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             myPosition = currentPosition(),
             mapCentre = mapCentre(),
             onSave = { input -> saveFavorite(existing, input, sheet) },
-            onPickOnMap = { name, description, kind, startAt ->
+            onPickOnMap = { name, description, kind, emoji, startAt ->
                 launchPlacePicker(getString(R.string.picker_title), name, startAt) { at, pickedName ->
                     saveFavorite(
                         existing,
-                        FavoriteInput(name.ifEmpty { pickedName }, description, kind, at),
+                        FavoriteInput(name.ifEmpty { pickedName }, description, kind, at, emoji),
                         sheet,
                     )
                 }

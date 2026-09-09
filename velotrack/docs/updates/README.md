@@ -17,6 +17,7 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
+| 45 | 9 Sep 2026 | Every saved place shows on the map; pick an emoji for its icon | [045-favorite-markers-and-emoji-icons.md](045-favorite-markers-and-emoji-icons.md) |
 | 44 | 9 Sep 2026 | Search an address for Home/Work/favourites; a weather chip by the clock | [044-address-search-and-weather.md](044-address-search-and-weather.md) |
 | 43 | 9 Sep 2026 | Download any of 195 countries, Simple/Detailed; a green/red GPS status dot | [043-country-download-and-gps-dot.md](043-country-download-and-gps-dot.md) |
 | 42 | 9 Sep 2026 | Download map no longer asks "my position or map centre" — it just uses your position | [042-remove-map-centre-download-choice.md](042-remove-map-centre-download-choice.md) |
