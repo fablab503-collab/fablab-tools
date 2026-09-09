@@ -257,7 +257,9 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             WearFormat.distance(state.stats.distanceM, imperial),
             WearFormat.distanceUnit(imperial),
         )
-        timeText.text = WearFormat.duration(state.stats.elapsedMs)
+        // Moving time, not elapsed: elapsed is wall-clock and keeps counting through a pause,
+        // which reads as a stuck app on a wrist. Moving time only accrues while RECORDING.
+        timeText.text = WearFormat.duration(state.stats.movingMs)
 
         statusText.setText(
             when (state.status) {
@@ -299,7 +301,8 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             WearFormat.distance(current.distanceM, imperial),
             WearFormat.distanceUnit(imperial),
         )
-        timeText.text = WearFormat.duration(current.elapsedMs)
+        // Same reason as the local path: the clock must stop when the ride is paused.
+        timeText.text = WearFormat.duration(current.movingMs)
         statusText.setText(
             when (current.status) {
                 WearSync.STATUS_RECORDING -> R.string.wear_recording
