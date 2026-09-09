@@ -1,6 +1,6 @@
 # Build 45 — every saved place shows on the map, with an emoji if you want one
 
-Date: 9 September 2026. Commit: pending. Tag: `velotrack-v45`.
+Date: 9 September 2026. Commit: `3edca14`. Tag: `velotrack-v45`.
 
 ## What a rider notices
 
