@@ -52,7 +52,6 @@ class DownloadMapActivity : AppCompatActivity() {
 
     private var fix: Pair<Double, Double>? = null
     private var mapCentre: Pair<Double, Double>? = null
-    private var useMapCentre = false
     private var selectedArea: Area? = null
 
     private var mode = Mode.IDLE
@@ -156,19 +155,7 @@ class DownloadMapActivity : AppCompatActivity() {
     private fun setupCentre() {
         val hasFix = fix != null
         val hasCentre = mapCentre != null
-        binding.btnMyPosition.isEnabled = hasFix
-        binding.btnMapCentre.isEnabled = hasCentre
         binding.noCentreText.isVisible = !hasFix && !hasCentre
-        useMapCentre = !hasFix && hasCentre
-        binding.centreGroup.check(if (useMapCentre) R.id.btnMapCentre else R.id.btnMyPosition)
-        binding.centreGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val wantMapCentre = checkedId == R.id.btnMapCentre
-            if (wantMapCentre != useMapCentre) {
-                useMapCentre = wantMapCentre
-                onSelectionChanged()
-            }
-        }
         if (!hasFix && !hasCentre) {
             // Radius choices need a centre; the world and the presets do not.
             binding.chip10km.isEnabled = false
@@ -237,7 +224,8 @@ class DownloadMapActivity : AppCompatActivity() {
             is Area.BBox -> getString(area.nameRes)
             is Area.Radius -> when {
                 area.radiusKm >= WORLD_RADIUS_KM -> getString(R.string.download_name_world)
-                useMapCentre -> getString(R.string.download_name_map_centre, formatKm(area.radiusKm))
+                // No GPS fix yet: silently centred on wherever the map was showing instead.
+                fix == null -> getString(R.string.download_name_map_centre, formatKm(area.radiusKm))
                 else -> getString(R.string.download_name_around_me, formatKm(area.radiusKm))
             }
         }
@@ -257,9 +245,8 @@ class DownloadMapActivity : AppCompatActivity() {
         return if (typed.isNotEmpty()) typed else autoName.ifEmpty { getString(R.string.title_download_map) }
     }
 
-    /** The circle centre for radius areas: the chosen source, falling back to whatever is available. */
-    private fun centre(): Pair<Double, Double>? =
-        if (useMapCentre) mapCentre ?: fix else fix ?: mapCentre
+    /** The circle centre for radius areas: the rider's GPS fix, or the map's last position if none. */
+    private fun centre(): Pair<Double, Double>? = fix ?: mapCentre
 
     // ---------------------------------------------------------------- estimate
 
@@ -389,11 +376,7 @@ class DownloadMapActivity : AppCompatActivity() {
     }
 
     private fun setInputsEnabled(enabled: Boolean) {
-        val hasFix = fix != null
-        val hasCentre = mapCentre != null
-        binding.btnMyPosition.isEnabled = enabled && hasFix
-        binding.btnMapCentre.isEnabled = enabled && hasCentre
-        val radiusOk = enabled && (hasFix || hasCentre)
+        val radiusOk = enabled && (fix != null || mapCentre != null)
         binding.chip10km.isEnabled = radiusOk
         binding.chip100km.isEnabled = radiusOk
         binding.chip1000km.isEnabled = radiusOk

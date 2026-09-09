@@ -215,9 +215,6 @@
     <string name="band_label_3">Every street</string>
 
     <!-- Download map (DownloadMapActivity) -->
-    <string name="download_centre_label">Centre</string>
-    <string name="download_my_position">My position</string>
-    <string name="download_map_centre">Map centre</string>
     <!-- Place picker: choose a point by dragging the map under a fixed crosshair. -->
     <string name="picker_title">Choose a place</string>
     <string name="picker_hint">Drag the map so the crosshair sits on the spot.</string>

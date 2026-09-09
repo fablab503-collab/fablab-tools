@@ -17,6 +17,7 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
+| 42 | 9 Sep 2026 | Download map no longer asks "my position or map centre" — it just uses your position | [042-remove-map-centre-download-choice.md](042-remove-map-centre-download-choice.md) |
 | 41 | 8 Sep 2026 | Nothing. The build is warning-free for the first time | [041-clean-build.md](041-clean-build.md) |
 | 40 | 8 Sep 2026 | Nothing. Builds now happen on this Mac in 8 seconds and install straight onto a phone; this log begins | [040-build-and-install-from-this-mac.md](040-build-and-install-from-this-mac.md) |
 | 39 | 8 Sep 2026 | Buttons vibrate under the finger; Home answers a tap with the distance; the no-map card sits under the statistics | [039-touch-feedback.md](039-touch-feedback.md) |

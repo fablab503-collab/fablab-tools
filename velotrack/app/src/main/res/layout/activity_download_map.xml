@@ -38,46 +38,13 @@
                 android:paddingEnd="@dimen/screen_margin"
                 android:paddingBottom="@dimen/overlay_padding">
 
-                <!-- Centre of the circle -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/download_centre_label"
-                    android:textAppearance="?attr/textAppearanceTitleSmall"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/centreGroup"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/fab_gap"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMyPosition"
-                        style="?attr/materialButtonOutlinedStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/download_my_position"
-                        app:icon="@drawable/ic_my_location" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMapCentre"
-                        style="?attr/materialButtonOutlinedStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/download_map_centre"
-                        app:icon="@drawable/ic_map" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
+                <!-- The circle is centred on the rider's GPS fix. No fix yet (indoors, cold
+                     start) silently falls back to wherever the map was last showing, so a rider
+                     can still download for where they are about to ride. -->
                 <TextView
                     android:id="@+id/noCentreText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
                     android:text="@string/download_no_centre"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorError"
