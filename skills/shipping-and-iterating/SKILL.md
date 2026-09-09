@@ -124,3 +124,48 @@ writing it up as a finding: does an unrelated, previously-proven-working interac
 way right now? If yes, close the app, let the host settle, and say plainly in the changelog that a
 check was blocked by environment load rather than recording a false defect or silently skipping
 the check without saying so.
+
+## `uses-feature required="true"` is a store filter, not a hint
+
+A `<uses-feature>` left at the default `required="true"` silently removes whole classes of device
+from the Play catalogue, and nothing in the build or the tests will ever mention it. VeloTrack
+declared `android.hardware.location.gps` as required and had, without anyone noticing, been
+excluding every Chromebook, every headset and the large share of tablets with no GNSS chip:
+15,332 eligible devices where 20,862 was available, a quarter of the catalogue gone for one
+attribute.
+
+The Play Console names the damage exactly. On a release's **Preview and confirm** step, the
+**Changes to your supported devices** table breaks the count down by form factor - phone, tablet,
+TV, wearable, car, Chromebook, XR - with a "newly supported" column. Read it on every release
+where the manifest changed; it is the only place the filter is visible, and it turns a vague
+"should work everywhere" into a number to put in the changelog.
+
+Before flipping a feature to `required="false"`, check what the code actually does when the
+hardware is absent, and say so in the commit rather than assuming. A permission-driven feature is
+often already defensive for unrelated reasons - a nullable `getSystemService`, a `try/catch`
+around the registration call - in which case the flag is genuinely the only blocker and the change
+is one line. If it is not defensive, make it so first; shipping to a device where the app crashes
+on launch is worse than not shipping to it.
+
+Two traps in the same move. Declaring `android.hardware.touchscreen` optional is what Chromebooks
+need, but it also makes the app eligible for Android TV, where a bike computer makes no sense -
+without a `LEANBACK_LAUNCHER` intent filter it stays out of the TV store's browsable listing, so
+note it rather than reverting the flag. And relaxing a feature flag does nothing for form factors
+that need their own module: Wear OS stays at zero devices no matter what the manifest says,
+because a watch needs a watch-sized interface, not permission to install a phone one.
+
+Verify the merged result, never the source: `aapt2 dump badging <apk>` prints
+`uses-feature-not-required:` lines and the `supports-screens:` buckets from the packaged manifest,
+which is what Google actually reads.
+
+## Prove a layout on the narrowest screen, not the one on your desk
+
+`adb shell wm size 480x800` and `adb shell wm density 160` turn any emulator into a 320 dp device
+- the narrowest width Android supports - in two commands, with `wm size reset` / `wm density reset`
+to undo. This is far faster than creating an AVD and it catches the real failure, which is a large
+fixed `sp` text size or a fixed-width panel overflowing a narrow screen. Two things to know: the
+density change restarts the app, so a screenshot taken six seconds later is still the splash
+screen and proves nothing - wait for `dumpsys activity activities | grep ResumedActivity` to name
+your activity first. And a forced resize can leave a MapLibre GL surface blank; confirm any
+rendering oddity at native resolution before recording it as a bug, because a manifest-only change
+cannot possibly have caused it.
