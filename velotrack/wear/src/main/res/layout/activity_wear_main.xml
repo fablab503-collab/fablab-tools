@@ -144,6 +144,16 @@
             tools:text="Pause" />
 
         <Button
+            android:id="@+id/menuButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="32dp"
+            android:text="@string/wear_menu"
+            android:textColor="@color/wear_dim"
+            android:textSize="11sp" />
+
+        <Button
             android:id="@+id/stopButton"
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"

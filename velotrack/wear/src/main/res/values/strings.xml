@@ -20,6 +20,12 @@
     <string name="wear_needs_location">Location permission needed</string>
     <string name="wear_no_gps_hardware">This watch has no GPS</string>
 
+    <string name="wear_menu">Rides and version</string>
+    <string name="wear_past_rides">Past rides</string>
+    <string name="wear_no_rides">No rides recorded on this watch yet</string>
+    <string name="wear_more_rides">and %1$d more</string>
+    <string name="wear_version">VeloTrack %1$s</string>
+
     <string name="wear_no_value">–</string>
     <string name="wear_separator">·</string>
 

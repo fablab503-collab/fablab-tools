@@ -96,6 +96,9 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         primaryButton = findViewById(R.id.primaryButton)
         stopButton = findViewById(R.id.stopButton)
 
+        findViewById<Button>(R.id.menuButton).setOnClickListener {
+            startActivity(android.content.Intent(this, WearMenuActivity::class.java))
+        }
         primaryButton.setOnClickListener { onPrimaryClicked() }
         stopButton.setOnClickListener { onStopClicked() }
 

@@ -46,6 +46,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".WearMenuActivity"
+            android:exported="false"
+            android:label="@string/wear_menu"
+            android:screenOrientation="portrait" />
+
         <!--
             The shared engine's own service, declared here so the watch can record without the
             phone. Same class as the phone runs; the manifest entry is per-app because a library
