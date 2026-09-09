@@ -58,25 +58,30 @@
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- The search hit. Styled as a row you can press, because tapping the answer is what a rider
-         reaches for first; the dialog button does the same thing further down. -->
+    <!-- "Searching…", "no match", "couldn't search". Only ever one line of state; the matches
+         themselves go in the group below it. -->
     <TextView
-        android:id="@+id/addressResult"
+        android:id="@+id/addressStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:background="?attr/selectableItemBackground"
-        android:focusable="true"
-        android:minHeight="48dp"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
+        android:layout_marginTop="6dp"
         android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textColor="?attr/colorPrimary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone"
-        tools:text="12 Rue de Rivoli, Paris"
+        tools:text="Searching..."
+        tools:visibility="visible" />
+
+    <!-- Every match the search returned, as radio buttons, because that is what choosing one of
+         several is. A radio shows which is chosen without anyone having to guess, and choosing is
+         separated from saving: nothing is written until the dialog's own button is pressed, so the
+         name and the icon above can still be set afterwards. Rows are added by MainActivity. -->
+    <RadioGroup
+        android:id="@+id/addressResults"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:orientation="vertical"
+        android:visibility="gone"
         tools:visibility="visible" />
 
     <TextView

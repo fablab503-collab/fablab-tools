@@ -19,9 +19,10 @@ import com.fablab503.velotrack.model.GpsStatus
 
 /**
  * GPS-only location feed. Uses `LocationManager.GPS_PROVIDER` exclusively via
- * [LocationManagerCompat] (1 Hz, high accuracy, no batching) so no Wi-Fi or cell scanning is ever
+ * [LocationManagerCompat] (high accuracy, no batching) so no Wi-Fi or cell scanning is ever
  * triggered, and a [GnssStatus.Callback] for satellite counts. All callbacks arrive on the main
- * thread. [start] is safe to call twice: the second call only replaces the listener.
+ * thread. [start] is safe to call twice: the second call replaces the listener, and re-registers
+ * at a new rate if one is asked for.
  */
 class GpsSource(context: Context) {
 
@@ -36,6 +37,8 @@ class GpsSource(context: Context) {
 
     private var listener: Listener? = null
     private var started = false
+    /** Update interval currently registered with the platform, so [start] can tell a change. */
+    private var intervalMs: Long = DEFAULT_INTERVAL_MS
     private var gnssRegistered = false
     private var current = GpsStatus()
 
@@ -97,28 +100,48 @@ class GpsSource(context: Context) {
     /**
      * Starts GPS updates and GNSS status reporting. Does nothing (beyond reporting the current
      * status) when the fine-location permission is missing or the device has no location service.
+     *
+     * [intervalMs] is the fix interval to ask for. Calling this again with a different interval
+     * re-registers the listener at the new rate, which is how energy saver is applied mid-ride
+     * without interrupting the recording; calling it with the same one only swaps the listener.
      */
     @SuppressLint("MissingPermission") // hasPermission() is checked right before registering
-    fun start(listener: Listener) {
+    fun start(listener: Listener, intervalMs: Long = DEFAULT_INTERVAL_MS) {
         this.listener = listener
         val lm = locationManager
         if (lm == null) {
             publish(current.copy(providerEnabled = false))
             return
         }
+
+        val requested = intervalMs.coerceIn(MIN_INTERVAL_MS, MAX_INTERVAL_MS)
+        val rateChanged = started && requested != this.intervalMs
+        if (rateChanged) {
+            // Drop the old request so the new rate takes effect. The GNSS status callback stays
+            // registered, so the satellite count and the status dot do not blink, and `current` is
+            // kept: the receiver has not lost its fix, the app only asked for fixes less often.
+            try {
+                LocationManagerCompat.removeUpdates(lm, locationListener)
+            } catch (e: Exception) {
+                // Already gone; re-registering below is still the right move.
+            }
+            started = false
+        }
+        this.intervalMs = requested
+
         if (started) {
             listener.onStatus(current)
             return
         }
-        current = GpsStatus(providerEnabled = isGpsEnabled)
+        if (!rateChanged) current = GpsStatus(providerEnabled = isGpsEnabled)
         if (!hasPermission()) {
             listener.onStatus(current)
             return
         }
 
-        val request = LocationRequestCompat.Builder(1000L)
+        val request = LocationRequestCompat.Builder(this.intervalMs)
             .setQuality(LocationRequestCompat.QUALITY_HIGH_ACCURACY)
-            .setMinUpdateIntervalMillis(1000L)
+            .setMinUpdateIntervalMillis(this.intervalMs)
             .setMinUpdateDistanceMeters(0f)
             .setMaxUpdateDelayMillis(0L)
             .build()
@@ -138,14 +161,16 @@ class GpsSource(context: Context) {
             return
         }
 
-        gnssRegistered = try {
-            if (Build.VERSION.SDK_INT >= 30) {
-                lm.registerGnssStatusCallback(executor, gnssCallback)
-            } else {
-                registerGnssLegacy(lm)
+        if (!gnssRegistered) {
+            gnssRegistered = try {
+                if (Build.VERSION.SDK_INT >= 30) {
+                    lm.registerGnssStatusCallback(executor, gnssCallback)
+                } else {
+                    registerGnssLegacy(lm)
+                }
+            } catch (e: Exception) {
+                false
             }
-        } catch (e: Exception) {
-            false
         }
 
         listener.onStatus(current)
@@ -184,5 +209,23 @@ class GpsSource(context: Context) {
     private fun publish(status: GpsStatus) {
         current = status
         listener?.onStatus(status)
+    }
+
+    companion object {
+        /** One fix a second: what a bike computer wants and what the app has always asked for. */
+        const val DEFAULT_INTERVAL_MS = 1_000L
+
+        /**
+         * Energy saver's rate. Half the fixes for roughly half the location callbacks, filtering
+         * and database work. At 25 km/h two seconds is about 14 m between fixes, so the stored
+         * track is still well inside [PointFilter]'s 5 m thinning distance and the shape of a
+         * corner survives; going much coarser starts cutting corners off the recorded line. The
+         * receiver itself may or may not idle between fixes - that is the chipset's decision, not
+         * ours - so this is the smaller half of the saving, not the headline.
+         */
+        const val SAVER_INTERVAL_MS = 2_000L
+
+        private const val MIN_INTERVAL_MS = 500L
+        private const val MAX_INTERVAL_MS = 30_000L
     }
 }

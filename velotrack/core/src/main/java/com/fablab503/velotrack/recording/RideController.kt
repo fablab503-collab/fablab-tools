@@ -6,7 +6,12 @@ import android.content.Context
 object RideController {
     fun startNew(context: Context) = RecordingService.start(context, null)
 
-    fun resumeUnfinished(context: Context, trackId: Long) = RecordingService.start(context, trackId)
+    /**
+     * Adds to an existing ride instead of starting a new one. Used both by crash recovery ("this
+     * ride was never finished") and by Continue in the ride list ("add today's leg to that tour").
+     * The service handles the difference; from here they are the same request.
+     */
+    fun continueTrack(context: Context, trackId: Long) = RecordingService.start(context, trackId)
 
     fun pause(context: Context) = RecordingService.pause(context)
 

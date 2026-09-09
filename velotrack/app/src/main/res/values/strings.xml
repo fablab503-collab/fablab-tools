@@ -161,6 +161,13 @@
     <string name="tracks_empty_hint">Rides you record appear here</string>
     <string name="track_subtitle">%1$s · %2$s · %3$s · ↑ %4$s</string>
     <string name="track_recording_suffix">(recording)</string>
+    <!-- Continuing an old ride. The dialog spells out what happens to the track before anything is
+         written to it, because "continue" could reasonably mean three different things. -->
+    <string name="continue_title">Continue this ride?</string>
+    <string name="continue_body">%1$s, started %2$s.\n\nRecording will be added to this ride instead of starting a new one. Its %3$s and %4$s carry on from here, and the gap since you stopped is left as a break — it is not counted as distance ridden or drawn as a line across the map.</string>
+    <string name="continue_confirm">Continue ride</string>
+    <string name="continue_already_recording">A ride is already being recorded. Finish it first.</string>
+    <string name="track_action_continue">Continue this ride</string>
     <string name="track_action_rename">Rename</string>
     <string name="track_action_share">Export: share GPX</string>
     <string name="track_action_save">Export: save GPX as…</string>
@@ -216,12 +223,21 @@
     <string name="picker_title">Choose a place</string>
     <string name="picker_hint">Drag the map so the crosshair sits on the spot, or search an address above.</string>
     <string name="picker_unknown_place">No name here</string>
-    <string name="fav_address_found">Use this: %1$s</string>
-    <string name="fav_use_address">Use address</string>
+    <string name="fav_use_address">Save this address</string>
     <!-- CO2 comparison. Wording is deliberate: "would have emitted", never "you saved". Cycling
          avoids emissions rather than removing them, and only when it replaces a car trip. -->
     <string name="carbon_chip_icon">\uD83C\uDF43</string>
     <string name="carbon_chip_value">%1$s vs car</string>
+    <!-- Energy saver, on the battery reading in the HUD. -->
+    <string name="energy_chip_icon">\u26A1</string>
+    <string name="cd_energy_chip_off">Battery %1$s. Energy saver off. Tap to turn it on, hold for battery tips.</string>
+    <string name="cd_energy_chip_on">Battery %1$s. Energy saver on. Tap to turn it off, hold for battery tips.</string>
+    <string name="energy_saver_on">Energy saver on</string>
+    <string name="energy_saver_off">Energy saver off</string>
+    <string name="energy_help_title">Making the battery last</string>
+    <string name="energy_help_body">Energy saver changes three things while you ride:\n\n•  The screen is dimmed rather than held at full brightness. This is by far the biggest saving — a phone screen at full brightness outdoors uses more than GPS and the map put together.\n•  The map draws at 15 frames a second instead of 30, and flat instead of tilted, so the GPU has less to do.\n•  GPS is asked for a fix every 2 seconds instead of every second. Whether the receiver actually idles in between is up to your phone\u2019s chipset, so treat this as the smallest of the three.\n\nNothing about the recording changes: the same ride is stored, and distance stays accurate to within a few metres.\n\nThree more things that help, none of which this app can do for you:\n\n•  Set Screen during a ride to System default, so the screen turns itself off. Recording carries on regardless.\n•  Use the dark theme. On an OLED phone black pixels are genuinely switched off.\n•  Download the map before you leave. A map that is already on the phone never touches the radio.</string>
+    <string name="energy_help_dismiss">Got it</string>
+
     <string name="cd_carbon_chip">What an average car would have emitted over the distance you have ridden. Tap for the full working.</string>
     <string name="carbon_title">Riding versus driving</string>
     <string name="carbon_kg">%1$.1f kg</string>
@@ -298,6 +314,7 @@
     <string name="theme_mode_auto">Auto (dark after sunset)</string>
     <string name="pref_cat_recording">Recording</string>
     <string name="pref_cat_display">Display and map</string>
+    <string name="pref_cat_energy">Battery</string>
     <string name="pref_cat_route">Route</string>
     <string name="pref_cat_downloads">Map downloads</string>
     <string name="pref_accuracy_title">Ignore fixes less accurate than</string>
@@ -313,6 +330,16 @@
     <string name="pref_units_title">Units</string>
     <string name="pref_pitch_title">3D tilt (degrees)</string>
     <string name="pref_pitch_summary">Camera pitch in Follow 3D mode</string>
+    <string name="pref_energy_saver_title">Energy saver</string>
+    <string name="pref_energy_saver_summary">Dim the screen, draw the map more cheaply and take a GPS fix every 2 s. Same switch as the battery chip on the map.</string>
+    <string name="pref_inactivity_title">Ask if the ride is over after</string>
+    <string name="pref_inactivity_summary">A notification when you have not moved for this long, with Finish ride and Keep recording. Nothing stops on its own.</string>
+    <string name="inactivity_never">Never ask</string>
+    <string name="inactivity_5">5 minutes</string>
+    <string name="inactivity_10">10 minutes</string>
+    <string name="inactivity_15">15 minutes</string>
+    <string name="inactivity_30">30 minutes</string>
+    <string name="inactivity_60">1 hour</string>
     <string name="pref_off_route_title">Off-route distance</string>
     <string name="pref_wifi_only_title">Wi-Fi only</string>
     <string name="pref_wifi_only_summary">Ask before downloading map data over mobile data</string>

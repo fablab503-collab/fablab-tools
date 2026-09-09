@@ -28,6 +28,26 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_AUTO_RECORD, true)
         set(value) = sp.edit().putBoolean(KEY_AUTO_RECORD, value).apply()
 
+    /**
+     * Energy saver. One switch for the three things that actually cost a phone a long ride: the
+     * screen is dimmed, the map draws at half the frame rate and flat, and GPS is asked for a fix
+     * every few seconds instead of every second. It never changes what is recorded, only how often
+     * and how brightly, and it is deliberately not sticky across installs - a rider turns it on
+     * when the battery is low, not once and forever.
+     */
+    var energySaver: Boolean
+        get() = sp.getBoolean(KEY_ENERGY_SAVER, false)
+        set(value) = sp.edit().putBoolean(KEY_ENERGY_SAVER, value).apply()
+
+    /**
+     * Minutes of no movement before the app asks whether the ride is over; 0 means never ask.
+     * Stored as a string because ListPreference writes strings.
+     */
+    var inactivityReminderMin: Int
+        get() = sp.getString(KEY_INACTIVITY_REMINDER, null)?.toIntOrNull()
+            ?: DEFAULT_INACTIVITY_REMINDER_MIN
+        set(value) = sp.edit().putString(KEY_INACTIVITY_REMINDER, value.toString()).apply()
+
     var screenMode: ScreenMode
         get() = enumOrDefault(sp.getString(KEY_SCREEN_MODE, null), ScreenMode.KEEP_ON)
         set(value) = sp.edit().putString(KEY_SCREEN_MODE, value.name).apply()
@@ -150,6 +170,8 @@ class Prefs(context: Context) {
         const val KEY_ACCURACY_CUTOFF = "accuracy_cutoff_m"
         const val KEY_AUTO_PAUSE = "auto_pause"
         const val KEY_AUTO_RECORD = "auto_record"
+        const val KEY_ENERGY_SAVER = "energy_saver"
+        const val KEY_INACTIVITY_REMINDER = "inactivity_reminder_min"
         const val KEY_SCREEN_MODE = "screen_mode"
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_DIM_LEVEL = "dim_level"
@@ -172,6 +194,7 @@ class Prefs(context: Context) {
         const val KEY_WEATHER_FETCHED_AT = "weather_fetched_at_ms"
 
         const val DEFAULT_ACCURACY_CUTOFF_M = 50f
+        const val DEFAULT_INACTIVITY_REMINDER_MIN = 10
         const val DEFAULT_PITCH_DEG = 55
         const val DEFAULT_OFF_ROUTE_M = 50.0
     }

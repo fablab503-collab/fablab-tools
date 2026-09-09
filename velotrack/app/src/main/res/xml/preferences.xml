@@ -76,6 +76,24 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_cat_energy">
+
+        <SwitchPreferenceCompat
+            android:key="energy_saver"
+            android:title="@string/pref_energy_saver_title"
+            android:summary="@string/pref_energy_saver_summary"
+            android:defaultValue="false" />
+
+        <ListPreference
+            android:key="inactivity_reminder_min"
+            android:title="@string/pref_inactivity_title"
+            android:summary="@string/pref_inactivity_summary"
+            android:entries="@array/inactivity_entries"
+            android:entryValues="@array/inactivity_values"
+            android:defaultValue="10" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/pref_cat_route">
 
         <ListPreference

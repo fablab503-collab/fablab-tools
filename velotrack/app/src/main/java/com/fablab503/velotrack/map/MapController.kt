@@ -81,6 +81,22 @@ class MapController(
      */
     var lightMap: Boolean = false
 
+    /**
+     * Energy saver. Halves the follow-mode frame budget and flattens the camera: a tilted 3D view
+     * asks the GPU for more tiles and more geometry than a flat one covering the same ground, and
+     * the rider's chosen follow mode is left untouched so turning this off restores it.
+     */
+    var energySaver: Boolean = prefs.energySaver
+        set(value) {
+            val changed = field != value
+            field = value
+            if (changed) {
+                applyFrameCap()
+                appliedPaddingTop = null // the pitch and padding both differ; force a re-set
+                applyCameraNow()
+            }
+        }
+
     /** FOLLOW_3D | FOLLOW_2D | FREE. Setting a follow mode applies the camera immediately. */
     var cameraMode: CameraMode = prefs.followMode
         set(value) {
@@ -105,7 +121,8 @@ class MapController(
      * case, so an idle map costs nothing regardless of the cap.
      */
     private fun applyFrameCap() {
-        val fps = if (cameraMode == CameraMode.FREE) displayFps() else FOLLOW_FPS
+        val followFps = if (energySaver) SAVER_FOLLOW_FPS else FOLLOW_FPS
+        val fps = if (cameraMode == CameraMode.FREE) displayFps() else followFps
         try {
             mapView.setMaximumFps(fps)
         } catch (e: IllegalStateException) {
@@ -159,7 +176,13 @@ class MapController(
 
     // Data kept so that a style reload re-applies it.
     private var routePoints: List<LatLon>? = null
-    private val historyPoints = ArrayList<LatLon>()
+    /**
+     * The ride already on disk, one list per recorded segment. Segments exist because a ride can
+     * have gaps in it - a train, a coffee, a night, a ride continued days later - and the recorder
+     * refuses to count a gap as distance ridden. The map has to agree: each segment is drawn as its
+     * own line, so nothing is joined that was not ridden.
+     */
+    private val historySegments = ArrayList<MutableList<LatLon>>()
     private val livePoints = ArrayList<LatLon>()
     private var lastFix: GpsFix? = null
     private var lastHeading: Float? = null
@@ -405,8 +428,9 @@ class MapController(
                 val speedKmh = ((fix.speedMps ?: 0f) * 3.6f).toDouble()
                 val zoom = zoomController.next(speedKmh, currentZoom, nowMs) ?: currentZoom
                 val bearing = (lastHeading ?: 0f).toDouble()
-                builder.zoom(zoom).tilt(prefs.pitchDeg).bearing(bearing)
-                desiredPaddingTop = mapView.height * PUCK_TOP_PADDING_FRACTION
+                val tilt = if (energySaver) 0.0 else prefs.pitchDeg
+                builder.zoom(zoom).tilt(tilt).bearing(bearing)
+                desiredPaddingTop = if (energySaver) 0.0 else mapView.height * PUCK_TOP_PADDING_FRACTION
             }
             CameraMode.FOLLOW_2D -> {
                 builder.zoom(ZOOM_2D).tilt(0.0).bearing(0.0)
@@ -443,22 +467,42 @@ class MapController(
 
     // ---------------------------------------------------------------- track and route data
 
-    /** Replaces the history line with [points] simplified to 2 m; the live tail restarts from the last point. */
-    fun setTrackHistory(points: List<LatLon>) {
-        historyPoints.clear()
-        historyPoints.addAll(Simplify.rdp(points, HISTORY_TOLERANCE_M))
+    /** Replaces the drawn ride. Each list is one recorded segment and is drawn as its own line. */
+    fun setTrackHistory(segments: List<List<LatLon>>) {
+        historySegments.clear()
+        for (segment in segments) {
+            val simplified = Simplify.rdp(segment, HISTORY_TOLERANCE_M)
+            if (simplified.isNotEmpty()) historySegments.add(ArrayList(simplified))
+        }
         livePoints.clear()
-        historyPoints.lastOrNull()?.let { livePoints.add(it) } // keeps the live line joined to history
         pushHistory()
         pushLive()
     }
 
     /** Appends to the live line; every [LIVE_CAP] points the tail is simplified into history. */
     fun appendTrackPoint(p: LatLon) {
+        if (livePoints.isEmpty()) {
+            // The first point after the drawn ride was loaded - the app was reopened during a
+            // ride, or an old ride is being continued. Join it to what is already there only when
+            // it is genuinely next to the end of it; after a break the recorder starts a new
+            // segment, and a line drawn from there to here would invent a journey nobody made.
+            lastHistoryPoint()?.takeIf { joins(it, p) }?.let { livePoints.add(it) }
+        }
         livePoints.add(p)
         if (livePoints.size >= LIVE_CAP) {
             val chunk = ArrayList(livePoints)
-            historyPoints.addAll(Simplify.rdp(chunk, HISTORY_TOLERANCE_M))
+            val simplified = Simplify.rdp(chunk, HISTORY_TOLERANCE_M)
+            val tail = historySegments.lastOrNull()
+            val continues = tail?.lastOrNull()?.let { joins(it, chunk.first()) } == true
+            if (continues && tail != null) {
+                // The live line was seeded from this segment's own last point, so that point is
+                // about to be written a second time. Drop the repeat: a zero-length step in a
+                // GeoJSON line is harmless once and untidy five hundred points at a time.
+                val join = if (simplified.firstOrNull() == tail.lastOrNull()) simplified.drop(1) else simplified
+                tail.addAll(join)
+            } else {
+                historySegments.add(ArrayList(simplified))
+            }
             livePoints.clear()
             livePoints.add(chunk[chunk.size - 1]) // seed so the lines stay connected
             pushHistory()
@@ -467,11 +511,20 @@ class MapController(
     }
 
     fun clearTrack() {
-        historyPoints.clear()
+        historySegments.clear()
         livePoints.clear()
         pushHistory()
         pushLive()
     }
+
+    private fun lastHistoryPoint(): LatLon? = historySegments.lastOrNull()?.lastOrNull()
+
+    /**
+     * Whether two points are close enough to be one line. Well under [PointFilter]'s own 200 m
+     * segment threshold, so this can never join across something the recorder itself called a gap.
+     */
+    private fun joins(a: LatLon, b: LatLon): Boolean =
+        Geo.haversineM(a.lat, a.lon, b.lat, b.lon) <= LIVE_JOIN_M
 
     fun setRoute(points: List<LatLon>?) {
         routePoints = points
@@ -681,7 +734,7 @@ class MapController(
         val lineOptions = GeoJsonOptions().withBuffer(64).withTolerance(0.5f)
 
         val route = GeoJsonSource(SOURCE_ROUTE, lineCollection(routePoints ?: emptyList()), lineOptions)
-        val history = GeoJsonSource(SOURCE_TRACK_HISTORY, lineCollection(historyPoints), lineOptions)
+        val history = GeoJsonSource(SOURCE_TRACK_HISTORY, segmentCollection(historySegments), lineOptions)
         val live = GeoJsonSource(SOURCE_TRACK_LIVE, lineCollection(livePoints), lineOptions)
         val puck = GeoJsonSource(SOURCE_PUCK, puckCollection())
         val guidance = GeoJsonSource(SOURCE_GUIDANCE, guidanceCollection())
@@ -803,7 +856,7 @@ class MapController(
 
     private fun pushHistory() {
         if (!styleReady) return
-        historySource?.setGeoJson(lineCollection(historyPoints))
+        historySource?.setGeoJson(segmentCollection(historySegments))
     }
 
     private fun pushLive() {
@@ -862,6 +915,18 @@ class MapController(
         val to = guidanceTo
         if (from == null || to == null) return FeatureCollection.fromFeatures(emptyList<Feature>())
         return lineCollection(listOf(from, to))
+    }
+
+    /** One feature per segment, so the gaps between them stay gaps. Short segments are dropped. */
+    private fun segmentCollection(segments: List<List<LatLon>>): FeatureCollection {
+        val features = ArrayList<Feature>(segments.size)
+        for (segment in segments) {
+            if (segment.size < 2) continue
+            val coords = ArrayList<Point>(segment.size)
+            for (p in segment) coords.add(Point.fromLngLat(p.lon, p.lat))
+            features.add(Feature.fromGeometry(LineString.fromLngLats(coords)))
+        }
+        return FeatureCollection.fromFeatures(features)
     }
 
     /** A GeoJSON line needs at least two positions; anything shorter becomes an empty collection. */
@@ -1169,6 +1234,9 @@ class MapController(
 
         /** Cap while auto-following a ride; see applyFrameCap for why it is not the display rate. */
         private const val FOLLOW_FPS = 30
+
+        /** Energy saver's follow-mode cap. Nobody is touching a camera that eases itself. */
+        private const val SAVER_FOLLOW_FPS = 15
         private const val EASE_MS = 1000
         private const val RECENTER_MS = 500
         private const val INITIAL_ZOOM_3D = 17.0
@@ -1183,5 +1251,8 @@ class MapController(
         private const val PUCK_HALO_ALPHA = 0x33
         private const val HISTORY_TOLERANCE_M = 2.0
         private const val LIVE_CAP = 500
+
+        /** How near a new point must be to the drawn ride to be joined to it rather than started apart. */
+        private const val LIVE_JOIN_M = 100.0
     }
 }
