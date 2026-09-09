@@ -3,6 +3,12 @@
 Free, open-source apps and utilities from FabLab 503, built with Claude Code and published from
 GitHub Actions. Everything here is MIT licensed: use it, change it, share it.
 
+## Airplane Mode
+
+The sixty second commercial for VeloTrack: the positioning, a shot-by-shot board and the
+generation prompts behind it. **[Read it here](https://fablab503-collab.github.io/fablab-tools/)**,
+or in [docs/index.html](docs/index.html).
+
 ## VeloTrack
 
 **[velotrack/](velotrack/)** is an offline cycling map and ride recorder for Android.

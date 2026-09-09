@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Airplane Mode: a sixty second commercial for VeloTrack, the offline bike GPS. Positioning, shot-by-shot board and generation prompts.">
+<meta name="color-scheme" content="light dark">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Airplane Mode">
+<meta property="og:description" content="A sixty second commercial for VeloTrack, the offline bike GPS. Fifteen shots, no voiceover, one demonstration.">
+<meta property="og:image" content="https://raw.githubusercontent.com/fablab503-collab/fablab-tools/main/velotrack/store/graphics/feature-graphic.png">
+<meta name="twitter:card" content="summary_large_image">
+<title>Airplane Mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Courier+Prime:wght@400;700&display=swap">
+
+<style>
+  /* Film production paperwork: call sheets are colour-coded by revision (white, then blue,
+     then pink...). This is the blue revision. Screenplay mono is Courier Prime, the real
+     screenwriting face. Light theme = the printed page; dark = the grading suite. */
+  :root {
+    --ground:      #E7EDF3;
+    --surface:     #FBFCFD;
+    --surface-2:   #F0F4F8;
+    --ink:         #10151B;
+    --ink-mid:     #46525F;
+    --ink-dim:     #6E7C8A;
+    --rule:        #C2CFDB;
+    --rule-soft:   #DAE3EB;
+    --rec:         #B8322A;
+    --gen:         #0D6E88;
+    --screen:      #6A4BA8;
+    --shadow:      0 1px 2px rgba(16,21,27,.07), 0 8px 24px -12px rgba(16,21,27,.18);
+    --font-d: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --font-m: 'Courier Prime', 'Courier New', Courier, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0E1319;
+      --surface:   #171E26;
+      --surface-2: #1D262F;
+      --ink:       #E7EDF3;
+      --ink-mid:   #A4B2C0;
+      --ink-dim:   #778593;
+      --rule:      #2C3742;
+      --rule-soft: #232C35;
+      --rec:       #FF6257;
+      --gen:       #4FC3E8;
+      --screen:    #B49BFF;
+      --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #0E1319;
+    --surface:   #171E26;
+    --surface-2: #1D262F;
+    --ink:       #E7EDF3;
+    --ink-mid:   #A4B2C0;
+    --ink-dim:   #778593;
+    --rule:      #2C3742;
+    --rule-soft: #232C35;
+    --rec:       #FF6257;
+    --gen:       #4FC3E8;
+    --screen:    #B49BFF;
+    --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-d);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 24px 96px; }
+
+  /* ---- masthead ---------------------------------------------------------- */
+  .slug {
+    font-family: var(--font-m);
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  h1 {
+    font-size: clamp(46px, 10vw, 92px);
+    font-weight: 800;
+    letter-spacing: -.035em;
+    line-height: .92;
+    margin: 22px 0 0;
+    text-wrap: balance;
+  }
+  .logline {
+    font-size: clamp(18px, 2.4vw, 22px);
+    color: var(--ink-mid);
+    max-width: 30em;
+    margin: 14px 0 0;
+    text-wrap: balance;
+  }
+  .runtime {
+    font-family: var(--font-m);
+    font-size: 13px;
+    color: var(--rec);
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--rec); flex: none; }
+
+  /* ---- section headings -------------------------------------------------- */
+  h2 {
+    font-family: var(--font-m);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin: 56px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  h3 { font-size: 19px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 6px; }
+  p { margin: 0 0 14px; max-width: 66ch; }
+  .lede { color: var(--ink-mid); }
+
+  /* ---- the strategy block ------------------------------------------------ */
+  .thesis {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rec);
+    padding: 24px 26px;
+    box-shadow: var(--shadow);
+  }
+  .thesis p:last-child { margin-bottom: 0; }
+  .pull {
+    font-size: clamp(22px, 3.4vw, 30px);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    line-height: 1.2;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  /* ---- 60-second timeline ------------------------------------------------ */
+  .timeline { display: flex; gap: 3px; margin: 4px 0 10px; }
+  .act {
+    flex: var(--w);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--bar);
+    padding: 10px 11px 12px;
+    min-width: 0;
+  }
+  .act .n {
+    font-family: var(--font-m);
+    font-size: 11px;
+    color: var(--ink-dim);
+    letter-spacing: .1em;
+  }
+  .act .t { font-size: 14px; font-weight: 600; letter-spacing: -.01em; margin-top: 3px; }
+  .ticks {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-m);
+    font-size: 11px;
+    color: var(--ink-dim);
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 6px;
+  }
+
+  /* ---- shot list --------------------------------------------------------- */
+  .shot {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 0 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .shot .tc { font-family: var(--font-m); font-size: 12px; line-height: 1.5; }
+  .shot .tc .id { font-weight: 700; color: var(--ink); display: block; font-size: 13px; }
+  .shot .tc .in { color: var(--ink-mid); display: block; }
+  .shot .tc .dur { color: var(--ink-dim); display: block; }
+  .shot .body h3 { margin-bottom: 4px; }
+  .shot .body p { font-size: 15px; color: var(--ink-mid); margin-bottom: 10px; }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--font-m);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    padding: 2px 7px;
+    margin-top: 8px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+  }
+  .tag.gen { color: var(--gen); }
+  .tag.screen { color: var(--screen); }
+  .tag.film { color: var(--rec); }
+
+  .prompt {
+    font-family: var(--font-m);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--surface-2);
+    border: 1px solid var(--rule-soft);
+    border-left: 2px solid var(--gen);
+    padding: 12px 14px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    color: var(--ink-mid);
+    margin: 0;
+  }
+  .prompt b { color: var(--ink); font-weight: 700; }
+  .note {
+    font-family: var(--font-m);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--surface-2);
+    border: 1px solid var(--rule-soft);
+    border-left: 2px solid var(--screen);
+    padding: 12px 14px;
+    color: var(--ink-mid);
+    margin: 0;
+  }
+  .note.film { border-left-color: var(--rec); }
+
+  /* ---- warning callout --------------------------------------------------- */
+  .warn {
+    background: var(--surface);
+    border: 1px solid var(--rec);
+    padding: 20px 22px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 16px;
+    align-items: start;
+  }
+  .warn .mark {
+    font-family: var(--font-m);
+    font-weight: 700;
+    color: var(--rec);
+    font-size: 13px;
+    letter-spacing: .1em;
+    padding-top: 2px;
+  }
+  .warn p:last-child { margin-bottom: 0; }
+
+  /* ---- specs table ------------------------------------------------------- */
+  .specs { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .specs th, .specs td {
+    text-align: left;
+    padding: 11px 14px 11px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  .specs th {
+    font-family: var(--font-m);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    font-weight: 700;
+    border-bottom-color: var(--rule);
+  }
+  .specs td:first-child { font-weight: 600; white-space: nowrap; padding-right: 24px; }
+  .specs td.num { font-family: var(--font-m); font-variant-numeric: tabular-nums; color: var(--ink-mid); }
+  .scroller { overflow-x: auto; }
+
+  /* ---- end card ---------------------------------------------------------- */
+  .endcard {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 40px 32px;
+    text-align: center;
+  }
+  .endcard .line {
+    font-size: clamp(26px, 4.6vw, 42px);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .endcard .sub {
+    font-family: var(--font-m);
+    font-size: 13px;
+    letter-spacing: .06em;
+    color: var(--ink-dim);
+    margin: 16px 0 0;
+  }
+  .alts { display: grid; gap: 10px; margin-top: 18px; }
+  .alt {
+    font-size: 16px;
+    color: var(--ink-mid);
+    font-style: italic;
+  }
+
+  ul { padding-left: 20px; max-width: 66ch; }
+  li { margin-bottom: 8px; color: var(--ink-mid); }
+  li b { color: var(--ink); font-weight: 600; }
+  strong { font-weight: 600; }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-m);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 640px) {
+    .shot { grid-template-columns: 1fr; gap: 10px; }
+    .shot .tc { display: flex; gap: 14px; align-items: baseline; }
+    .timeline { flex-wrap: wrap; }
+    .act { flex: 1 1 44%; }
+    .warn { grid-template-columns: 1fr; gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+<style>
+  html { color-scheme: light dark; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  a { color: var(--gen); text-underline-offset: 3px; }
+  a:focus-visible, .shot:focus-visible { outline: 2px solid var(--rec); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="slug">
+    <span>VeloTrack</span>
+    <span>Commercial &middot; 1 of 1</span>
+    <span>Blue revision</span>
+    <span>8 Sept 2026</span>
+  </div>
+
+  <h1>Airplane<br>Mode</h1>
+  <p class="logline">A rider switches the phone off the network, rides all day, and the app never misses a metre. Sixty seconds, no voiceover.</p>
+  <p class="runtime"><span class="dot"></span>60 SEC &middot; 2.39:1 &middot; 15 SHOTS</p>
+
+  <h2>Why this one</h2>
+  <div class="thesis">
+    <p class="pull">Every other cycling app turns your ride into content. This one turns it into a number.</p>
+    <p>Strava wants your social graph. Google wants your location history. Komoot wants money per region. They all want the network. VeloTrack wants nothing, and the ad should demonstrate that rather than claim it.</p>
+    <p>The demonstration is airplane mode. GPS is a receiver: it listens to satellites and never speaks back. So a phone with every radio switched off still knows exactly where it is, to five metres. Most people do not know this, which is what makes it worth sixty seconds. The whole spot is one uninterrupted proof, and the flight icon stays in the status bar from the first shot to the last.</p>
+  </div>
+
+  <h2>Structure</h2>
+  <div class="timeline">
+    <div class="act" style="--w:8; --bar:var(--rec)">
+      <span class="n">0:00</span>
+      <div class="t">The switch</div>
+    </div>
+    <div class="act" style="--w:10; --bar:var(--gen)">
+      <span class="n">0:08</span>
+      <div class="t">Departure</div>
+    </div>
+    <div class="act" style="--w:20; --bar:var(--gen)">
+      <span class="n">0:18</span>
+      <div class="t">The day</div>
+    </div>
+    <div class="act" style="--w:12; --bar:var(--screen)">
+      <span class="n">0:38</span>
+      <div class="t">The proof</div>
+    </div>
+    <div class="act" style="--w:10; --bar:var(--rec)">
+      <span class="n">0:50</span>
+      <div class="t">The number</div>
+    </div>
+  </div>
+  <div class="ticks"><span>0:00</span><span>0:15</span><span>0:30</span><span>0:45</span><span>1:00</span></div>
+
+  <h2>The one production rule</h2>
+  <div class="warn">
+    <span class="mark">HOLD</span>
+    <div>
+      <p><strong>No AI model can draw your app.</strong> Ask any of them for "a cycling app on a phone screen" and you get an invented interface with melted text. Every frame that shows the screen is a real recording, from the emulator or from the phone in your hand.</p>
+      <p>That splits the edit cleanly, and it means no compositing: generated shots and real screen cuts simply alternate. Where a generated shot happens to include the phone, keep it out of focus or crop above it.</p>
+    </div>
+  </div>
+
+  <h2>Shot list</h2>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S01</span><span class="in">0:00</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>The switch</h3>
+      <p>Macro on a thumb pulling down the shade and tapping the aeroplane icon. It lights up. Everything else greys out.</p>
+      <p class="note film">Film this yourself, on your own phone, in daylight by a window. Four seconds handheld. An AI model will get Android's quick settings wrong and the whole premise dies in the first shot.</p>
+      <span class="tag film">FILM IT</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S02</span><span class="in">0:04</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>Mounting up</h3>
+      <p>The phone clicks into the handlebar mount. Cold blue pre-dawn. Breath visible.</p>
+      <p class="prompt"><b>Extreme close-up</b>, a smartphone clicking into a matte black handlebar mount on a steel road bike. Blue pre-dawn light, a Paris street out of focus behind. Gloved hands, worn bar tape, condensation on the metal. Shallow depth of field, anamorphic 2.39:1, 35mm grain, cool desaturated palette. <b>Camera: slow dolly in.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 4S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S03</span><span class="in">0:08</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>First revolution</h3>
+      <p>The front wheel starts to roll on wet cobbles. The spot's first movement, and it should feel like an engine turning over.</p>
+      <p class="prompt"><b>Low angle macro</b>, front wheel of a road bike beginning to roll across wet Paris cobblestones at dawn. Spokes catch the low sun, reflection breaks in a puddle as the tyre passes through it. 50fps, slight slow motion, cinematic, cool blue grade with a warm highlight. <b>Camera: static low angle, subject crosses frame left to right.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 4S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S04</span><span class="in">0:12</span><span class="dur">3 sec</span></div>
+    <div class="body">
+      <h3>It starts itself</h3>
+      <p>The screen. The map swings to course-up and the Recording chip appears with nobody touching the phone. This is the product's whole personality in three seconds.</p>
+      <p class="note">Emulator recording at 20 km/h so auto-record triggers. Crop to 2.39:1 on the map, keep the status bar's flight icon in frame.</p>
+      <span class="tag screen">SCREEN RECORD</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S05</span><span class="in">0:15</span><span class="dur">3 sec</span></div>
+    <div class="body">
+      <h3>Into the empty city</h3>
+      <p>From behind, the rider takes a wide boulevard with nobody on it.</p>
+      <p class="prompt"><b>Wide tracking shot from behind</b>, a lone cyclist riding down an empty Haussmannian boulevard at sunrise, long shadows, wet asphalt, no traffic. Cinematic, anamorphic, muted teal and grey grade. <b>Camera: smooth vehicle tracking, matching the rider's speed.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 3S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S06</span><span class="in">0:18</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>The river</h3>
+      <p>Morning gold. The day is properly underway.</p>
+      <p class="prompt"><b>Side tracking shot</b>, cyclist riding along the Seine on a riverside path, morning sun flaring through plane trees in rhythmic bursts. Warm golden light, water glittering, bridges passing. Cinematic anamorphic, shallow depth of field. <b>Camera: parallel dolly, subject centre frame.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 4S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S07</span><span class="in">0:22</span><span class="dur">2 sec</span></div>
+    <div class="body">
+      <h3>8.4 km</h3>
+      <p>Quick cut to the screen. The number, and nothing else, no notification, no banner, no prompt.</p>
+      <p class="note">Same crop and framing as S04, so the three screen cuts read as one running instrument.</p>
+      <span class="tag screen">SCREEN RECORD</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S08</span><span class="in">0:24</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>Out of town</h3>
+      <p>Hard midday shadows strobing across the rider through an avenue of plane trees.</p>
+      <p class="prompt"><b>Front three-quarter tracking shot</b>, cyclist on a straight French country road lined with plane trees, harsh midday sun, tree shadows strobing rhythmically across rider and tarmac. High contrast, warm, dust in the air. <b>Camera: tracking ahead of the subject, slight low angle.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 4S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S09</span><span class="in">0:28</span><span class="dur">2 sec</span></div>
+    <div class="body">
+      <h3>41.2 km</h3>
+      <p>The number again. It is the only thing in the spot that changes in a straight line.</p>
+      <span class="tag screen">SCREEN RECORD</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S10</span><span class="in">0:30</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>The climb</h3>
+      <p>Out of the saddle. Effort. The one shot where the rider is working.</p>
+      <p class="prompt"><b>Low angle close-up</b>, cyclist standing on the pedals climbing a steep switchback, heat haze rising off the tarmac, sweat, jersey stuck to the back, valley falling away behind. Late afternoon sun, warm high-contrast grade. <b>Camera: handheld, slight shake, pushing in.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 4S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S11</span><span class="in">0:34</span><span class="dur">4 sec</span></div>
+    <div class="body">
+      <h3>The descent</h3>
+      <p>The reward. Fastest shot in the film.</p>
+      <p class="prompt"><b>FPV chase</b>, following close behind a cyclist descending a mountain road at speed, leaning into a corner, golden hour light strobing through roadside trees, motion blur at the frame edges. Cinematic, wide lens, high energy. <b>Camera: FPV drone follow, banking with the rider.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 4S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S12</span><span class="in">0:38</span><span class="dur">5 sec</span></div>
+    <div class="body">
+      <h3>Stopping</h3>
+      <p>A viewpoint at sunset. The rider unclips and puts a foot down. Everything goes quiet.</p>
+      <p class="prompt"><b>Wide static shot</b>, cyclist rolling to a stop at a hilltop viewpoint at sunset, unclipping one foot and putting it down, silhouetted against an orange sky, valley and distant city below. Still, contemplative, long lens compression. <b>Camera: locked off, no movement.</b></p>
+      <span class="tag gen">GENERATE &middot; KLING 3.0 &middot; 5S</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S13</span><span class="in">0:43</span><span class="dur">7 sec</span></div>
+    <div class="body">
+      <h3>The proof</h3>
+      <p>The phone comes off the mount and into the hand. Hold long enough to read two things: the ride summary, and the flight icon still lit in the status bar. This shot is the entire argument, and it is the reason none of it can be faked.</p>
+      <p class="note film">Film on your real phone with a real finished ride on screen. Golden hour, outdoors, one continuous take, slow push in on the status bar at the end.</p>
+      <span class="tag film">FILM IT</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S14</span><span class="in">0:50</span><span class="dur">5 sec</span></div>
+    <div class="body">
+      <h3>All of it</h3>
+      <p>The Statistics screen. All-time distance. One ride was the story, but this is the product: the number that only ever goes up.</p>
+      <p class="note">Seed the database with a plausible lifetime figure before recording. A real one you would be proud of, not a fantasy.</p>
+      <span class="tag screen">SCREEN RECORD</span>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="tc"><span class="id">S15</span><span class="in">0:55</span><span class="dur">5 sec</span></div>
+    <div class="body">
+      <h3>End card</h3>
+      <p>Black. Type. The flight icon one last time, small, in the corner.</p>
+      <span class="tag film">TITLE CARD</span>
+    </div>
+  </div>
+
+  <h2>The last five seconds</h2>
+  <div class="endcard">
+    <p class="line">Every kilometre.<br>Nothing else.</p>
+    <p class="sub">OFFLINE MAPS &middot; NO ACCOUNT &middot; FREE AND OPEN SOURCE</p>
+  </div>
+  <div class="alts">
+    <p class="alt">Alternate: "Nobody was watching. That's the point."</p>
+    <p class="alt">Alternate: "The bike computer that wants nothing from you."</p>
+    <p class="alt">For the store listing, shorter: "It counts. That's the app."</p>
+  </div>
+
+  <h2>Generation settings</h2>
+  <div class="scroller">
+    <table class="specs">
+      <thead>
+        <tr><th>Setting</th><th>Use</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Kling 3.0</td>
+          <td class="num">3&ndash;15 s &middot; up to 4K</td>
+          <td>Every generated shot here. Custom duration means the clip matches the cut instead of being trimmed.</td>
+        </tr>
+        <tr>
+          <td>Veo 3.1</td>
+          <td class="num">4 / 6 / 8 s</td>
+          <td>Only if you want its native audio on a single shot. Locked to 8 seconds at 1080p and above.</td>
+        </tr>
+        <tr>
+          <td>Image to video</td>
+          <td class="num">S02, S03</td>
+          <td>Photograph your actual bike and mount, then animate the still. The hardware in the ad is then really yours.</td>
+        </tr>
+        <tr>
+          <td>Character consistency</td>
+          <td class="num">S05 &ndash; S12</td>
+          <td>Train one rider from reference images so the same person appears in all six riding shots. Without it each cut is a different cyclist.</td>
+        </tr>
+        <tr>
+          <td>Camera presets</td>
+          <td class="num">70+ available</td>
+          <td>Named in bold at the end of each prompt. The move is doing as much work as the subject.</td>
+        </tr>
+        <tr>
+          <td>Aspect</td>
+          <td class="num">2.39:1</td>
+          <td>Set it at generation. Cropping a 16:9 clip afterwards throws away the framing you asked for.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Grade and sound</h2>
+  <ul>
+    <li><b>The day passes in the grade.</b> Cool and blue at 0:00, neutral by 0:22, warm and golden from 0:30. That arc is what makes fifteen disconnected clips read as one ride.</li>
+    <li><b>No voiceover.</b> The spot has no claims in it, only a demonstration. A voice would turn it back into an advert.</li>
+    <li><b>Sound is bike and world.</b> Freewheel tick, tyre on wet stone, wind, birds, a bell. Then one restrained track underneath from about 0:18.</li>
+    <li><b>Cut the music at 0:43.</b> Silence under the proof shot. Let the ride end before the type arrives.</li>
+  </ul>
+
+  <h2>If you only make one thing</h2>
+  <p class="lede">Shoot S01 and S13 on your own phone this week, cut them together with the screen recording of the app auto-starting, and you have a fifteen second version that says everything. The generated riding footage makes it a film; those three real shots make it true.</p>
+
+  <footer>
+    <span>VeloTrack &middot; Airplane Mode &middot; Shooting board</span>
+    <span><a href="https://github.com/fablab503-collab/fablab-tools">Source on GitHub</a> &middot; <a href="https://play.google.com/store/apps/details?id=com.fablab503.velotrack">The app</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
