@@ -166,6 +166,21 @@ function flavorFor(flavorName) {
  * `_b<index>`. The dark flavour gets a pure black earth fill (OLED). The background layer is removed
  * (the style has a single one).
  */
+// How far past its own zoom range a band is still allowed to draw.
+//
+// MapLibre overzooms a source past its maxzoom without limit, so every band used to render at every
+// zoom: at z14 all four were live, 65 layers each, 261 layers and 44 symbol layers in total. Inside
+// a downloaded area the three coarse bands are completely hidden behind band 3's opaque earth fill,
+// yet they were still parsed, drawn, and - the expensive part - included in the symbol collision
+// pass on every rotation. That is what made panning and rotating cost 2-4x more than it needed to.
+//
+// The cap cannot simply be each band's own maxZoom: outside the downloaded area the finer band has
+// no tiles, and the coarse band showing through is exactly the intended fallback. These cutoffs sit
+// a few levels above each band's range, which keeps that fallback where it is useful and drops the
+// cases that never were - a z6 world tile stretched across a street-level view.
+// Band ranges (download/Bands.kt): 0 = z0-6, 1 = z7-9, 2 = z10-12, 3 = z13-15.
+const BAND_MAX_RENDER_ZOOM = [9, 12, 16, null]; // null = the finest band, overzooms freely
+
 function bandLayers(index, lang, flavorName, flavor) {
   const source = `band${index}`;
   const suffix = `_b${index}`;
@@ -182,7 +197,15 @@ function bandLayers(index, lang, flavorName, flavor) {
     }
     l.id = `${l.id}${suffix}`;
     l.source = source;
+    const cutoff = BAND_MAX_RENDER_ZOOM[index];
+    if (cutoff !== null && cutoff !== undefined) {
+      // Keep whichever limit is tighter; some Protomaps layers already carry a maxzoom.
+      l.maxzoom = l.maxzoom === undefined ? cutoff : Math.min(l.maxzoom, cutoff);
+      // A layer whose own minzoom is already past the cutoff would be inert; drop it below.
+      if (l.minzoom !== undefined && l.minzoom >= l.maxzoom) l.__drop = true;
+    }
   }
+  out = out.filter((l) => !l.__drop);
   if (!sawEarth) throw new Error(`gen-style: no earth layer in generated style for ${source}`);
   return out;
 }
