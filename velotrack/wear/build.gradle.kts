@@ -24,6 +24,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         applicationId = "com.fablab503.velotrack"
         // Wear OS 3. Earlier watches run a different, much older platform that this UI does not
         // target, and they are a vanishing share of the installed base.
@@ -100,4 +101,11 @@ dependencies {
     implementation(project(":sync"))
 
     testImplementation(libs.junit)
+
+    // The Data Layer cannot be reached from a JVM unit test: it needs Play Services on a real
+    // device. These run on the watch emulator instead.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
 }

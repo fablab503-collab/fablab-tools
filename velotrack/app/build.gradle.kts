@@ -19,6 +19,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         applicationId = "com.fablab503.velotrack"
         minSdk = 26
         targetSdk = 36
@@ -102,4 +103,12 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.json)
+
+    // The Data Layer needs Play Services, so what WearPublisher actually writes can only be
+    // checked on a device. This is the phone half of the phone-to-watch contract.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.play.services.wearable)
 }

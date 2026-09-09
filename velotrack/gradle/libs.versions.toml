@@ -26,6 +26,11 @@ coroutinesPlayServices = "1.11.0"
 # quality rules require it for a workout-style app, and it is what stops the watch dropping
 # back to the watch face mid-ride.
 wearOngoing = "1.1.0"
+# Instrumented tests: the only way to exercise the Data Layer, which needs a real device/emulator
+# and Play Services. Unit tests on the JVM cannot reach it.
+androidxTestJunit = "1.2.1"
+androidxTestRunner = "1.6.2"
+androidxTestCore = "1.6.1"
 # Real org.json for unit tests: the Android SDK jar these tests otherwise compile and run against
 # only stubs org.json (every method body throws or, with isReturnDefaultValues, silently returns
 # null/0), which cannot exercise real parsing. Same artifact org.json ships inside the platform.
@@ -49,6 +54,9 @@ play-services-wearable = { module = "com.google.android.gms:play-services-wearab
 androidx-wear = { module = "androidx.wear:wear", version.ref = "wear" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
 androidx-wear-ongoing = { module = "androidx.wear:wear-ongoing", version.ref = "wearOngoing" }
+androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestJunit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "androidxTestCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
