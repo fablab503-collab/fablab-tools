@@ -18,7 +18,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import com.fablab503.velotrack.R
+import com.fablab503.velotrack.core.R
 import com.fablab503.velotrack.location.GpsSource
 import com.fablab503.velotrack.location.HeadingEstimator
 import com.fablab503.velotrack.model.GpsFix
@@ -29,7 +29,6 @@ import com.fablab503.velotrack.model.TrackPoint
 import com.fablab503.velotrack.settings.Prefs
 import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
-import com.fablab503.velotrack.ui.MainActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -430,14 +429,21 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
         val distanceKm = snapshot.distanceM / 1000.0
         val text = String.format(Locale.ROOT, "%.1f km", distanceKm) + "  " + formatDuration(snapshot.movingMs)
 
-        val openIntent = Intent(this, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val contentIntent = PendingIntent.getActivity(
-            this,
-            REQUEST_OPEN,
-            openIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
+        // Resolved from the package manager rather than named directly: this service is shared by
+        // the phone and the watch, whose launcher activities are different classes. Same pattern,
+        // and same reason, as MapDownloadService.launchIntent(). The flags are kept identical to
+        // the previous Intent(this, MainActivity) so tapping the notification still returns to a
+        // running ride instead of stacking a second copy of it.
+        val openIntent = packageManager.getLaunchIntentForPackage(packageName)
+            ?.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val contentIntent = openIntent?.let {
+            PendingIntent.getActivity(
+                this,
+                REQUEST_OPEN,
+                it,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        }
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_rec)

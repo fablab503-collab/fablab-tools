@@ -97,6 +97,7 @@ dependencies {
     // Mirrors the ride onto a paired Wear OS watch. Adds no permission: the Data Layer talks to
     // Play Services on the same device, never to the network.
     implementation(libs.play.services.wearable)
+    implementation(project(":core"))
     implementation(project(":sync"))
 
     testImplementation(libs.junit)

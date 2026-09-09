@@ -16,5 +16,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "VeloTrack"
 include(":app")
+include(":core")
 include(":sync")
 include(":wear")

@@ -3,13 +3,6 @@
     <string name="app_name">VeloTrack</string>
 
     <!-- Notification (used by recording.RecordingService) -->
-    <string name="notif_channel_recording">Ride recording</string>
-    <string name="notif_recording_title">Recording ride</string>
-    <string name="notif_paused_title">Recording paused</string>
-    <string name="notif_action_pause">Pause</string>
-    <string name="notif_action_resume">Resume</string>
-    <string name="notif_action_stop">Stop</string>
-    <string name="notif_storage_error">Storage error: retrying</string>
 
     <!-- Activity titles -->
     <string name="title_tracks">Tracks</string>

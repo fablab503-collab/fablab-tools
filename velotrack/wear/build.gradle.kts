@@ -16,6 +16,9 @@ val hasReleaseKey = keystoreFile?.exists() == true && keystorePassword.isNotEmpt
 
 val ciRunNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
 
+/** Keeps every watch versionCode clear of the phone's, which counts up from the CI run number. */
+val WEAR_VERSION_OFFSET = 1_000_000
+
 android {
     namespace = "com.fablab503.velotrack.wear"
     compileSdk = 36
@@ -26,7 +29,10 @@ android {
         // target, and they are a vanishing share of the installed base.
         minSdk = 30
         targetSdk = 36
-        versionCode = ciRunNumber
+        // The watch shares an application ID with the phone, so the two artifacts must never carry
+        // the same versionCode - Play rejects the upload. The offset keeps them ordered and makes
+        // the run number still readable at a glance: run 47 becomes 1000047.
+        versionCode = WEAR_VERSION_OFFSET + ciRunNumber
         versionName = "1.0.$ciRunNumber"
     }
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings owned by the shared engine. They live here, not in :app, because RecordingService
+     moved into this module and both the phone and the watch raise the same notification. -->
+<resources>
+    <string name="notif_channel_recording">Ride recording</string>
+    <string name="notif_recording_title">Recording ride</string>
+    <string name="notif_paused_title">Recording paused</string>
+    <string name="notif_action_pause">Pause</string>
+    <string name="notif_action_resume">Resume</string>
+    <string name="notif_action_stop">Stop</string>
+    <string name="notif_storage_error">Storage error: retrying</string>
+</resources>
