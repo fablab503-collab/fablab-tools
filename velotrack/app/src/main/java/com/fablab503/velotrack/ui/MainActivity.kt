@@ -33,6 +33,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
+import android.widget.RadioButton
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -58,6 +59,7 @@ import com.fablab503.velotrack.download.MapLibrary
 import com.fablab503.velotrack.download.RangeClient
 import com.fablab503.velotrack.download.WeatherClient
 import com.fablab503.velotrack.geo.Geo
+import com.fablab503.velotrack.geo.segmentsOf
 import com.fablab503.velotrack.location.GpsSource
 import com.fablab503.velotrack.location.HeadingEstimator
 import com.fablab503.velotrack.location.IdleSpeedEstimator
@@ -189,6 +191,13 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     private var batterySaverWarned = false
     private var recoveryChecked = false
     private var pendingViewTrackId: Long? = null
+
+    /**
+     * Ride the list asked to be continued, consumed in [onResume]. Not started straight from the
+     * intent: a foreground service may only be started while the activity really is in front, and
+     * in onCreate it is not yet.
+     */
+    private var pendingContinueTrackId: Long? = null
     private var pendingAfterPermission: (() -> Unit)? = null
 
     private val permissionLauncher =
@@ -262,7 +271,13 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == Prefs.KEY_THEME_MODE) nightMode.apply()
+        when (key) {
+            Prefs.KEY_THEME_MODE -> nightMode.apply()
+            // The chip on the map and the switch in Settings are one setting; whichever was
+            // touched, the other has to agree, and the map and screen follow immediately.
+            Prefs.KEY_ENERGY_SAVER -> applyEnergySaver()
+            else -> Unit
+        }
     }
 
     /** A finished download changes the band files under MapLibre's feet: reload the style. */
@@ -336,6 +351,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         }
         updateModeButton()
         pendingViewTrackId = viewTrackIdFrom(intent)
+        pendingContinueTrackId = continueTrackIdFrom(intent)
         mapController.lightMap = !isNightUi()
         prepareMapData()
 
@@ -366,6 +382,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             pendingViewTrackId = id
             showPendingTrack()
         }
+        continueTrackIdFrom(intent)?.let { pendingContinueTrackId = it }
     }
 
     override fun onStart() {
@@ -396,8 +413,13 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         refreshNoMapOverlay()
         refreshRoute()
         refreshCarbonChip()
+        applyEnergySaver()
         updateModeButton()
         render(RideSession.state.value)
+        pendingContinueTrackId?.let {
+            pendingContinueTrackId = null
+            continueTrack(it)
+        }
     }
 
     override fun onPause() {
@@ -500,6 +522,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         binding.btnFavorites.onTapWithFeedback { showFavoritesSheet() }
         binding.btnStopGuidance.onTapWithFeedback { stopGuidance() }
         binding.guidanceText.setOnClickListener { stopGuidance() }
+
+        binding.energyChip.onTapWithFeedback { toggleEnergySaver() }
+        binding.energyChip.onHoldWithFeedback { showEnergyHelp() }
     }
 
     /**
@@ -669,18 +694,30 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 .setMessage(
                     getString(R.string.recovery_body, unfinished.name, Format.distance(unfinished.distanceM, prefs.units))
                 )
-                .setPositiveButton(R.string.recovery_resume) { _, _ -> resumeUnfinished(unfinished.id) }
+                .setPositiveButton(R.string.recovery_resume) { _, _ -> continueTrack(unfinished.id) }
                 .setNegativeButton(R.string.recovery_finish) { _, _ -> finishUnfinished(unfinished) }
                 .show()
         }
     }
 
-    private fun resumeUnfinished(trackId: Long) {
-        if (!hasFineLocation() || !hasNotificationPermission()) {
-            requestLocationPermissions { resumeUnfinished(trackId) }
+    /**
+     * Records into an existing track rather than a new one: the crash-recovery dialog above, and
+     * Continue in the ride list. Everything a normal start needs - the permissions, the foreground
+     * service - is the same, which is why both arrive here.
+     */
+    private fun continueTrack(trackId: Long) {
+        val state = RideSession.state.value
+        if (state.status != RecordingStatus.IDLE || RideSession.serviceRunning) {
+            // Already recording. When it is this very ride the request has already been honoured -
+            // a rotation re-delivering the same intent - so say nothing rather than complain.
+            if (state.trackId != trackId) toast(R.string.continue_already_recording)
             return
         }
-        launchService { RideController.resumeUnfinished(this, trackId) }
+        if (!hasFineLocation() || !hasNotificationPermission()) {
+            requestLocationPermissions { continueTrack(trackId) }
+            return
+        }
+        launchService { RideController.continueTrack(this, trackId) }
     }
 
     /** Marks the track finished with statistics rebuilt from its stored points. */
@@ -748,7 +785,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         val want = eligible && !RideSession.serviceRunning
         if (want && !localGpsRunning) {
             localGpsRunning = true
-            gpsSource.start(this)
+            gpsSource.start(this, localGpsIntervalMs())
         } else if (!want && localGpsRunning) {
             stopLocalGps()
         }
@@ -909,6 +946,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         } else {
             getString(R.string.hud_no_value)
         }
+        renderEnergyChip()
         maybeRefreshWeather()
     }
 
@@ -960,7 +998,12 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
      */
     private fun applyScreenMode() {
         val recording = RideSession.state.value.status != RecordingStatus.IDLE
-        val mode = if (recording) prefs.screenMode else ScreenMode.SYSTEM
+        val chosen = prefs.screenMode
+        // Energy saver dims a screen that would otherwise be held at full brightness. It never
+        // *raises* brightness, and it never overrides "System default": a rider who has already
+        // asked for the screen to switch itself off is saving more than this could.
+        val saved = if (prefs.energySaver && chosen == ScreenMode.KEEP_ON) ScreenMode.DIM else chosen
+        val mode = if (recording) saved else ScreenMode.SYSTEM
         val lp = window.attributes
         when (mode) {
             ScreenMode.KEEP_ON -> {
@@ -977,6 +1020,82 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             }
         }
         window.attributes = lp
+    }
+
+    // ---------------------------------------------------------------- energy saver
+
+    /**
+     * The chip on the map and the switch in Settings write the same preference, and
+     * [prefsListener] applies whichever one moved, so this only has to write it.
+     */
+    private fun toggleEnergySaver() {
+        val on = !prefs.energySaver
+        prefs.energySaver = on
+        toast(if (on) R.string.energy_saver_on else R.string.energy_saver_off)
+    }
+
+    /**
+     * Pushes the setting at everything it changes: the map, the screen, the chip, and the map
+     * screen's own GPS client. The recording service watches the same preference and re-registers
+     * its own GPS, so a ride in progress follows without being interrupted.
+     */
+    private fun applyEnergySaver() {
+        mapController.energySaver = prefs.energySaver
+        applyScreenMode()
+        renderEnergyChip()
+        if (localGpsRunning) gpsSource.start(this, localGpsIntervalMs())
+    }
+
+    private fun localGpsIntervalMs(): Long =
+        if (prefs.energySaver) GpsSource.SAVER_INTERVAL_MS else GpsSource.DEFAULT_INTERVAL_MS
+
+    /**
+     * On: a filled pill with a bolt, in the tertiary colour the app already uses for "something is
+     * active". Off: the plain battery reading it has always been. The state has to be readable at
+     * arm's length in sunlight, so it is a shape and a colour rather than a small icon alone.
+     */
+    private fun renderEnergyChip() {
+        val on = prefs.energySaver
+        binding.energyIcon.isVisible = on
+        val battery = binding.batteryText.text?.toString().orEmpty()
+        binding.energyChip.contentDescription =
+            getString(if (on) R.string.cd_energy_chip_on else R.string.cd_energy_chip_off, battery)
+        if (on) {
+            val container = MaterialColors.getColor(
+                binding.energyChip,
+                com.google.android.material.R.attr.colorTertiaryContainer,
+            )
+            val onContainer = MaterialColors.getColor(
+                binding.energyChip,
+                com.google.android.material.R.attr.colorOnTertiaryContainer,
+            )
+            binding.energyChip.setBackgroundResource(R.drawable.bg_chip_active)
+            binding.energyChip.backgroundTintList = ColorStateList.valueOf(container)
+            binding.energyIcon.setTextColor(onContainer)
+            binding.batteryText.setTextColor(onContainer)
+        } else {
+            binding.energyChip.background = null
+            binding.energyChip.backgroundTintList = null
+            binding.batteryText.setTextColor(
+                MaterialColors.getColor(binding.batteryText, com.google.android.material.R.attr.colorOnSurface),
+            )
+        }
+    }
+
+    /**
+     * What holding the chip explains. It names what the app actually changes and what it does not,
+     * and puts the three things the rider has to do themselves at the end, because two of them
+     * (system default screen, dark theme) save more than energy saver does.
+     */
+    private fun showEnergyHelp() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.energy_help_title)
+            .setMessage(R.string.energy_help_body)
+            .setPositiveButton(R.string.energy_help_dismiss, null)
+            .setNeutralButton(R.string.title_settings) { _, _ ->
+                startActivity(Intent(this, SettingsActivity::class.java))
+            }
+            .show()
     }
 
     // ---------------------------------------------------------------- riding mode, auto record, theme
@@ -1082,7 +1201,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                     runCatching { repo.loadPoints(id) }.getOrDefault(emptyList())
                 }
                 if (trackOnMapId != id) return@launch
-                mapController.setTrackHistory(points.map { it.latLon })
+                mapController.setTrackHistory(segmentsOf(points))
                 trackPointsOnMap = points.size
                 val current = RideSession.state.value
                 if (current.trackId == id && current.stats.pointCount > points.size) {
@@ -1104,6 +1223,18 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         return if (id >= 0) id else null
     }
 
+    /**
+     * Reads and *consumes* the continue request. Removed from the intent because the activity's
+     * intent outlives the launch - a rotation, or a later onNewIntent - and re-reading it would
+     * try to start the same ride twice.
+     */
+    private fun continueTrackIdFrom(intent: Intent?): Long? {
+        val id = intent?.getLongExtra(EXTRA_CONTINUE_TRACK_ID, -1L) ?: -1L
+        if (id < 0) return null
+        intent?.removeExtra(EXTRA_CONTINUE_TRACK_ID)
+        return id
+    }
+
     /** Draws a saved track and frames it (north-up, free camera). Ignored while a ride is recorded. */
     private fun showPendingTrack() {
         val id = pendingViewTrackId ?: return
@@ -1114,15 +1245,15 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         trackPointsOnMap = -1
         trackLoadJob?.cancel()
         trackLoadJob = lifecycleScope.launch {
-            val points = withContext(Dispatchers.IO) {
+            val stored = withContext(Dispatchers.IO) {
                 runCatching { repo.loadPoints(id) }.getOrDefault(emptyList())
-            }.map { it.latLon }
+            }
             if (trackOnMapId != id) return@launch
-            mapController.setTrackHistory(points)
-            trackPointsOnMap = points.size
-            if (points.isEmpty()) return@launch
+            mapController.setTrackHistory(segmentsOf(stored))
+            trackPointsOnMap = stored.size
+            if (stored.isEmpty()) return@launch
             mapController.cameraMode = CameraMode.FREE
-            frameTrack(m, points)
+            frameTrack(m, stored.map { it.latLon })
         }
     }
 
@@ -1513,7 +1644,6 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         // "my position" once one is held: typing an address then pressing it must not silently
         // save the rider's own position instead.
         var foundAt: LatLon? = null
-        var foundName: String? = null
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.fav_set_title, defaultName))
@@ -1524,57 +1654,66 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
         var searching = false
 
-        /** Drops a previous hit so a later failed search cannot leave the old one tappable. */
-        fun clearFoundAddress() {
+        /** Forgets the chosen address and puts the button back to meaning "my position". */
+        fun clearChosenAddress() {
             foundAt = null
-            foundName = null
-            b.addressResult.setOnClickListener(null)
-            b.addressResult.isClickable = false
+            b.addressResults.removeAllViews()
+            b.addressResults.isVisible = false
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setText(R.string.fav_my_position)
+        }
+
+        fun showStatus(resId: Int) {
+            b.addressStatus.isVisible = true
+            b.addressStatus.setText(resId)
+        }
+
+        /**
+         * Puts every match on screen as a radio button.
+         *
+         * Choosing is separated from saving on purpose. A tap that saved and closed the dialog took
+         * the name field and the icon with it, and left no way to change your mind about which of
+         * several matches was the right one. Here a tap only decides *which*; the dialog's own
+         * button still decides *whether*.
+         */
+        fun showResults(results: List<Geocoder.Result>) {
+            b.addressResults.removeAllViews()
+            for ((index, result) in results.withIndex()) {
+                val row = RadioButton(b.addressResults.context).apply {
+                    id = View.generateViewId()
+                    text = result.name
+                    minHeight = resources.getDimensionPixelSize(R.dimen.touch_target_min)
+                    setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+                    setOnClickListener {
+                        foundAt = result.at
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setText(R.string.fav_use_address)
+                    }
+                }
+                b.addressResults.addView(row)
+                // A single match is not a choice, so make it the choice. performClick both ticks
+                // the radio and runs the listener above, so the button updates with it.
+                if (index == 0 && results.size == 1) row.performClick()
+            }
+            b.addressResults.isVisible = true
         }
 
         fun runAddressSearch() {
             val query = b.addressInput.text?.toString()?.trim().orEmpty()
             if (query.isEmpty() || searching) return
             searching = true
-            b.addressResult.isVisible = true
-            b.addressResult.text = getString(R.string.picker_search_searching)
-            clearFoundAddress()
+            clearChosenAddress()
+            showStatus(R.string.picker_search_searching)
             lifecycleScope.launch {
                 val results = withContext(Dispatchers.IO) {
                     runCatching { Geocoder.search(placeSearchClient, query) }.getOrNull()
                 }
                 searching = false
                 if (isFinishing || isDestroyed) return@launch
-                val first = results?.firstOrNull()
                 when {
-                    results == null -> {
-                        b.addressResult.setText(R.string.picker_search_failed)
-                        clearFoundAddress()
-                    }
-                    first == null -> {
-                        b.addressResult.setText(R.string.picker_search_no_results)
-                        clearFoundAddress()
-                    }
+                    results == null -> showStatus(R.string.picker_search_failed)
+                    results.isEmpty() -> showStatus(R.string.picker_search_no_results)
                     else -> {
-                        foundAt = first.at
-                        foundName = first.name
-                        b.addressResult.text = getString(R.string.fav_address_found, first.name)
-                        // Tapping the result is the obvious thing to do once it appears, so make it
-                        // work: it saves the place there and then. The button below still does the
-                        // same, but a rider should not have to scroll past the answer to find it.
-                        b.addressResult.isClickable = true
-                        b.addressResult.setOnClickListener {
-                            val typed = b.nameInput.text?.toString()?.trim().orEmpty()
-                            saveFixedFavorite(
-                                kind,
-                                typed.ifEmpty { defaultName },
-                                first.at,
-                                customEmoji ?: chipEmoji,
-                            )
-                            dialog.dismiss()
-                        }
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setText(R.string.fav_use_address)
+                        b.addressStatus.isVisible = false
+                        showResults(results)
                     }
                 }
             }
@@ -1917,6 +2056,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     companion object {
         /** Long extra: id of a saved track to draw on the map (sent by [TracksActivity]). */
         const val EXTRA_VIEW_TRACK_ID = "view_track_id"
+
+        /** Long: record into this existing track instead of starting a new one. */
+        const val EXTRA_CONTINUE_TRACK_ID = "continue_track_id"
 
         /** [MapDownloadService.EXTRA_PHASE] value that marks a completed download. */
         private const val PHASE_DONE = "done"

@@ -9,4 +9,14 @@
     <string name="notif_action_resume">Resume</string>
     <string name="notif_action_stop">Stop</string>
     <string name="notif_storage_error">Storage error: retrying</string>
+
+    <!-- "Are you still riding?" Its own channel so it can be silenced without silencing the
+         ongoing ride notification, and louder than that one because its whole job is to reach a
+         rider who has stopped looking at the phone. -->
+    <string name="notif_channel_reminder">Forgotten ride reminder</string>
+    <string name="notif_channel_reminder_desc">Asks whether a ride is over after a long stop, so a recording left running does not swallow the afternoon.</string>
+    <string name="notif_still_recording_title">Still recording</string>
+    <string name="notif_still_recording_text">No movement for %1$d min. %2$s recorded so far — finish this ride?</string>
+    <string name="notif_action_finish_ride">Finish ride</string>
+    <string name="notif_action_keep_recording">Keep recording</string>
 </resources>

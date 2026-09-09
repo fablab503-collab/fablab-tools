@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The "this control is on" pill behind the energy-saver chip. White so the tint set in code
+     (MainActivity.renderEnergyChip) decides the colour, the same trick as bg_status_dot. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="@dimen/card_corner_small" />
+</shape>

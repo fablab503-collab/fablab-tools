@@ -16,8 +16,10 @@ import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityTracksBinding
 import com.fablab503.velotrack.databinding.ItemListRowBinding
 import com.fablab503.velotrack.gpx.GpxWriter
+import com.fablab503.velotrack.model.RecordingStatus
 import com.fablab503.velotrack.model.TrackSummary
 import com.fablab503.velotrack.model.Units
+import com.fablab503.velotrack.recording.RideSession
 import com.fablab503.velotrack.settings.Prefs
 import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
@@ -29,7 +31,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-/** List of recorded rides: tap to view on the map, trailing menu or long-press for rename / export / delete. */
+/** List of recorded rides: tap to view on the map, trailing menu or long-press for continue / rename / export / delete. */
 class TracksActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTracksBinding
@@ -134,23 +136,60 @@ class TracksActivity : AppCompatActivity() {
     }
 
     private fun showActions(t: TrackSummary) {
-        val items = arrayOf(
-            getString(R.string.track_action_rename),
-            getString(R.string.track_action_share),
-            getString(R.string.track_action_save),
-            getString(R.string.track_action_delete),
-        )
+        // Continue is offered only when nothing is being recorded. Nothing can be added to a ride
+        // while another one is running, and an entry that always answers "not now" is worse than
+        // no entry. The actions are built as a list of label-to-action pairs rather than a fixed
+        // array so a hidden first item cannot silently shift what the others do.
+        val actions = mutableListOf<Pair<Int, () -> Unit>>()
+        if (!RideSession.serviceRunning && RideSession.state.value.status == RecordingStatus.IDLE) {
+            actions += R.string.track_action_continue to { confirmContinue(t) }
+        }
+        actions += R.string.track_action_rename to { rename(t) }
+        actions += R.string.track_action_share to { exportAndShare(t) }
+        actions += R.string.track_action_save to { exportAndSave(t) }
+        actions += R.string.track_action_delete to { confirmDelete(t) }
+
         MaterialAlertDialogBuilder(this)
             .setTitle(t.name)
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> rename(t)
-                    1 -> exportAndShare(t)
-                    2 -> exportAndSave(t)
-                    3 -> confirmDelete(t)
-                }
+            .setItems(actions.map { getString(it.first) }.toTypedArray()) { _, which ->
+                actions[which].second()
             }
             .show()
+    }
+
+    /**
+     * Continuing a ride is not obvious from its name, so the dialog says exactly what will happen
+     * to it before anything is written: it grows, its totals carry on, and the gap between the two
+     * halves is not counted as distance ridden.
+     */
+    private fun confirmContinue(t: TrackSummary) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.continue_title)
+            .setMessage(
+                getString(
+                    R.string.continue_body,
+                    t.name,
+                    Format.dateTime(t.startedAtMs),
+                    Format.distance(t.distanceM, prefs.units),
+                    Format.duration(t.movingMs),
+                ),
+            )
+            .setPositiveButton(R.string.continue_confirm) { _, _ -> startContinuing(t) }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
+    }
+
+    /**
+     * Handed to MainActivity rather than started here: the location and notification permissions,
+     * the battery-saver warning and the foreground-service launch all live there already, and a
+     * ride belongs on the map anyway.
+     */
+    private fun startContinuing(t: TrackSummary) {
+        val intent = Intent(this, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_CONTINUE_TRACK_ID, t.id)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        startActivity(intent)
+        finish()
     }
 
     private fun rename(t: TrackSummary) {

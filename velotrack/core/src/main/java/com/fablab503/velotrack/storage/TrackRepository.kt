@@ -71,6 +71,22 @@ class TrackRepository(private val db: TrackDatabase) {
         db.writableDatabase.update(TrackDatabase.TABLE_TRACKS, values, "id = ?", arrayOf(trackId.toString()))
     }
 
+    /**
+     * Puts a finished track back into the recording state so more can be added to it.
+     *
+     * Clearing `finished_at` matters as much as the state: while a continued ride is running the
+     * row has to look exactly like any other ride in progress, or a crash mid-continuation would
+     * leave points appended to a track that [findUnfinished] cannot see and nothing would offer to
+     * close it. [finishTrack] sets both again when the rider stops.
+     */
+    fun reopenTrack(trackId: Long) {
+        val values = ContentValues().apply {
+            put("state", TrackSummary.STATE_RECORDING)
+            putNull("finished_at")
+        }
+        db.writableDatabase.update(TrackDatabase.TABLE_TRACKS, values, "id = ?", arrayOf(trackId.toString()))
+    }
+
     fun renameTrack(trackId: Long, name: String) {
         val values = ContentValues().apply { put("name", name) }
         db.writableDatabase.update(TrackDatabase.TABLE_TRACKS, values, "id = ?", arrayOf(trackId.toString()))

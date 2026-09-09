@@ -56,4 +56,21 @@
         <item>100</item>
         <item>200</item>
     </string-array>
+    <!-- Minutes of no movement before "are you still riding?"; 0 disables it. -->
+    <string-array name="inactivity_entries">
+        <item>@string/inactivity_never</item>
+        <item>@string/inactivity_5</item>
+        <item>@string/inactivity_10</item>
+        <item>@string/inactivity_15</item>
+        <item>@string/inactivity_30</item>
+        <item>@string/inactivity_60</item>
+    </string-array>
+    <string-array name="inactivity_values">
+        <item>0</item>
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+    </string-array>
 </resources>
