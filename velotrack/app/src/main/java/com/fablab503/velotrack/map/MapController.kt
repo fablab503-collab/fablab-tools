@@ -86,6 +86,7 @@ class MapController(
         set(value) {
             val changed = field != value
             field = value
+            if (changed) applyFrameCap()
             if (value != CameraMode.FREE) {
                 lastFollowMode = value
                 appliedPaddingTop = null // padding differs between the follow modes; force a re-set
@@ -93,8 +94,37 @@ class MapController(
             }
         }
 
+    /**
+     * The frame-rate cap follows who is driving the camera.
+     *
+     * While the rider drags or rotates the map (FREE), the renderer is allowed the display's own
+     * refresh rate: a pan at 30 fps on a 90 or 120 Hz phone is the "laggy" feel that was reported,
+     * because every second frame the finger moves and the map does not. While the app follows the
+     * ride, the camera eases continuously for hours and nobody is touching it, so 30 fps there is
+     * a deliberate battery saving with no felt cost. The renderer only draws when dirty in either
+     * case, so an idle map costs nothing regardless of the cap.
+     */
+    private fun applyFrameCap() {
+        val fps = if (cameraMode == CameraMode.FREE) displayFps() else FOLLOW_FPS
+        try {
+            mapView.setMaximumFps(fps)
+        } catch (e: IllegalStateException) {
+            // Renderer not created yet; onMapReady applies the cap once it exists.
+        }
+    }
+
+    /** The display's refresh rate, rounded, with a sane floor if the platform reports nothing. */
+    private fun displayFps(): Int {
+        val rate = try { mapView.display?.refreshRate ?: 0f } catch (e: Exception) { 0f }
+        return if (rate >= 30f) Math.round(rate) else 60
+    }
+
     private var map: MapLibreMap? = null
     private var styleReady = false
+    /** Bumped on every loadStyle; a background render whose generation is stale is discarded. */
+    private var loadGeneration = 0
+    /** The raw style template, keyed by asset name, so a reload does not re-read 1 MB from assets. */
+    private var cachedTemplate: Pair<String, String>? = null
     /** True once any style has finished loading; a later reload then passes through a blank style first. */
     private var styleLoadedOnce = false
     private var pendingOnDone: ((String?) -> Unit)? = null
@@ -170,7 +200,7 @@ class MapController(
 
     // ---------------------------------------------------------------- lifecycle
 
-    /** Stores the map, disables UI widgets, caps the frame rate, disables prefetch and wires gesture detection. */
+    /** Stores the map, disables UI widgets, sets the mode-aware frame cap, disables prefetch and wires gesture detection. */
     @Suppress("DEPRECATION")
     fun onMapReady(map: MapLibreMap) {
         this.map = map
@@ -181,11 +211,7 @@ class MapController(
             isTiltGesturesEnabled = true
             isRotateGesturesEnabled = true
         }
-        try {
-            mapView.setMaximumFps(MAX_FPS)
-        } catch (e: IllegalStateException) {
-            // Renderer not created yet; the default refresh mode is already WHEN_DIRTY.
-        }
+        applyFrameCap()
         map.setPrefetchesTiles(false)
 
         // Before the first fix, show the last known area instead of the whole world.
@@ -225,13 +251,6 @@ class MapController(
             pendingLoad = Pair(bandFiles, onDone)
             return
         }
-        val styleAsset = if (lightMap) STYLE_ASSET_LIGHT else STYLE_ASSET
-        val template = try {
-            context.assets.open(styleAsset).bufferedReader(Charsets.UTF_8).use { it.readText() }
-        } catch (e: IOException) {
-            onDone("Cannot read $styleAsset: ${e.message}")
-            return
-        }
         val mapUrls = ArrayList<String?>(bandFiles.size)
         for (file in bandFiles) {
             if (!file.isFile) {
@@ -246,13 +265,39 @@ class MapController(
             }
             mapUrls.add(url)
         }
-        // Without any map file the template's vector sources would all have to be emitted with an
-        // empty "tiles" array, and MapLibre's TileLoader indexes tiles[0] unguarded (native abort on
-        // the first render). Use a self-contained background-only style instead; setupStyle adds the overlays.
-        val hasAnyFile = mapUrls.any { it != null }
-        val emptyJson = emptyStyleJson()
-        val json = if (hasAnyFile) StyleTemplate.render(template, mapUrls) else emptyJson
+        val styleAsset = if (lightMap) STYLE_ASSET_LIGHT else STYLE_ASSET
+        val generation = ++loadGeneration
 
+        // The style is about 1 MB of JSON. Reading it from assets and substituting the band URLs
+        // into it used to happen right here on the main thread, and on a mid-range phone that is a
+        // multi-second stall: Choreographer reported 300 skipped frames at startup. Do that work on
+        // a background thread and hand only the finished string back to the main thread, where
+        // MapLibre must be called. The generation check drops a result that a later call overtook.
+        Thread({
+            val template = try {
+                cachedTemplate?.takeIf { it.first == styleAsset }?.second
+                    ?: context.assets.open(styleAsset).bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        .also { cachedTemplate = styleAsset to it }
+            } catch (e: IOException) {
+                mapView.post { if (generation == loadGeneration) onDone("Cannot read $styleAsset: ${e.message}") }
+                return@Thread
+            }
+            // Without any map file the template's vector sources would all have to be emitted with
+            // an empty "tiles" array, and MapLibre's TileLoader indexes tiles[0] unguarded (native
+            // abort on the first render). Use a self-contained background-only style instead;
+            // setupStyle adds the overlays.
+            val hasAnyFile = mapUrls.any { it != null }
+            val emptyJson = emptyStyleJson()
+            val json = if (hasAnyFile) StyleTemplate.render(template, mapUrls) else emptyJson
+            mapView.post {
+                if (generation != loadGeneration || map !== m) return@post
+                applyStyleJson(m, json, emptyJson, onDone)
+            }
+        }, "velotrack-style").start()
+    }
+
+    /** Main thread only. The part of a style load that must talk to MapLibre. */
+    private fun applyStyleJson(m: MapLibreMap, json: String, emptyJson: String, onDone: (String?) -> Unit) {
         val hadStyle = styleLoadedOnce
         styleReady = false
         clearStyleRefs()
@@ -1122,7 +1167,8 @@ class MapController(
         private val DEFAULT_PUCK_COLOR: Int = 0xFF42A5F5.toInt()
         private val DEFAULT_PUCK_ON_COLOR: Int = Color.WHITE
 
-        private const val MAX_FPS = 30
+        /** Cap while auto-following a ride; see applyFrameCap for why it is not the display rate. */
+        private const val FOLLOW_FPS = 30
         private const val EASE_MS = 1000
         private const val RECENTER_MS = 500
         private const val INITIAL_ZOOM_3D = 17.0
