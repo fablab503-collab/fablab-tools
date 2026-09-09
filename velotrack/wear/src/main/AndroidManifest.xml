@@ -7,9 +7,20 @@
         android:required="true" />
 
     <!--
-        No location permission, and no GPS feature. The watch shows the ride the phone is recording;
-        every fix is the phone's. A watch with no GNSS chip of its own works exactly as well.
+        The watch records on its own when the phone is not there, so it needs the same location and
+        foreground-service permissions the phone app has. GPS is NOT required: a watch without a
+        GNSS chip still works as a display for a ride the phone is recording, which is the whole
+        point of keeping both modes.
     -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
 
     <application
         android:allowBackup="false"
@@ -34,6 +45,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            The shared engine's own service, declared here so the watch can record without the
+            phone. Same class as the phone runs; the manifest entry is per-app because a library
+            module must not force a service into every consumer.
+        -->
+        <service
+            android:name="com.fablab503.velotrack.recording.RecordingService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 
 </manifest>

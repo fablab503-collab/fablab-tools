@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Advertised to paired watches. The watch looks for this rather than for any connected node, so
+     a phone without VeloTrack installed reads as "no phone" instead of a phone that never answers. -->
+<resources>
+    <string-array name="android_wear_capabilities">
+        <item>velotrack_phone</item>
+    </string-array>
+</resources>

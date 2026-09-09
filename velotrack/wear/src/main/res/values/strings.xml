@@ -15,6 +15,11 @@
     <string name="wear_resume">Resume</string>
     <string name="wear_stop">Finish ride</string>
 
+    <string name="wear_source_phone">From phone</string>
+    <string name="wear_source_watch">On watch</string>
+    <string name="wear_needs_location">Location permission needed</string>
+    <string name="wear_no_gps_hardware">This watch has no GPS</string>
+
     <string name="wear_no_value">–</string>
     <string name="wear_separator">·</string>
 

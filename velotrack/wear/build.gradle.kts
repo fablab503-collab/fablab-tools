@@ -88,10 +88,15 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.kotlinx.coroutines.android)
+    // repeatOnLifecycle, for collecting the ride state only while the screen is on.
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
     // BoxInsetLayout: keeps content inside the square that fits within a round screen.
     implementation(libs.androidx.wear)
+    implementation(libs.androidx.wear.ongoing)
+    // The same ride engine the phone uses: same filtering, same statistics, same database.
+    implementation(project(":core"))
     implementation(project(":sync"))
 
     testImplementation(libs.junit)

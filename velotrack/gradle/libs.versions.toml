@@ -22,6 +22,10 @@ playServicesWearable = "18.2.0"
 wear = "1.3.0"
 # await() on a Play Services Task; the Data Layer only offers Task-based APIs.
 coroutinesPlayServices = "1.11.0"
+# OngoingActivity: how a Wear app stays visible on the watch face during a ride. Play's Wear
+# quality rules require it for a workout-style app, and it is what stops the watch dropping
+# back to the watch face mid-ride.
+wearOngoing = "1.1.0"
 # Real org.json for unit tests: the Android SDK jar these tests otherwise compile and run against
 # only stubs org.json (every method body throws or, with isReturnDefaultValues, silently returns
 # null/0), which cannot exercise real parsing. Same artifact org.json ships inside the platform.
@@ -44,6 +48,7 @@ json = { module = "org.json:json", version.ref = "json" }
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearable" }
 androidx-wear = { module = "androidx.wear:wear", version.ref = "wear" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
+androidx-wear-ongoing = { module = "androidx.wear:wear-ongoing", version.ref = "wearOngoing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

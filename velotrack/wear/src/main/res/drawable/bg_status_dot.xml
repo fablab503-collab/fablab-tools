@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain filled circle. Colour comes from backgroundTintList, set in code
+     (WearMainActivity.renderConnection). Same shape the phone uses for its GPS dot, so the two
+     apps read the same way: green connected, red not. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white" />
+</shape>
