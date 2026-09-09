@@ -26,6 +26,7 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -63,6 +64,18 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     /** Set once the rider starts a ride here, so a phone reconnecting cannot steal the display. */
     private var recordingLocally = false
 
+    /**
+     * The ride clock, held here rather than read straight from the engine.
+     *
+     * `movingMs` only advances when a GPS fix arrives, so a rider in a tunnel or stopped at lights
+     * would watch a dead clock. These two carry the last figure the engine gave and the wall-clock
+     * instant it arrived, so the display can keep counting between fixes while the ride is running,
+     * and freeze the moment it is not.
+     */
+    private var clockBaseMs = 0L
+    private var clockBaseWallMs = 0L
+    private var clockRunning = false
+
     private val requestLocation = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -91,6 +104,16 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 RideSession.state.collect { render() }
+            }
+        }
+        // Fixes arrive about once a second at best and not at all without sky. The clock is redrawn
+        // on its own beat so it never looks stalled while the ride is genuinely running.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    delay(1000L)
+                    if (clockRunning) timeText.text = WearFormat.duration(rideClockMs())
+                }
             }
         }
         render()
@@ -240,6 +263,32 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
     // ---- rendering ------------------------------------------------------------------------------
 
+    /**
+     * Records what the engine last reported and whether the ride is running, so [rideClockMs] can
+     * carry on between updates. Called on every render so a status change takes effect at once.
+     */
+    private fun updateClock(movingMs: Long, running: Boolean, idle: Boolean) {
+        if (idle) {
+            // A finished or not-yet-started ride: the next one begins at zero.
+            clockBaseMs = 0L
+            clockBaseWallMs = System.currentTimeMillis()
+            clockRunning = false
+            return
+        }
+        // Never let the clock run backwards. movingMs only advances on a GPS fix the filter
+        // accepts, so it lags the wall clock; re-basing straight onto it made a pause visibly
+        // reset the ride to 0:00.
+        val base = maxOf(movingMs, rideClockMs())
+        if (running != clockRunning || base > clockBaseMs) {
+            clockBaseMs = base
+            clockBaseWallMs = System.currentTimeMillis()
+        }
+        clockRunning = running
+    }
+
+    private fun rideClockMs(): Long =
+        if (clockRunning) clockBaseMs + (System.currentTimeMillis() - clockBaseWallMs) else clockBaseMs
+
     private fun render() {
         connectionDot.backgroundTintList =
             ColorStateList.valueOf(if (phoneConnected) DOT_CONNECTED else DOT_ALONE)
@@ -258,8 +307,13 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             WearFormat.distanceUnit(imperial),
         )
         // Moving time, not elapsed: elapsed is wall-clock and keeps counting through a pause,
-        // which reads as a stuck app on a wrist. Moving time only accrues while RECORDING.
-        timeText.text = WearFormat.duration(state.stats.movingMs)
+        // which reads as a stuck app on a wrist.
+        updateClock(
+            state.stats.movingMs,
+            running = state.status == RecordingStatus.RECORDING,
+            idle = state.status == RecordingStatus.IDLE,
+        )
+        timeText.text = WearFormat.duration(rideClockMs())
 
         statusText.setText(
             when (state.status) {
@@ -302,7 +356,12 @@ class WearMainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
             WearFormat.distanceUnit(imperial),
         )
         // Same reason as the local path: the clock must stop when the ride is paused.
-        timeText.text = WearFormat.duration(current.movingMs)
+        updateClock(
+            current.movingMs,
+            running = current.status == WearSync.STATUS_RECORDING,
+            idle = !current.isActive,
+        )
+        timeText.text = WearFormat.duration(rideClockMs())
         statusText.setText(
             when (current.status) {
                 WearSync.STATUS_RECORDING -> R.string.wear_recording
