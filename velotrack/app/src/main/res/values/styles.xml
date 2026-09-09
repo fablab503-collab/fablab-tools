@@ -3,9 +3,13 @@
     Widget styles shared by the map overlay. These reference theme attributes only, so there is no
     -night variant: the colours follow whichever theme is active.
 
-    Everything here is flat on purpose. On the black night map a Material shadow reads as a grey
-    smudge around each button rather than as depth, so the controls sit on the map with no
-    elevation at all and are separated from it by their surface colour alone.
+    Everything here is flat on purpose. On the map a Material shadow reads as a grey smudge around
+    each button rather than as depth, so the controls sit on the map with no elevation at all and
+    are separated from it by their surface colour alone.
+
+    Setting `elevation` to 0 is not enough on its own. A FloatingActionButton also carries a default
+    state-list animator that drives translationZ on press, focus and hover, and that animator puts
+    the shadow straight back. Clearing it is what actually removes the halo.
 -->
 <resources>
 
@@ -13,18 +17,23 @@
         <item name="elevation">0dp</item>
         <item name="hoveredFocusedTranslationZ">0dp</item>
         <item name="pressedTranslationZ">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <!-- Clears the hairline the MaterialShapeDrawable strokes under the same shadow. -->
+        <item name="borderWidth">0dp</item>
     </style>
 
     <style name="Widget.VeloTrack.Fab.Primary" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Primary">
         <item name="elevation">0dp</item>
         <item name="hoveredFocusedTranslationZ">0dp</item>
         <item name="pressedTranslationZ">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="Widget.VeloTrack.Fab.Secondary" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Secondary">
         <item name="elevation">0dp</item>
         <item name="hoveredFocusedTranslationZ">0dp</item>
         <item name="pressedTranslationZ">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <!-- The stop button: same flatness, its own error colouring is set in the layout. -->
@@ -32,6 +41,8 @@
         <item name="elevation">0dp</item>
         <item name="hoveredFocusedTranslationZ">0dp</item>
         <item name="pressedTranslationZ">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="borderWidth">0dp</item>
     </style>
 
     <!-- Cards over the map: filled, no shadow, so they match the flat buttons. -->
