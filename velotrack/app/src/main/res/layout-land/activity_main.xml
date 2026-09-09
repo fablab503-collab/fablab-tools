@@ -54,6 +54,39 @@
                     android:paddingEnd="@dimen/card_padding_horizontal"
                     android:paddingBottom="@dimen/card_padding_vertical">
 
+                    <!-- Same CO2 comparison as portrait, above the speed. -->
+                    <LinearLayout
+                        android:id="@+id/carbonChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:minHeight="28dp"
+                        android:orientation="horizontal"
+                        android:paddingStart="2dp"
+                        android:paddingEnd="6dp"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <TextView
+                            android:id="@+id/carbonIcon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:importantForAccessibility="no"
+                            android:text="@string/carbon_chip_icon"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/carbonValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:maxLines="1"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="12.4 kg vs car" />
+                    </LinearLayout>
+
                     <!-- Speed -->
                     <LinearLayout
                         android:layout_width="match_parent"

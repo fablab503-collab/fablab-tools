@@ -89,6 +89,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.CarbonActivity"
+            android:exported="false"
+            android:label="@string/carbon_title" />
+
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:label="@string/title_settings" />

@@ -17,6 +17,7 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
+| 59 | 9 Sep 2026 | A leaf chip on the map: what a car would have emitted over the distance you have ridden, with the sources and an honest account of what it means | [059-co2-comparison.md](059-co2-comparison.md) |
 | 48 | 9 Sep 2026 | The watch records rides on its own with no phone, and a green/red dot says whether the phone is there | [048-watch-records-on-its-own.md](048-watch-records-on-its-own.md) |
 | 47 | 9 Sep 2026 | A Wear OS app showing the phone's ride on the wrist, with Start/Pause/Finish. Built and rendering, but not yet distributed and the live link is unproven | [047-wear-os-companion.md](047-wear-os-companion.md) |
 | 46 | 9 Sep 2026 | Nothing on a phone. The app can now be installed on Chromebooks, GPS-less tablets and headsets: 15,332 supported devices become 20,862 | [046-every-device-that-can-use-the-app.md](046-every-device-that-can-use-the-app.md) |

@@ -218,6 +218,30 @@
     <string name="picker_unknown_place">No name here</string>
     <string name="fav_address_found">Found: %1$s</string>
     <string name="fav_use_address">Use address</string>
+    <!-- CO2 comparison. Wording is deliberate: "would have emitted", never "you saved". Cycling
+         avoids emissions rather than removing them, and only when it replaces a car trip. -->
+    <string name="carbon_chip_icon">\uD83C\uDF43</string>
+    <string name="carbon_chip_value">%1$s vs car</string>
+    <string name="cd_carbon_chip">What an average car would have emitted over the distance you have ridden. Tap for the full working.</string>
+    <string name="carbon_title">Riding versus driving</string>
+    <string name="carbon_kg">%1$.1f kg</string>
+    <string name="carbon_headline_caption">of CO\u2082e an average car would have emitted over the %1$s you have ridden.</string>
+    <string name="carbon_equivalences">That is about %1$.1f litres of petrol burned, or %2$d phone charges.</string>
+    <string name="carbon_ride_more">Ride a little further and there will be something to compare.</string>
+
+    <string name="carbon_honesty_title">What this number is, and is not</string>
+    <string name="carbon_honesty_body">This is what a car would have emitted over the same distance. It is not CO\u2082 removed from the air, and it is not subtracted from your own footprint.\n\nRiding only avoids emissions when it replaces a journey you would otherwise have driven. Nobody has measured how often leisure riding does that, and driving to the start of a ride works the other way. So the figure above is a comparison, not a credit.</string>
+
+    <string name="carbon_avoided_title">If your riding replaced driving</string>
+    <string name="carbon_avoided_body">Only you know how much of your riding replaced a car trip. Set it here and the avoided figure is worked out from your distance, minus the bicycle\u2019s own footprint.</string>
+    <string name="carbon_avoided_none">Set above 0% to see what would have been avoided.</string>
+    <string name="carbon_avoided_value">If %1$d%% of your riding replaced a car trip: %2$s kg avoided</string>
+    <string name="carbon_substitution_hint">Research on commuting by e-bike puts the share of cycled kilometres that replace a car at about a quarter (Bigazzi and Wong, 2020). For leisure riding there is no published figure.</string>
+    <string name="carbon_substitution_cd">Share of your riding that replaced a car trip</string>
+
+    <string name="carbon_sources_title">Where the numbers come from</string>
+    <string name="carbon_sources_body">Car: %1$.1f g CO\u2082e per kilometre. UK DESNZ greenhouse gas conversion factors 2026, average car, fuel unknown. Includes both the exhaust and the fuel\u2019s production and delivery, which is about a fifth of the total and is often left out.\n\nBicycle: %2$.1f g CO\u2082e per kilometre for building and maintaining it, spread over its life. Brand and others, Transportation Research Part D, 2021. Food is excluded there, because the evidence that everyday riding raises overall eating is weak. Counting it would put a bicycle nearer 21 g per kilometre.\n\nSubstitution: %3$d%% of cycled kilometres replace a car for e-bike commuting, from a review of 24 studies (Bigazzi and Wong, 2020). A meta-analysis restricted to controlled studies found no statistically significant car reduction at all (Chevance and others, 2025).\n\nPetrol 2.348 kg CO\u2082 per litre and a phone charge at 12.4 g: US EPA greenhouse gas equivalencies, 2022 data.</string>
+
     <string name="picker_search_hint">Search for an address</string>
     <string name="picker_search_no_results">No match for that address. Try a different search, or drag the map instead.</string>
     <string name="picker_search_failed">Couldn\'t search — check your connection.</string>

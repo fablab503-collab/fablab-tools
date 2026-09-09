@@ -80,6 +80,9 @@ import com.fablab503.velotrack.settings.Prefs
 import com.fablab503.velotrack.settings.WeatherReading
 import com.fablab503.velotrack.storage.FavoritesRepository
 import com.fablab503.velotrack.storage.RouteStore
+import com.fablab503.velotrack.green.CarbonEstimate
+import com.fablab503.velotrack.model.RideTotals
+import com.fablab503.velotrack.storage.StatsRepository
 import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
 import com.google.android.material.color.MaterialColors
@@ -392,6 +395,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         updateGpsBanner()
         refreshNoMapOverlay()
         refreshRoute()
+        refreshCarbonChip()
         updateModeButton()
         render(RideSession.state.value)
     }
@@ -1688,6 +1692,37 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     }
 
     /** Redraws every saved place's marker on the map; call after any add, edit or delete. */
+    /**
+     * Fills the CO2 chip from the all-time ridden distance.
+     *
+     * Reads once per resume rather than per fix: the figure moves by grams between GPS updates and
+     * a database read on every fix would cost more than the number is worth.
+     */
+    private fun refreshCarbonChip() {
+        lifecycleScope.launch {
+            val totals = withContext(Dispatchers.IO) {
+                runCatching { StatsRepository(TrackDatabase.get(this@MainActivity)).totals(null) }
+                    .getOrDefault(RideTotals.EMPTY)
+            }
+            if (isFinishing || isDestroyed) return@launch
+            val kg = CarbonEstimate.carEquivalentKg(totals.distanceM)
+            // Below a tenth of a kilo there is nothing worth showing.
+            if (kg < 0.1) {
+                binding.carbonChip.isVisible = false
+                return@launch
+            }
+            binding.carbonValue.text = getString(
+                R.string.carbon_chip_value,
+                getString(R.string.carbon_kg, kg),
+            )
+            binding.carbonChip.contentDescription = getString(R.string.cd_carbon_chip)
+            binding.carbonChip.isVisible = true
+            binding.carbonChip.onTapWithFeedback {
+                startActivity(Intent(this@MainActivity, CarbonActivity::class.java))
+            }
+        }
+    }
+
     private fun refreshFavoriteMarkers() {
         lifecycleScope.launch {
             val list = withContext(Dispatchers.IO) { runCatching { favorites.list() }.getOrDefault(emptyList()) }
