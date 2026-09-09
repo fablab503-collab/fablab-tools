@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain filled circle. Colour comes from backgroundTintList, set in code
+     (MainActivity.renderGps): green once a GPS fix is active, red while searching or off. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white" />
+</shape>

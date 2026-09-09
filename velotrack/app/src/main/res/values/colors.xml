@@ -22,4 +22,10 @@
     <color name="md_error_container">#FFFFDAD6</color>
     <color name="md_outline">#FF74777F</color>
     <color name="md_outline_variant">#FFC4C6D0</color>
+
+    <!-- GPS status dot (MainActivity.renderGps). Not a Material 3 role: M3 has no "success"
+         colour, so this is a plain, deliberately saturated green, tuned for contrast against
+         this theme's light surface the same way md_error is tuned against it. Red reuses
+         ?attr/colorError instead of a colour of its own. -->
+    <color name="gps_fix_ok">#FF1E8E3E</color>
 </resources>

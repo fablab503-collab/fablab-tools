@@ -100,6 +100,17 @@ class PmTilesRemote(private val client: RangeClient, val url: String) {
         val root = rootDir ?: throw IllegalStateException("Root directory not loaded")
         val lo = maxOf(zMin, h.minZoom)
         val hi = minOf(zMax, h.maxZoom)
+        // Cheap up-front check, no lookups yet: how many (z, x, y) grid cells this call would have
+        // to visit. Every cell that resolves to a tile becomes one PlannedTile plus a HashMap entry,
+        // held in memory until the whole band is planned -- a whole country at the finest zoom band
+        // (z13-15) is the first request this app has ever offered that can reach millions of cells,
+        // and building that list literally exhausted the download process's heap (OutOfMemoryError
+        // in PmDirectory.decode, first hit downloading all of Germany "Fully detailed"). Failing
+        // fast here with the actual count is far better than an unexplained crash partway through.
+        val gridCells = if (lo <= hi) gridTileCount(bbox, lo, hi) else 0L
+        if (gridCells > MAX_PLANNABLE_TILES) {
+            throw AreaTooLargeException(gridCells)
+        }
         val tiles = ArrayList<PlannedTile>()
         val blobs = HashMap<Long, Int>() // absolute offset -> length
         var visited = 0
@@ -280,5 +291,45 @@ class PmTilesRemote(private val client: RangeClient, val url: String) {
         private const val MAX_CACHED_LEAVES = 48
         private const val CANCEL_CHECK_INTERVAL = 256
         private const val CHANNEL_CAPACITY = 64
+
+        /**
+         * Ceiling on grid cells (not confirmed tiles -- this is checked before any lookup) for one
+         * [plan] call. Each cell that resolves to a real tile ends up as a [PlannedTile] plus a
+         * `HashMap<Long, Int>` entry, both held for the whole call; measured overhead is roughly
+         * 100-150 bytes per tile once HashMap boxing is included. 300 000 keeps one band's plan
+         * under ~45 MB even at the pessimistic end, comfortably inside a normal Android heap with
+         * several bands planned back to back. It corresponds to roughly a 150 000-200 000 km^2
+         * region at the finest band (z13-15) -- a mid-sized country, not a small one.
+         */
+        internal const val MAX_PLANNABLE_TILES = 300_000L
     }
 }
+
+/**
+ * Thrown by [PmTilesRemote.plan] before doing any work when the requested area/zoom combination
+ * would need more grid cells than [PmTilesRemote.MAX_PLANNABLE_TILES] -- building that many
+ * [PlannedTile]s would risk exhausting the download process's heap rather than merely taking a
+ * long time. [message] is shown to the rider as-is by [MapDownloadService], the same way any other
+ * failure's exception message is (see `describe()`).
+ */
+class AreaTooLargeException(gridCells: Long) : IOException(
+    "This area needs about ${formatCount(gridCells)} tiles at this detail -- too many to plan " +
+        "at once. Try Simple map, a smaller area, or a smaller country.",
+)
+
+/** Grid cells (not confirmed tiles) a [PmTilesRemote.plan] call for `[zMin, zMax]` would visit.
+ *  Internal (not private) so [PmTilesRemoteSizingTest] can check it without a fake [RangeClient]. */
+internal fun gridTileCount(bbox: Mercator.BBox, zMin: Int, zMax: Int): Long {
+    var total = 0L
+    for (z in zMin..zMax) {
+        val (xRanges, yRange) = Mercator.tileRanges(bbox, z)
+        val xCount = xRanges.sumOf { (it.last - it.first + 1).toLong().coerceAtLeast(0L) }
+        val yCount = (yRange.last - yRange.first + 1).toLong().coerceAtLeast(0L)
+        total += xCount * yCount
+    }
+    return total
+}
+
+/** "1,234,567" without java.text.NumberFormat, which needs a Locale this pure-Kotlin file avoids. */
+internal fun formatCount(n: Long): String =
+    n.toString().reversed().chunked(3).joinToString(",").reversed()

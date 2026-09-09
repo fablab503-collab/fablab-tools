@@ -862,6 +862,16 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 getString(R.string.hud_gps_status, gps.satellitesUsed, gps.satellitesTotal, accuracy.roundToInt())
             else -> getString(R.string.hud_gps_status_no_accuracy, gps.satellitesUsed, gps.satellitesTotal)
         }
+        // Green once a fix is active, red while searching or the location provider is off -- a
+        // glance a rider can read in bright sunlight without parsing the "GPS 9/14" text. Purely
+        // decorative for accessibility (importantForAccessibility="no" in the layout): gpsText
+        // right next to it already says the same thing in words for a screen reader.
+        val dotColor = if (gps.hasFix) {
+            ContextCompat.getColor(this, R.color.gps_fix_ok)
+        } else {
+            MaterialColors.getColor(binding.gpsStatusDot, androidx.appcompat.R.attr.colorError)
+        }
+        binding.gpsStatusDot.backgroundTintList = ColorStateList.valueOf(dotColor)
     }
 
     private fun updateGpsBanner() {

@@ -130,6 +130,14 @@
                             android:textAppearance="?attr/textAppearanceBodyMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
+                        <View
+                            android:id="@+id/gpsStatusDot"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_status_dot"
+                            android:importantForAccessibility="no" />
+
                         <TextView
                             android:id="@+id/gpsText"
                             android:layout_width="0dp"

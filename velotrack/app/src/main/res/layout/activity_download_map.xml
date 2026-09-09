@@ -133,6 +133,58 @@
                         android:text="@string/download_chip_france" />
                 </com.google.android.material.chip.ChipGroup>
 
+                <!-- Country: any of the 195 UN member and observer states, picked from a
+                     searchable list rather than 195 chips. Its own detail toggle, separate from
+                     the Area chips above, because a whole country at "every street" can be a very
+                     different size decision than 10 km around the rider. -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
+                    android:text="@string/download_country_label"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChooseCountry"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical|start"
+                    android:maxLines="1"
+                    android:text="@string/download_choose_country"
+                    app:icon="@drawable/ic_public"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/countryDetailGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fab_gap"
+                    android:visibility="gone"
+                    app:selectionRequired="true"
+                    app:singleSelection="true"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCountrySimple"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/download_country_simple" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCountryDetailed"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/download_country_detailed" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
                 <!-- Name -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/nameLayout"

@@ -16,6 +16,7 @@
     <string name="title_stats">Statistics</string>
     <string name="title_map_files">Map data</string>
     <string name="title_download_map">Download map</string>
+    <string name="title_country_picker">Choose a country</string>
     <string name="title_settings">Settings</string>
 
     <!-- Overflow menu -->
@@ -233,11 +234,18 @@
     <string name="download_chip_1000km">Wide area · 1000 km · big roads only</string>
     <string name="download_chip_world">Whole world · coastlines only</string>
     <string name="download_chip_france">All of France · big roads only</string>
+    <string name="download_country_label">Country</string>
+    <string name="download_choose_country">Choose a country</string>
+    <string name="download_country_simple">Simple map</string>
+    <string name="download_country_detailed">Fully detailed</string>
     <string name="download_name_hint">Name</string>
     <string name="download_name_around_me">Around me %1$s</string>
     <string name="download_name_map_centre">Map centre %1$s</string>
     <string name="download_name_world">World</string>
     <string name="download_name_france">France</string>
+    <string name="download_name_country">%1$s · %2$s</string>
+    <string name="country_search_hint">Search countries</string>
+    <string name="country_search_empty">No country matches that search.</string>
     <string name="download_estimating">Calculating size…</string>
     <string name="download_estimate">Download %1$s · %2$s tiles</string>
     <string name="download_estimate_build">Download %1$s · %2$s tiles · build %3$s</string>

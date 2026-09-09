@@ -65,6 +65,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.CountryPickerActivity"
+            android:exported="false"
+            android:label="@string/title_country_picker"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.PlacePickerActivity"
             android:configChanges="keyboardHidden"
             android:exported="false"

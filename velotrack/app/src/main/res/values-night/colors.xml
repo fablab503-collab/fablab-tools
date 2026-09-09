@@ -21,4 +21,8 @@
     <color name="md_error_container">#FF8C1D18</color>
     <color name="md_outline">#FF8E918F</color>
     <color name="md_outline_variant">#FF444746</color>
+
+    <!-- See values/colors.xml: a lighter tone for contrast against the dark surface, the same way
+         md_error is lighter here than in the light theme. -->
+    <color name="gps_fix_ok">#FF81C995</color>
 </resources>

@@ -11,11 +11,13 @@ import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityDownloadMapBinding
+import com.fablab503.velotrack.download.Countries
 import com.fablab503.velotrack.download.MapDownloadService
 import com.fablab503.velotrack.pmtiles.Mercator
 import com.fablab503.velotrack.settings.Prefs
@@ -32,15 +34,20 @@ class DownloadMapActivity : AppCompatActivity() {
 
     private sealed class Area(val bandIndex: Int) {
         class Radius(bandIndex: Int, val radiusKm: Double) : Area(bandIndex)
+
+        /** Either a fixed preset ([nameRes], e.g. "All of France") or a country picked at
+         *  runtime ([rawName]) -- there is no string resource for 195 country names. */
         class BBox(
             bandIndex: Int,
             val west: Double,
             val south: Double,
             val east: Double,
             val north: Double,
-            val nameRes: Int,
+            val nameRes: Int = 0,
+            val rawName: String? = null,
         ) : Area(bandIndex) {
             fun toMercator() = Mercator.BBox(west, south, east, north)
+            fun name(context: Context): String = rawName ?: context.getString(nameRes)
         }
     }
 
@@ -53,6 +60,8 @@ class DownloadMapActivity : AppCompatActivity() {
     private var fix: Pair<Double, Double>? = null
     private var mapCentre: Pair<Double, Double>? = null
     private var selectedArea: Area? = null
+    private var countryChoice: Countries.Country? = null
+    private var countryDetailed = false
 
     private var mode = Mode.IDLE
     private var estimateReady = false
@@ -91,6 +100,7 @@ class DownloadMapActivity : AppCompatActivity() {
 
         setupCentre()
         setupChips()
+        setupCountry()
         setupName()
         binding.btnDownload.setOnClickListener { startDownload(allowMetered = false) }
         binding.btnCancel.setOnClickListener { MapDownloadService.cancel(this) }
@@ -168,6 +178,7 @@ class DownloadMapActivity : AppCompatActivity() {
         binding.areaChips.setOnCheckedStateChangeListener { _, checkedIds ->
             if (checkedIds.isNotEmpty()) {
                 binding.presetChips.clearCheck()
+                clearCountrySelection()
                 selectedArea = areaForChip(checkedIds[0])
                 onSelectionChanged()
             } else if (binding.presetChips.checkedChipId == View.NO_ID) {
@@ -178,6 +189,7 @@ class DownloadMapActivity : AppCompatActivity() {
         binding.presetChips.setOnCheckedStateChangeListener { _, checkedIds ->
             if (checkedIds.isNotEmpty()) {
                 binding.areaChips.clearCheck()
+                clearCountrySelection()
                 selectedArea = areaForChip(checkedIds[0])
                 onSelectionChanged()
             } else if (binding.areaChips.checkedChipId == View.NO_ID) {
@@ -194,6 +206,52 @@ class DownloadMapActivity : AppCompatActivity() {
         R.id.chipWorld -> Area.Radius(BAND_OVERVIEW, WORLD_RADIUS_KM)
         R.id.chipFrance -> Area.BBox(BAND_REGION, -5.5, 41.3, 9.7, 51.2, R.string.download_name_france)
         else -> null
+    }
+
+    // ---------------------------------------------------------------- country
+
+    private val countryPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode != RESULT_OK) return@registerForActivityResult
+            val data = result.data ?: return@registerForActivityResult
+            val country = CountryPickerActivity.countryFrom(data) ?: return@registerForActivityResult
+            onCountryPicked(country)
+        }
+
+    private fun setupCountry() {
+        binding.btnChooseCountry.setOnClickListener {
+            countryPickerLauncher.launch(CountryPickerActivity.intent(this))
+        }
+        binding.countryDetailGroup.check(R.id.btnCountrySimple)
+        binding.countryDetailGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            countryDetailed = checkedId == R.id.btnCountryDetailed
+            val country = countryChoice ?: return@addOnButtonCheckedListener
+            applyCountryBand(country)
+        }
+    }
+
+    private fun onCountryPicked(country: Countries.Country) {
+        countryChoice = country
+        binding.areaChips.clearCheck()
+        binding.presetChips.clearCheck()
+        binding.btnChooseCountry.text = country.countryName
+        binding.countryDetailGroup.isVisible = true
+        applyCountryBand(country)
+    }
+
+    /** Rebuilds [selectedArea] from [country] and the current Simple/Detailed choice. */
+    private fun applyCountryBand(country: Countries.Country) {
+        val band = if (countryDetailed) BAND_STREETS else BAND_REGION
+        selectedArea = Area.BBox(band, country.west, country.south, country.east, country.north, rawName = country.countryName)
+        onSelectionChanged()
+    }
+
+    private fun clearCountrySelection() {
+        if (countryChoice == null) return
+        countryChoice = null
+        binding.btnChooseCountry.text = getString(R.string.download_choose_country)
+        binding.countryDetailGroup.isVisible = false
     }
 
     private fun setupName() {
@@ -221,7 +279,11 @@ class DownloadMapActivity : AppCompatActivity() {
         val area = selectedArea
         autoName = when (area) {
             null -> ""
-            is Area.BBox -> getString(area.nameRes)
+            is Area.BBox -> if (area.rawName != null) {
+                getString(R.string.download_name_country, area.rawName, bandLabel(area.bandIndex))
+            } else {
+                getString(area.nameRes)
+            }
             is Area.Radius -> when {
                 area.radiusKm >= WORLD_RADIUS_KM -> getString(R.string.download_name_world)
                 // No GPS fix yet: silently centred on wherever the map was showing instead.
@@ -382,6 +444,9 @@ class DownloadMapActivity : AppCompatActivity() {
         binding.chip1000km.isEnabled = radiusOk
         binding.chipWorld.isEnabled = enabled
         binding.chipFrance.isEnabled = enabled
+        binding.btnChooseCountry.isEnabled = enabled
+        binding.btnCountrySimple.isEnabled = enabled
+        binding.btnCountryDetailed.isEnabled = enabled
         binding.nameLayout.isEnabled = enabled
         binding.nameEdit.isEnabled = enabled
     }
