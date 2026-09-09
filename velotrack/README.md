@@ -1,6 +1,8 @@
 # VeloTrack
 
-Free and open source (MIT). No accounts, no tracking, no data connection needed while you ride.
+Free and open source (MIT). No accounts, no tracking, no data connection needed while you ride —
+downloading a map, searching an address and the weather chip are the only things that ever ask
+for one, and each fires only when you use it.
 
 VeloTrack is an Android app for cycling. It shows where you are on an **offline vector
 map** viewed from a tilted, course-up 3D perspective, **records rides** of any length to GPX with
@@ -12,11 +14,13 @@ you the **name of the street or park** you are on, hides every button when you r
 5 km/h (**riding mode**), switches between **dark and light** with the sun, **starts recording by
 itself** when you set off, and adds up your kilometres in a **Statistics** screen.
 
-While riding it uses **only the GPS receiver**: the map renderer is locked offline and the
-network is touched by exactly one screen, **Download map**, where you fetch the map data for the
-area you ride in. The app is built to be as cheap on battery as possible so a big phone lasts a
-multi-day ride. Everything is built and published by GitHub Actions: every push to `main`
-produces an installable APK.
+While riding it uses **only the GPS receiver**: the map renderer is locked offline, and recording,
+navigation and GPX export never touch the network at all. Three screens do, each only when you use
+them: **Download map** fetches map data for the area you ride in; **address search**, in the Home /
+Work / favourite picker, looks up whatever you type; and the small **weather chip** by the clock
+reads the local forecast and links to its official page. The app is built to be as cheap on
+battery as possible so a big phone lasts a multi-day ride. Everything is built and published by
+GitHub Actions: every push to `main` produces an installable APK.
 
 ## Screenshots
 
@@ -174,11 +178,17 @@ with **Map data -> Import file**.
 
 ## Privacy
 
-- The network is used **only by the Download map screen**, to fetch map tiles from the Protomaps
-  planet file (or the URL you set). The map renderer is locked offline
+- The network is used by three screens, each only while you are using it, never in the
+  background: **Download map** fetches map tiles from the Protomaps planet file (or the URL you
+  set); **address search** (in the Home / Work / favourite picker) sends whatever you typed to
+  OpenStreetMap's public Nominatim service, once per search, never per keystroke; the **weather
+  chip** reads your last known position's forecast from met.no (the institute behind Yr.no), at
+  most roughly once every 30 minutes. The map renderer itself is locked offline
   (`MapLibre.setConnected(false)`) and never requests anything; the CI build fails if that guard
-  disappears or if the `ACCESS_WIFI_STATE` permission creeps back in. Nothing about you or your
-  rides is ever sent anywhere.
+  disappears or if the `ACCESS_WIFI_STATE` permission creeps back in. Recording a ride, following
+  a route and exporting a GPX never touch the network under any circumstance. Nothing about you or
+  your rides is ever sent anywhere; a search query is sent to Nominatim and a position to met.no
+  because that is what each lookup needs to answer, and neither is asked for anything else.
 - No Google Play Services, no accounts, no analytics. Rides, routes and map files live only on
   the phone, in the app's private storage, until you export them yourself.
 - Location is used only while the app is visible or a recording is running (a persistent

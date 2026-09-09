@@ -90,6 +90,42 @@
                             android:gravity="end"
                             android:orientation="vertical">
 
+                            <!-- Local weather, right next to the clock. Gone until a reading
+                                 exists (MainActivity.maybeRefreshWeather); tapping it opens the
+                                 official per-location forecast page this data comes from. -->
+                            <LinearLayout
+                                android:id="@+id/weatherChip"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="2dp"
+                                android:background="?attr/selectableItemBackground"
+                                android:gravity="center_vertical"
+                                android:minHeight="32dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="4dp"
+                                android:paddingEnd="4dp"
+                                android:visibility="gone"
+                                tools:visibility="visible">
+
+                                <TextView
+                                    android:id="@+id/weatherIcon"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:importantForAccessibility="no"
+                                    android:textSize="18sp"
+                                    tools:text="⛅" />
+
+                                <TextView
+                                    android:id="@+id/weatherTemp"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="4dp"
+                                    android:maxLines="1"
+                                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                                    android:textColor="?attr/colorOnSurface"
+                                    tools:text="16°C" />
+                            </LinearLayout>
+
                             <TextView
                                 android:id="@+id/clockText"
                                 android:layout_width="wrap_content"

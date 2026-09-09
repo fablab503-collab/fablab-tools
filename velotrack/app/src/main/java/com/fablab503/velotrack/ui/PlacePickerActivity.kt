@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -14,7 +16,9 @@ import androidx.lifecycle.lifecycleScope
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityPlacePickerBinding
 import com.fablab503.velotrack.download.Bands
+import com.fablab503.velotrack.download.Geocoder
 import com.fablab503.velotrack.download.MapLibrary
+import com.fablab503.velotrack.download.RangeClient
 import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.map.MapController
 import com.fablab503.velotrack.model.CameraMode
@@ -34,15 +38,19 @@ import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 
 /**
- * Pick a point by dragging the offline map under a fixed crosshair.
+ * Pick a point by dragging the offline map under a fixed crosshair, or by searching an address.
  *
  * Exists because the only ways to place Home, Work or a favourite were the current GPS position and
  * the centre of the main map, so setting a place you are not standing in meant panning the main map
  * and guessing. Here the crosshair never moves, the card names whatever road, park or town sits
  * under it, and the point is only saved when the rider presses Save.
  *
- * There is no address search: the app carries no geocoder and the Protomaps basemap has no house
- * numbers, so the honest tool is the map itself plus the name under the crosshair.
+ * The app still carries no bundled geocoder -- dragging the map and reading the offline label under
+ * the crosshair works with no network at all, and stays the primary way to place a point. The
+ * search field is a deliberate, occasional exception: one explicit lookup against the public
+ * Nominatim server per submit (never per keystroke -- see [Geocoder]), only when the rider chooses
+ * to use it, and it still lands on exactly the same crosshair-and-drag flow, in case the address
+ * search doesn't find quite the right spot.
  */
 class PlacePickerActivity : AppCompatActivity() {
 
@@ -57,6 +65,11 @@ class PlacePickerActivity : AppCompatActivity() {
 
     /** Last point we asked for a name, so panning a few metres does not re-query on every frame. */
     private var lastNamedAt: LatLon? = null
+
+    // Same client the map downloader uses (sane timeouts, no per-call setup); address search is
+    // the only other network call this activity ever makes, and only when the rider submits one.
+    private val httpClient by lazy { RangeClient.defaultClient() }
+    private var searchInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,6 +134,45 @@ class PlacePickerActivity : AppCompatActivity() {
         }
 
         binding.btnSave.setOnClickListener { save() }
+
+        binding.searchLayout.setEndIconOnClickListener { performSearch() }
+        binding.searchInput.setOnEditorActionListener { _, actionId, event ->
+            val isSearch = actionId == EditorInfo.IME_ACTION_SEARCH ||
+                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+            if (isSearch) performSearch()
+            isSearch
+        }
+    }
+
+    /**
+     * One explicit geocoding lookup for whatever is typed in [ActivityPlacePickerBinding.searchInput].
+     * Fired only from [performSearch]'s callers (submit / the search icon), never from a text
+     * watcher -- seeing Nominatim's usage policy in [Geocoder] for why that distinction matters.
+     */
+    private fun performSearch() {
+        val query = binding.searchInput.text?.toString().orEmpty()
+        if (query.isBlank() || searchInFlight) return
+        searchInFlight = true
+        binding.searchLayout.isEndIconVisible = false
+        lifecycleScope.launch {
+            val results = Geocoder.search(httpClient, query)
+            searchInFlight = false
+            binding.searchLayout.isEndIconVisible = true
+            if (isFinishing || isDestroyed) return@launch
+            when {
+                results == null -> toast(getString(R.string.picker_search_failed))
+                results.isEmpty() -> toast(getString(R.string.picker_search_no_results))
+                else -> {
+                    val top = results.first()
+                    map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(top.at.lat, top.at.lon), START_ZOOM))
+                    // A found address is worth prefilling as the label, but never overwrites
+                    // something the rider already typed themselves.
+                    if (binding.nameInput.text.isNullOrBlank()) {
+                        binding.nameInput.setText(top.name.substringBefore(','))
+                    }
+                }
+            }
+        }
     }
 
     private fun save() {

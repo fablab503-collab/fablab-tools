@@ -86,13 +86,47 @@
                             tools:text="km/h" />
                     </LinearLayout>
 
-                    <!-- Clock · battery · GPS on one line -->
+                    <!-- Weather · clock · battery · GPS on one line -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
+
+                        <!-- Gone until a reading exists; see the portrait layout for what tapping it does. -->
+                        <LinearLayout
+                            android:id="@+id/weatherChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="?attr/selectableItemBackground"
+                            android:gravity="center_vertical"
+                            android:minHeight="32dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <TextView
+                                android:id="@+id/weatherIcon"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:importantForAccessibility="no"
+                                android:textSize="18sp"
+                                tools:text="⛅" />
+
+                            <TextView
+                                android:id="@+id/weatherTemp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:maxLines="1"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="16°C" />
+                        </LinearLayout>
 
                         <TextView
                             android:id="@+id/clockText"

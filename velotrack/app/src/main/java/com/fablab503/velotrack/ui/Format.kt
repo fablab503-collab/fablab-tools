@@ -58,6 +58,12 @@ object Format {
         return if (units == Units.METRIC) "${v.roundToInt()} m" else "${(v * M_TO_FT).roundToInt()} ft"
     }
 
+    /** Weather chip temperature, e.g. "16°C" or "61°F". */
+    fun temperature(celsius: Float, units: Units): String {
+        val v = safe(celsius.toDouble())
+        return if (units == Units.METRIC) "${v.roundToInt()}°C" else "${(v * 9.0 / 5.0 + 32.0).roundToInt()}°F"
+    }
+
     /** Local date and time, e.g. "2026-09-07 10:15". */
     fun dateTime(ms: Long): String =
         SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(ms))

@@ -108,6 +108,35 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_WIFI_ONLY_DOWNLOADS, true)
         set(value) = sp.edit().putBoolean(KEY_WIFI_ONLY_DOWNLOADS, value).apply()
 
+    /** Last weather reading fetched for the HUD chip, so it has something to show immediately on
+     *  launch (and if the network call fails) instead of a blank space. Null fields mean "never
+     *  fetched" or "cleared"; [weatherAgeMs] tells the caller whether it is worth refetching. */
+    var weather: WeatherReading?
+        get() {
+            val temp = sp.getFloat(KEY_WEATHER_TEMP_C, Float.NaN).takeIf { !it.isNaN() } ?: return null
+            val symbol = sp.getString(KEY_WEATHER_SYMBOL, null) ?: return null
+            val lat = sp.getString(KEY_WEATHER_LAT, null)?.toDoubleOrNull() ?: return null
+            val lon = sp.getString(KEY_WEATHER_LON, null)?.toDoubleOrNull() ?: return null
+            val fetchedAt = sp.getLong(KEY_WEATHER_FETCHED_AT, 0L).takeIf { it > 0L } ?: return null
+            return WeatherReading(temp, symbol, LatLon(lat, lon), fetchedAt)
+        }
+        set(value) {
+            if (value == null) {
+                sp.edit()
+                    .remove(KEY_WEATHER_TEMP_C).remove(KEY_WEATHER_SYMBOL)
+                    .remove(KEY_WEATHER_LAT).remove(KEY_WEATHER_LON).remove(KEY_WEATHER_FETCHED_AT)
+                    .apply()
+            } else {
+                sp.edit()
+                    .putFloat(KEY_WEATHER_TEMP_C, value.temperatureC)
+                    .putString(KEY_WEATHER_SYMBOL, value.symbolCode)
+                    .putString(KEY_WEATHER_LAT, value.at.lat.toString())
+                    .putString(KEY_WEATHER_LON, value.at.lon.toString())
+                    .putLong(KEY_WEATHER_FETCHED_AT, value.fetchedAtMs)
+                    .apply()
+            }
+        }
+
     fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) =
         sp.registerOnSharedPreferenceChangeListener(listener)
 
@@ -136,9 +165,21 @@ class Prefs(context: Context) {
         const val KEY_LAST_LON = "last_lon"
         const val KEY_PLANET_URL = "planet_url"
         const val KEY_WIFI_ONLY_DOWNLOADS = "wifi_only_downloads"
+        const val KEY_WEATHER_TEMP_C = "weather_temp_c"
+        const val KEY_WEATHER_SYMBOL = "weather_symbol"
+        const val KEY_WEATHER_LAT = "weather_lat"
+        const val KEY_WEATHER_LON = "weather_lon"
+        const val KEY_WEATHER_FETCHED_AT = "weather_fetched_at_ms"
 
         const val DEFAULT_ACCURACY_CUTOFF_M = 50f
         const val DEFAULT_PITCH_DEG = 55
         const val DEFAULT_OFF_ROUTE_M = 50.0
     }
 }
+
+/**
+ * One weather reading, cached so the HUD chip has something to show immediately on launch. [at] is
+ * the position it was fetched for -- once the rider is far enough from it, [MainActivity] fetches
+ * again rather than showing yesterday's weather for a different town.
+ */
+data class WeatherReading(val temperatureC: Float, val symbolCode: String, val at: LatLon, val fetchedAtMs: Long)

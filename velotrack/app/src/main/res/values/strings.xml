@@ -40,6 +40,7 @@
     <string name="hud_battery">%1$d%%</string>
     <string name="hud_speed_placeholder">0.0</string>
     <string name="hud_no_value">–</string>
+    <string name="hud_weather_open_failed">Couldn\'t open the forecast page.</string>
 
     <!-- Status chip -->
     <string name="status_recording">Recording</string>
@@ -218,14 +219,19 @@
     <!-- Download map (DownloadMapActivity) -->
     <!-- Place picker: choose a point by dragging the map under a fixed crosshair. -->
     <string name="picker_title">Choose a place</string>
-    <string name="picker_hint">Drag the map so the crosshair sits on the spot.</string>
+    <string name="picker_hint">Drag the map so the crosshair sits on the spot, or search an address above.</string>
     <string name="picker_unknown_place">No name here</string>
+    <string name="picker_search_hint">Search for an address</string>
+    <string name="picker_search_no_results">No match for that address. Try a different search, or drag the map instead.</string>
+    <string name="picker_search_failed">Couldn\'t search — check your connection.</string>
+    <string name="picker_search_searching">Searching…</string>
     <string name="picker_save">Save here</string>
     <string name="fav_choose_on_map">Choose on map</string>
 
     <!-- Folding the statistics card away -->
     <string name="cd_hide_hud">Hide the ride statistics</string>
     <string name="cd_show_hud">Show the ride statistics</string>
+    <string name="cd_weather_chip">Weather, %1$s. Tap for the full forecast.</string>
 
     <string name="download_area_label">Area</string>
     <string name="download_presets_label">Presets</string>

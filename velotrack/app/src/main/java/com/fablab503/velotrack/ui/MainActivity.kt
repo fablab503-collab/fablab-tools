@@ -50,6 +50,8 @@ import com.fablab503.velotrack.databinding.DialogPlacePickerBinding
 import com.fablab503.velotrack.download.Bands
 import com.fablab503.velotrack.download.MapDownloadService
 import com.fablab503.velotrack.download.MapLibrary
+import com.fablab503.velotrack.download.RangeClient
+import com.fablab503.velotrack.download.WeatherClient
 import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.location.GpsSource
 import com.fablab503.velotrack.location.HeadingEstimator
@@ -70,6 +72,7 @@ import com.fablab503.velotrack.recording.RideSession
 import com.fablab503.velotrack.recording.RideStats
 import com.fablab503.velotrack.route.RouteFollower
 import com.fablab503.velotrack.settings.Prefs
+import com.fablab503.velotrack.settings.WeatherReading
 import com.fablab503.velotrack.storage.FavoritesRepository
 import com.fablab503.velotrack.storage.RouteStore
 import com.fablab503.velotrack.storage.TrackDatabase
@@ -124,6 +127,12 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     private val heading = HeadingEstimator()
     private val idleSpeed = IdleSpeedEstimator()
     private val handler = Handler(Looper.getMainLooper())
+
+    // Weather chip near the clock: an occasional, explicit-feeling network read (never on a
+    // recording tick, only on the once-a-minute clock tick and only when stale or far away), same
+    // client the map downloader already uses.
+    private val httpClient by lazy { RangeClient.defaultClient() }
+    private var weatherFetchInFlight = false
 
     // Theme (dark / light / auto by sun), riding mode and auto record.
     private lateinit var nightMode: NightModeManager
@@ -886,6 +895,49 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             getString(R.string.hud_battery, pct)
         } else {
             getString(R.string.hud_no_value)
+        }
+        maybeRefreshWeather()
+    }
+
+    /**
+     * Shows the cached reading immediately (so the chip is never blank just because the network
+     * call hasn't finished), then refreshes it in the background when it is stale or the rider has
+     * moved far enough that it is probably describing the wrong town. Runs off the once-a-minute
+     * clock tick, not a dedicated timer: weather does not need to be fresher than that.
+     */
+    private fun maybeRefreshWeather() {
+        val pos = currentPosition() ?: prefs.lastPosition ?: return
+        val cached = prefs.weather
+        renderWeather(cached)
+        if (weatherFetchInFlight) return
+        val ageMs = cached?.let { System.currentTimeMillis() - it.fetchedAtMs } ?: Long.MAX_VALUE
+        val movedM = cached?.let { Geo.distanceM(it.at, pos) } ?: Double.MAX_VALUE
+        if (ageMs < WEATHER_MAX_AGE_MS && movedM < WEATHER_REFRESH_DISTANCE_M) return
+        weatherFetchInFlight = true
+        lifecycleScope.launch {
+            val now = WeatherClient.current(httpClient, pos.lat, pos.lon)
+            weatherFetchInFlight = false
+            if (isFinishing || isDestroyed || now == null) return@launch
+            val reading = WeatherReading(now.temperatureC, now.symbolCode, pos, System.currentTimeMillis())
+            prefs.weather = reading
+            renderWeather(reading)
+        }
+    }
+
+    private fun renderWeather(reading: WeatherReading?) {
+        if (reading == null) {
+            binding.weatherChip.isVisible = false
+            return
+        }
+        binding.weatherIcon.text = weatherEmoji(reading.symbolCode)
+        val temp = Format.temperature(reading.temperatureC, prefs.units)
+        binding.weatherTemp.text = temp
+        binding.weatherChip.isVisible = true
+        binding.weatherChip.contentDescription = getString(R.string.cd_weather_chip, temp)
+        binding.weatherChip.setOnClickListener {
+            val url = WeatherClient.officialForecastUrl(reading.at.lat, reading.at.lon)
+            runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                .onFailure { toast(R.string.hud_weather_open_failed) }
         }
     }
 
@@ -1723,6 +1775,11 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
 
         private const val RIDING_SPEED_STALE_MS = 5_000L
         private const val NIGHT_CHECK_SLACK_MS = 60_000L
+
+        /** Refetch the weather chip once a reading is this old... */
+        private const val WEATHER_MAX_AGE_MS = 30 * 60_000L
+        /** ...or once the rider has moved this far from where it was fetched, whichever is sooner. */
+        private const val WEATHER_REFRESH_DISTANCE_M = 20_000.0
 
         /** Compass points for 45° sectors starting at north. */
         private val COMPASS_LABELS = intArrayOf(
