@@ -14,7 +14,6 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -26,10 +25,13 @@ import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.format.DateFormat
+import android.util.Log
 import android.view.HapticFeedbackConstants
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +52,7 @@ import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityMainBinding
 import com.fablab503.velotrack.databinding.DialogPlacePickerBinding
 import com.fablab503.velotrack.download.Bands
+import com.fablab503.velotrack.download.Geocoder
 import com.fablab503.velotrack.download.MapDownloadService
 import com.fablab503.velotrack.download.MapLibrary
 import com.fablab503.velotrack.download.RangeClient
@@ -81,6 +84,10 @@ import com.fablab503.velotrack.storage.TrackDatabase
 import com.fablab503.velotrack.storage.TrackRepository
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.io.File
+import java.util.Date
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -92,10 +99,6 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
-import java.io.File
-import java.util.Date
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /**
  * Map + HUD screen. The MapView is created programmatically and inserted under the HUD overlay.
@@ -133,6 +136,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     // Weather chip near the clock: an occasional, explicit-feeling network read (never on a
     // recording tick, only on the once-a-minute clock tick and only when stale or far away), same
     // client the map downloader already uses.
+    /** Shared by the address lookup in the Set Home / Set Work dialog. Built only if used. */
+    private val placeSearchClient by lazy { RangeClient.defaultClient() }
+
     private val httpClient by lazy { RangeClient.defaultClient() }
     private var weatherFetchInFlight = false
 
@@ -1499,12 +1505,53 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             }
         })
 
+        // A found address becomes the location to save, and the positive button stops meaning
+        // "my position" once one is held: typing an address then pressing it must not silently
+        // save the rider's own position instead.
+        var foundAt: LatLon? = null
+        var foundName: String? = null
+
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.fav_set_title, defaultName))
             .setView(b.root)
             .setPositiveButton(R.string.fav_my_position, null)
             .setNegativeButton(R.string.dialog_cancel, null)
             .create()
+
+        var searching = false
+        fun runAddressSearch() {
+            val query = b.addressInput.text?.toString()?.trim().orEmpty()
+            if (query.isEmpty() || searching) return
+            searching = true
+            b.addressResult.isVisible = true
+            b.addressResult.text = getString(R.string.picker_search_searching)
+            lifecycleScope.launch {
+                val results = withContext(Dispatchers.IO) {
+                    runCatching { Geocoder.search(placeSearchClient, query) }.getOrNull()
+                }
+                searching = false
+                if (isFinishing || isDestroyed) return@launch
+                val first = results?.firstOrNull()
+                when {
+                    results == null -> b.addressResult.setText(R.string.picker_search_failed)
+                    first == null -> b.addressResult.setText(R.string.picker_search_no_results)
+                    else -> {
+                        foundAt = first.at
+                        foundName = first.name
+                        b.addressResult.text = getString(R.string.fav_address_found, first.name)
+                        // The button now saves the address, not the rider's position.
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setText(R.string.fav_use_address)
+                    }
+                }
+            }
+        }
+        b.addressLayout.setEndIconOnClickListener { runAddressSearch() }
+        b.addressInput.setOnEditorActionListener { _, actionId, event ->
+            val submitted = actionId == EditorInfo.IME_ACTION_SEARCH ||
+                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+            if (submitted) runAddressSearch()
+            submitted
+        }
         b.btnChooseOnMap.setOnClickListener {
             val typed = b.nameInput.text?.toString()?.trim().orEmpty()
             val label = typed.ifEmpty { defaultName }
@@ -1528,6 +1575,14 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 return if (typed.isEmpty()) defaultName else typed
             }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                // An address that was looked up wins: the rider asked for that spot, not this one.
+                val address = foundAt
+                if (address != null) {
+                    val typed = b.nameInput.text?.toString()?.trim().orEmpty()
+                    saveFixedFavorite(kind, typed.ifEmpty { defaultName }, address, customEmoji ?: chipEmoji)
+                    dialog.dismiss()
+                    return@setOnClickListener
+                }
                 val pos = currentPosition()
                 if (pos == null) {
                     toast(R.string.fav_no_position)

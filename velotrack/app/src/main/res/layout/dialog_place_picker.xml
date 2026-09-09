@@ -36,6 +36,39 @@
             tools:text="Home" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Type an address instead of hunting for it on the map. Submitting looks it up and fills the
+         location in place, so the dialog can be finished without leaving it. -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/addressLayout"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/screen_margin"
+        android:hint="@string/picker_search_hint"
+        app:endIconContentDescription="@string/picker_search_hint"
+        app:endIconDrawable="@drawable/ic_search"
+        app:endIconMode="custom">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/addressInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionSearch"
+            android:inputType="textPostalAddress"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/addressResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorPrimary"
+        android:visibility="gone"
+        tools:text="12 Rue de Rivoli, Paris"
+        tools:visibility="visible" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
