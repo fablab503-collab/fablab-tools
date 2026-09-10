@@ -293,6 +293,22 @@
     <string name="download_estimate">Download %1$s · %2$s tiles</string>
     <string name="download_estimate_build">Download %1$s · %2$s tiles · build %3$s</string>
     <string name="download_estimate_failed">Could not calculate the size: %1$s</string>
+
+    <!-- A country too large to plan in one pass, offered as pieces instead of refused. -->
+    <string name="download_split_title">%1$s</string>
+    <string name="download_split_body">At this detail %1$d parts are needed. Each one downloads separately, so you can take the whole country or just the part you ride in.</string>
+    <string name="download_split_whole">Whole country (%1$d parts)</string>
+    <string name="download_split_choose">Choose a part</string>
+    <string name="download_part_name">%1$s · %2$s</string>
+    <string name="download_part_grid">%1$s%2$d</string>
+    <string name="download_parts_ready">%1$d parts · each one\'s size is shown as it downloads</string>
+    <string name="download_part_progress">Part %1$d of %2$d</string>
+    <string name="compass_north">north</string>
+    <string name="compass_south">south</string>
+    <string name="compass_east">east</string>
+    <string name="compass_west">west</string>
+    <string name="compass_middle">centre</string>
+    <string name="compass_pair">%1$s-%2$s</string>
     <string name="download_no_centre">No position yet. Wait for a GPS fix, move the map, or pick a preset.</string>
     <string name="download_metered_warning">You are on a metered connection (mobile data). Wi-Fi only is on in Settings, so the download will ask before using it.</string>
     <string name="download_button">Download</string>

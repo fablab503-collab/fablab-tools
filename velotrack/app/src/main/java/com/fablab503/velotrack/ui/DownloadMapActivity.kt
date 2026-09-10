@@ -17,8 +17,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.databinding.ActivityDownloadMapBinding
+import com.fablab503.velotrack.download.AreaPart
+import com.fablab503.velotrack.download.Bands
 import com.fablab503.velotrack.download.Countries
 import com.fablab503.velotrack.download.MapDownloadService
+import com.fablab503.velotrack.download.splitForBudget
 import com.fablab503.velotrack.pmtiles.Mercator
 import com.fablab503.velotrack.settings.Prefs
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -49,6 +52,21 @@ class DownloadMapActivity : AppCompatActivity() {
             fun toMercator() = Mercator.BBox(west, south, east, north)
             fun name(context: Context): String = rawName ?: context.getString(nameRes)
         }
+
+        /**
+         * A country too large to plan in one pass, as the pieces it was split into. Downloaded one
+         * after another by the service; see [MapDownloadService.start] and [splitForBudget].
+         *
+         * There is deliberately no size estimate for this. Estimating means planning, and planning
+         * every piece of France up front is nine full passes over the archive before a single byte
+         * is fetched - minutes of waiting to be told a number the rider already expects to be
+         * large. The pieces report their real sizes as they run.
+         */
+        class Parts(
+            bandIndex: Int,
+            val countryName: String,
+            val parts: List<Pair<String, Mercator.BBox>>,
+        ) : Area(bandIndex)
     }
 
     private enum class Mode { IDLE, ESTIMATING, DOWNLOADING }
@@ -243,8 +261,81 @@ class DownloadMapActivity : AppCompatActivity() {
     /** Rebuilds [selectedArea] from [country] and the current Simple/Detailed choice. */
     private fun applyCountryBand(country: Countries.Country) {
         val band = if (countryDetailed) BAND_STREETS else BAND_REGION
-        selectedArea = Area.BBox(band, country.west, country.south, country.east, country.north, rawName = country.countryName)
-        onSelectionChanged()
+        val bandDef = Bands.byIndex(band)
+        val box = Mercator.BBox(country.west, country.south, country.east, country.north)
+        val parts = if (bandDef == null) {
+            emptyList()
+        } else {
+            splitForBudget(box, bandDef.minZoom, bandDef.maxZoom, PLAN_BUDGET_CELLS)
+        }
+        if (parts.size <= 1) {
+            selectedArea = Area.BBox(band, country.west, country.south, country.east, country.north, rawName = country.countryName)
+            onSelectionChanged()
+            return
+        }
+        askWholeOrPart(country, band, parts)
+    }
+
+    /**
+     * A whole country at this detail is more than [PmTilesRemote.plan] can hold in memory at once,
+     * so it is offered as pieces. Both answers are real: the whole country runs every piece one
+     * after another, and a single piece is an ordinary download of an ordinary area.
+     */
+    private fun askWholeOrPart(country: Countries.Country, band: Int, parts: List<AreaPart>) {
+        val named = parts.map { partName(country.countryName, it) to it.bbox }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.download_split_title, country.countryName))
+            .setMessage(getString(R.string.download_split_body, parts.size))
+            .setPositiveButton(getString(R.string.download_split_whole, parts.size)) { _, _ ->
+                selectedArea = Area.Parts(band, country.countryName, named)
+                onSelectionChanged()
+            }
+            .setNeutralButton(R.string.download_split_choose) { _, _ ->
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(getString(R.string.download_split_title, country.countryName))
+                    .setItems(named.map { it.first }.toTypedArray()) { _, which ->
+                        val (name, box) = named[which]
+                        selectedArea = Area.BBox(band, box.west, box.south, box.east, box.north, rawName = name)
+                        onSelectionChanged()
+                    }
+                    .setNegativeButton(R.string.dialog_cancel) { _, _ -> clearCountrySelection() }
+                    .show()
+            }
+            .setNegativeButton(R.string.dialog_cancel) { _, _ -> clearCountrySelection() }
+            .setOnCancelListener { clearCountrySelection() }
+            .show()
+    }
+
+    /**
+     * A name for one piece. Up to three across and three down the compass says it plainly, and that
+     * covers most countries. Beyond that a compass runs out of words - Russia needs 798 pieces - so
+     * it falls back to a grid reference, which is ugly but never lies about where the piece is.
+     */
+    private fun partName(country: String, part: AreaPart): String {
+        val where = if (part.cols <= 3 && part.rows <= 3) {
+            val ns = when {
+                part.rows == 1 -> ""
+                part.row == 0 -> getString(R.string.compass_north)
+                part.row == part.rows - 1 -> getString(R.string.compass_south)
+                else -> getString(R.string.compass_middle)
+            }
+            val ew = when {
+                part.cols == 1 -> ""
+                part.col == 0 -> getString(R.string.compass_west)
+                part.col == part.cols - 1 -> getString(R.string.compass_east)
+                else -> getString(R.string.compass_middle)
+            }
+            when {
+                ns.isEmpty() && ew.isEmpty() -> getString(R.string.compass_middle)
+                ns.isEmpty() -> ew
+                ew.isEmpty() -> ns
+                ns == ew -> ns
+                else -> getString(R.string.compass_pair, ns, ew)
+            }
+        } else {
+            getString(R.string.download_part_grid, ('A' + part.col), part.row + 1)
+        }
+        return getString(R.string.download_part_name, country, where)
     }
 
     private fun clearCountrySelection() {
@@ -279,6 +370,11 @@ class DownloadMapActivity : AppCompatActivity() {
         val area = selectedArea
         autoName = when (area) {
             null -> ""
+            is Area.Parts -> getString(
+                R.string.download_name_country,
+                area.countryName,
+                bandLabel(area.bandIndex),
+            )
             is Area.BBox -> if (area.rawName != null) {
                 getString(R.string.download_name_country, area.rawName, bandLabel(area.bandIndex))
             } else {
@@ -331,6 +427,17 @@ class DownloadMapActivity : AppCompatActivity() {
         mode = Mode.ESTIMATING
         val name = currentName()
         when (area) {
+            is Area.Parts -> {
+                // Planning nine pieces of France before fetching a byte would be minutes of waiting
+                // to be told a number the rider already knows is large. Each piece reports its real
+                // size as it runs instead.
+                mode = Mode.IDLE
+                binding.estimateProgress.isVisible = false
+                binding.estimateText.text = getString(R.string.download_parts_ready, area.parts.size)
+                estimateReady = true
+                binding.btnDownload.isEnabled = true
+                updateMeteredWarning()
+            }
             is Area.BBox -> MapDownloadService.estimate(this, name, area.bandIndex, area.toMercator())
             is Area.Radius -> {
                 val c = centre() ?: if (area.radiusKm >= WORLD_RADIUS_KM) Pair(0.0, 0.0) else null
@@ -405,6 +512,7 @@ class DownloadMapActivity : AppCompatActivity() {
         handler.removeCallbacks(estimateRunnable)
         val name = currentName()
         when (area) {
+            is Area.Parts -> MapDownloadService.start(this, area.bandIndex, area.parts, allowMetered)
             is Area.BBox -> MapDownloadService.start(this, name, area.bandIndex, area.toMercator(), allowMetered)
             is Area.Radius -> {
                 val c = centre() ?: if (area.radiusKm >= WORLD_RADIUS_KM) Pair(0.0, 0.0) else null
@@ -551,6 +659,15 @@ class DownloadMapActivity : AppCompatActivity() {
         private const val BAND_ROADS = 2
         private const val BAND_STREETS = 3
         private const val WORLD_RADIUS_KM = 10_000.0
+
+        /**
+         * Grid cells one download piece may need. Deliberately below
+         * [com.fablab503.velotrack.download.PmTilesRemote.MAX_PLANNABLE_TILES] (300,000): that is a
+         * hard refusal, and a piece that lands exactly on it would fail after the rider chose it.
+         * The headroom also absorbs the difference between a bbox's cells and the tiles that
+         * actually exist in it.
+         */
+        private const val PLAN_BUDGET_CELLS = 250_000L
 
         private const val ESTIMATE_DEBOUNCE_MS = 400L
         private const val DONE_LINGER_MS = 1_200L

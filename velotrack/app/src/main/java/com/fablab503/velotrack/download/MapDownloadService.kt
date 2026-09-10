@@ -63,6 +63,10 @@ class MapDownloadService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var downloadJob: Job? = null
     private var estimateJob: Job? = null
+
+    /** Where a multi-part download has got to; 1 and 0 whenever a single area is being downloaded. */
+    private var partsTotal = 1
+    private var partIndex = 0
     /** Import / delete / clear; never runs concurrently with [downloadJob]. */
     private var maintenanceJob: Job? = null
     private var foreground = false
@@ -110,12 +114,12 @@ class MapDownloadService : Service() {
                 }
             }
             ACTION_START -> {
-                val req = parseRequest(intent)
-                if (req == null) {
+                val reqs = parseRequests(intent)
+                if (reqs.isNullOrEmpty()) {
                     broadcast(PHASE_FAILED, message = MSG_BAD_REQUEST)
                     stopIfIdle()
                 } else {
-                    startDownload(req)
+                    startDownload(reqs)
                 }
             }
             ACTION_IMPORT -> {
@@ -175,6 +179,37 @@ class MapDownloadService : Service() {
     }
 
     // ---- request parsing -------------------------------------------------------------------------
+
+    /**
+     * Every piece this start command asks for, in order.
+     *
+     * A whole country at the finest band cannot be planned in one pass - that is what
+     * [AreaTooLargeException] guards against - so the picker splits it with [splitForBudget] and
+     * hands the pieces over together. One piece is the ordinary case and is simply a list of one,
+     * which is why nothing else in this file had to learn about parts.
+     */
+    private fun parseRequests(intent: Intent): List<DownloadRequest>? {
+        val wests = intent.getDoubleArrayExtra(EXTRA_PART_WESTS)
+        val souths = intent.getDoubleArrayExtra(EXTRA_PART_SOUTHS)
+        val easts = intent.getDoubleArrayExtra(EXTRA_PART_EASTS)
+        val norths = intent.getDoubleArrayExtra(EXTRA_PART_NORTHS)
+        val names = intent.getStringArrayExtra(EXTRA_PART_NAMES)
+        if (wests == null || souths == null || easts == null || norths == null || names == null) {
+            return parseRequest(intent)?.let { listOf(it) }
+        }
+        val n = wests.size
+        if (n == 0 || souths.size != n || easts.size != n || norths.size != n || names.size != n) return null
+        val band = intent.getIntExtra(EXTRA_BAND, -1)
+        if (Bands.byIndex(band) == null) return null
+        val allowMetered = intent.getBooleanExtra(EXTRA_ALLOW_METERED, false)
+        val out = ArrayList<DownloadRequest>(n)
+        for (i in 0 until n) {
+            val box = Mercator.BBox(wests[i], souths[i], easts[i], norths[i])
+            if (box.west > box.east || box.south > box.north) return null
+            out.add(DownloadRequest(names[i], box, band, allowMetered))
+        }
+        return out
+    }
 
     private fun parseRequest(intent: Intent): DownloadRequest? {
         val name = intent.getStringExtra(EXTRA_NAME)?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_NAME
@@ -260,7 +295,8 @@ class MapDownloadService : Service() {
 
     // ---- download ---------------------------------------------------------------------------------
 
-    private fun startDownload(req: DownloadRequest) {
+    private fun startDownload(reqs: List<DownloadRequest>) {
+        val req = reqs.first()
         if (downloadJob?.isActive == true || maintenanceJob?.isActive == true) {
             broadcast(PHASE_FAILED, message = MSG_BUSY, name = req.name, band = req.bandIndex)
             return
@@ -277,10 +313,35 @@ class MapDownloadService : Service() {
             return
         }
         estimateJob?.cancel()
-        downloadJob = scope.launch { runDownload(req) }
+        downloadJob = scope.launch { runQueue(reqs) }
     }
 
-    private suspend fun runDownload(req: DownloadRequest) {
+    /**
+     * Runs every piece in turn, and owns the foreground notification for the whole run rather than
+     * for one piece: stopping between pieces would drop the service and, on Android 12 and later,
+     * make starting the next one from the background impossible.
+     *
+     * A piece that fails ends the run. The pieces of one country share an archive and a build, so
+     * whatever stopped one - no network, no disk, a withdrawn build - stops the rest too, and
+     * grinding through eight more failures to say so eight more times helps nobody.
+     */
+    private suspend fun runQueue(reqs: List<DownloadRequest>) {
+        partsTotal = reqs.size
+        try {
+            for ((index, req) in reqs.withIndex()) {
+                partIndex = index
+                if (!runDownload(req)) break
+            }
+        } finally {
+            partsTotal = 1
+            partIndex = 0
+            finishForeground()
+            if (estimateJob?.isActive != true && maintenanceJob?.isActive != true) stopSelf()
+        }
+    }
+
+    /** One piece. Returns true when it finished; false when it failed (the run then stops). */
+    private suspend fun runDownload(req: DownloadRequest): Boolean {
         val bytesDone = AtomicLong(0L)
         val tilesDone = AtomicLong(0L)
         var bytesTotal = 0L
@@ -347,7 +408,8 @@ class MapDownloadService : Service() {
                 withContext(Dispatchers.IO) { library.addRegion(region) }
             }
             publishProgress(req, PHASE_DONE, bytesTotal, bytesTotal, tilesTotal, tilesTotal, buildKey, force = true)
-            showResultNotification(TITLE_DONE, req.name)
+            if (partIndex == partsTotal - 1) showResultNotification(TITLE_DONE, req.name)
+            return true
         } catch (e: CancellationException) {
             broadcast(
                 PHASE_CANCELLED,
@@ -363,9 +425,7 @@ class MapDownloadService : Service() {
                 message = message, name = req.name, band = req.bandIndex,
             )
             showResultNotification(TITLE_FAILED, message)
-        } finally {
-            finishForeground()
-            if (estimateJob?.isActive != true && maintenanceJob?.isActive != true) stopSelf()
+            return false
         }
     }
 
@@ -493,6 +553,8 @@ class MapDownloadService : Service() {
             .putExtra(EXTRA_BYTES_TOTAL, bytesTotal)
             .putExtra(EXTRA_TILES_DONE, tilesDone.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
             .putExtra(EXTRA_TILES_TOTAL, tilesTotal.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+            .putExtra(EXTRA_PART_INDEX, partIndex)
+            .putExtra(EXTRA_PART_COUNT, partsTotal)
             .putExtra(EXTRA_BAND, band)
         if (message != null) intent.putExtra(EXTRA_MESSAGE, message)
         if (name != null) intent.putExtra(EXTRA_NAME, name)
@@ -677,6 +739,21 @@ class MapDownloadService : Service() {
         /** Int: index into [Bands.ALL]; when absent, derived from the radius. Also set on every broadcast. */
         const val EXTRA_BAND = "com.fablab503.velotrack.download.extra.BAND"
 
+        /**
+         * A multi-part download: four parallel double arrays and the matching names, one entry per
+         * piece. Present only when a country was too large to plan in one pass; without them a
+         * start command means the single area described by the extras above, exactly as before.
+         */
+        const val EXTRA_PART_WESTS = "com.fablab503.velotrack.download.extra.PART_WESTS"
+        const val EXTRA_PART_SOUTHS = "com.fablab503.velotrack.download.extra.PART_SOUTHS"
+        const val EXTRA_PART_EASTS = "com.fablab503.velotrack.download.extra.PART_EASTS"
+        const val EXTRA_PART_NORTHS = "com.fablab503.velotrack.download.extra.PART_NORTHS"
+        const val EXTRA_PART_NAMES = "com.fablab503.velotrack.download.extra.PART_NAMES"
+
+        /** Int: which piece is running and how many there are, so the screen can say "3 of 9". */
+        const val EXTRA_PART_INDEX = "com.fablab503.velotrack.download.extra.PART_INDEX"
+        const val EXTRA_PART_COUNT = "com.fablab503.velotrack.download.extra.PART_COUNT"
+
         /** Boolean: proceed even on a metered network although `wifiOnlyDownloads` is set. */
         const val EXTRA_ALLOW_METERED = "com.fablab503.velotrack.download.extra.ALLOW_METERED"
 
@@ -748,6 +825,37 @@ class MapDownloadService : Service() {
         /** Starts a bounding-box (preset) download (call from a visible activity). */
         fun start(context: Context, name: String, bandIndex: Int, bbox: Mercator.BBox, allowMetered: Boolean = false) {
             ContextCompat.startForegroundService(context, bboxIntent(context, ACTION_START, name, bandIndex, bbox, allowMetered))
+        }
+
+        /**
+         * Starts a download made of several pieces, run one after another (call from a visible
+         * activity). Used when an area is too large for [PmTilesRemote.plan] to handle in one pass;
+         * see [splitForBudget]. Each piece is stored as its own region under its own name, so a
+         * half-finished country leaves behind exactly the pieces that did finish rather than
+         * nothing.
+         */
+        fun start(
+            context: Context,
+            bandIndex: Int,
+            parts: List<Pair<String, Mercator.BBox>>,
+            allowMetered: Boolean = false,
+        ) {
+            if (parts.isEmpty()) return
+            if (parts.size == 1) {
+                start(context, parts[0].first, bandIndex, parts[0].second, allowMetered)
+                return
+            }
+            val intent = Intent(context, MapDownloadService::class.java)
+                .setAction(ACTION_START)
+                .putExtra(EXTRA_BAND, bandIndex)
+                .putExtra(EXTRA_ALLOW_METERED, allowMetered)
+                .putExtra(EXTRA_NAME, parts[0].first)
+                .putExtra(EXTRA_PART_NAMES, parts.map { it.first }.toTypedArray())
+                .putExtra(EXTRA_PART_WESTS, parts.map { it.second.west }.toDoubleArray())
+                .putExtra(EXTRA_PART_SOUTHS, parts.map { it.second.south }.toDoubleArray())
+                .putExtra(EXTRA_PART_EASTS, parts.map { it.second.east }.toDoubleArray())
+                .putExtra(EXTRA_PART_NORTHS, parts.map { it.second.north }.toDoubleArray())
+            ContextCompat.startForegroundService(context, intent)
         }
 
         fun cancel(context: Context) {
