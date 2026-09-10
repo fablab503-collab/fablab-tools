@@ -110,6 +110,26 @@ jobs:
             velotrack/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
 
+      # The :wear module has been built by every run since it was written - assembleRelease and
+      # bundleRelease at the velotrack root cover every module - and then thrown away, because only
+      # app/build/outputs was ever collected. So the watch app has never been installable, on an
+      # emulator or anywhere else. Collecting it costs nothing and makes it downloadable from any
+      # run, including a branch run that publishes nothing.
+      #
+      # This does NOT put the watch on Play. Doing that means adding the wear .aab to the
+      # r0adkll/upload-google-play steps below, and Play then treats it as a second artifact under
+      # the same listing, routed to watches by android.hardware.type.watch in its manifest. Its
+      # applicationId and signing certificate already match the phone app, which is what the Data
+      # Layer requires. Ship it to testers deliberately, not as a side effect of this change.
+      - name: Upload watch artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: velotrack-wear
+          path: |
+            velotrack/wear/build/outputs/apk/release/*.apk
+            velotrack/wear/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
       - name: Upload test reports (on failure)
         if: failure()
         uses: actions/upload-artifact@v7
