@@ -14,6 +14,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import com.fablab503.velotrack.R
 import com.fablab503.velotrack.geo.Geo
 import com.fablab503.velotrack.geo.Simplify
+import com.fablab503.velotrack.geo.gapsBetween
 import com.fablab503.velotrack.geo.ZoomController
 import com.fablab503.velotrack.model.CameraMode
 import com.fablab503.velotrack.model.Favorite
@@ -40,6 +41,7 @@ import org.maplibre.android.style.layers.PropertyFactory.lineCap
 import org.maplibre.android.style.layers.PropertyFactory.lineColor
 import org.maplibre.android.style.layers.PropertyFactory.lineDasharray
 import org.maplibre.android.style.layers.PropertyFactory.lineJoin
+import org.maplibre.android.style.layers.PropertyFactory.lineOpacity
 import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.expressions.Expression
@@ -156,10 +158,12 @@ class MapController(
     private var routeSource: GeoJsonSource? = null
     private var historySource: GeoJsonSource? = null
     private var liveSource: GeoJsonSource? = null
+    private var gapSource: GeoJsonSource? = null
     private var puckSource: GeoJsonSource? = null
     private var routeLayer: LineLayer? = null
     private var historyLayer: LineLayer? = null
     private var liveLayer: LineLayer? = null
+    private var gapLayer: LineLayer? = null
     private var puckLayer: SymbolLayer? = null
     private var targetSource: GeoJsonSource? = null
     private var guidanceSource: GeoJsonSource? = null
@@ -184,6 +188,14 @@ class MapController(
      */
     private val historySegments = ArrayList<MutableList<LatLon>>()
     private val livePoints = ArrayList<LatLon>()
+
+    /**
+     * Set by [startNewTrackSegment] when the recorder says a gap opened. The next appended point
+     * then starts a run of its own even if it happens to be close to the last one - the recorder's
+     * word beats the map's distance guess, because a six-minute stop without moving is a gap the
+     * recorder saw and geometry alone cannot.
+     */
+    private var breakBeforeNextPoint = false
     private var lastFix: GpsFix? = null
     private var lastHeading: Float? = null
     private var targetPoint: LatLon? = null
@@ -475,13 +487,35 @@ class MapController(
             if (simplified.isNotEmpty()) historySegments.add(ArrayList(simplified))
         }
         livePoints.clear()
-        pushHistory()
-        pushLive()
+        breakBeforeNextPoint = false
+        pushTrack()
+    }
+
+    /**
+     * The recorder has started a new segment: the ride carries on, but not from where it left off.
+     *
+     * The run drawn so far is closed and the next point begins a new one. What is between them is
+     * not left blank - [gapCollection] draws a dashed line across it. A ride that simply stops and
+     * reappears somewhere else looks like the app lost the plot; a dashed line says plainly "you
+     * were here, then there, and nothing was measured in between".
+     */
+    fun startNewTrackSegment() {
+        when {
+            livePoints.size >= 2 -> historySegments.add(ArrayList(Simplify.rdp(livePoints, HISTORY_TOLERANCE_M)))
+            livePoints.size == 1 -> historySegments.add(arrayListOf(livePoints[0]))
+        }
+        livePoints.clear()
+        breakBeforeNextPoint = true
+        pushTrack()
     }
 
     /** Appends to the live line; every [LIVE_CAP] points the tail is simplified into history. */
     fun appendTrackPoint(p: LatLon) {
-        if (livePoints.isEmpty()) {
+        if (breakBeforeNextPoint) {
+            // The recorder said a gap opened. Its word beats the distance guess below: a six minute
+            // stop without moving is a gap it saw and geometry alone cannot.
+            breakBeforeNextPoint = false
+        } else if (livePoints.isEmpty()) {
             // The first point after the drawn ride was loaded - the app was reopened during a
             // ride, or an old ride is being continued. Join it to what is already there only when
             // it is genuinely next to the end of it; after a break the recorder starts a new
@@ -506,6 +540,7 @@ class MapController(
             livePoints.clear()
             livePoints.add(chunk[chunk.size - 1]) // seed so the lines stay connected
             pushHistory()
+            pushGaps()
         }
         pushLive()
     }
@@ -513,8 +548,37 @@ class MapController(
     fun clearTrack() {
         historySegments.clear()
         livePoints.clear()
+        breakBeforeNextPoint = false
+        pushTrack()
+    }
+
+    /** History, live tail and the gaps between them; they are one picture and always move together. */
+    private fun pushTrack() {
         pushHistory()
         pushLive()
+        pushGaps()
+    }
+
+    /**
+     * Every drawn run in order: the completed segments, then the live tail. The gaps are worked out
+     * from this rather than stored, so there is only one description of where the ride went.
+     */
+    private fun drawnRuns(): List<List<LatLon>> =
+        if (livePoints.isEmpty()) historySegments else historySegments + listOf(livePoints)
+
+    /**
+     * A straight line across each gap: the end of one run to the start of the next. Runs that are
+     * effectively touching produce nothing, so an ordinary ride draws no gaps at all.
+     */
+    private fun gapCollection(): FeatureCollection {
+        val features = gapsBetween(drawnRuns(), LIVE_JOIN_M).map { (from, to) ->
+            Feature.fromGeometry(
+                LineString.fromLngLats(
+                    listOf(Point.fromLngLat(from.lon, from.lat), Point.fromLngLat(to.lon, to.lat)),
+                ),
+            )
+        }
+        return FeatureCollection.fromFeatures(features)
     }
 
     private fun lastHistoryPoint(): LatLon? = historySegments.lastOrNull()?.lastOrNull()
@@ -711,6 +775,7 @@ class MapController(
         routeLayer?.setProperties(lineColor(routeColor))
         historyLayer?.setProperties(lineColor(trackColor))
         liveLayer?.setProperties(lineColor(trackColor))
+        gapLayer?.setProperties(lineColor(trackColor))
         guidanceLayer?.setProperties(lineColor(routeColor))
         // addImage with an existing name replaces the image; the symbol layers keep referencing it.
         style?.let { s ->
@@ -736,6 +801,7 @@ class MapController(
         val route = GeoJsonSource(SOURCE_ROUTE, lineCollection(routePoints ?: emptyList()), lineOptions)
         val history = GeoJsonSource(SOURCE_TRACK_HISTORY, segmentCollection(historySegments), lineOptions)
         val live = GeoJsonSource(SOURCE_TRACK_LIVE, lineCollection(livePoints), lineOptions)
+        val gaps = GeoJsonSource(SOURCE_TRACK_GAP, gapCollection(), lineOptions)
         val puck = GeoJsonSource(SOURCE_PUCK, puckCollection())
         val guidance = GeoJsonSource(SOURCE_GUIDANCE, guidanceCollection())
         val target = GeoJsonSource(SOURCE_TARGET, targetCollection())
@@ -743,6 +809,7 @@ class MapController(
         style.addSource(route)
         style.addSource(history)
         style.addSource(live)
+        style.addSource(gaps)
         style.addSource(puck)
         style.addSource(guidance)
         style.addSource(target)
@@ -753,6 +820,17 @@ class MapController(
             lineColor(routeColor),
             lineWidth(6f),
             lineCap(Property.LINE_CAP_ROUND),
+            lineJoin(Property.LINE_JOIN_ROUND),
+        )
+        // Where the ride was not measured: thinner than the ride, dashed, and half transparent, in
+        // the ride's own colour so it is legibly part of the same track. Added before the solid
+        // lines so it can never be drawn over one of them.
+        val gapLine = LineLayer(LAYER_TRACK_GAP, SOURCE_TRACK_GAP).withProperties(
+            lineColor(trackColor),
+            lineWidth(GAP_LINE_WIDTH),
+            lineOpacity(GAP_LINE_OPACITY),
+            lineDasharray(arrayOf(2f, 3f)),
+            lineCap(Property.LINE_CAP_BUTT),
             lineJoin(Property.LINE_JOIN_ROUND),
         )
         val historyLine = LineLayer(LAYER_TRACK_HISTORY, SOURCE_TRACK_HISTORY).withProperties(
@@ -775,6 +853,7 @@ class MapController(
             lineJoin(Property.LINE_JOIN_ROUND),
         )
         style.addLayer(routeLine)
+        style.addLayer(gapLine)
         style.addLayer(historyLine)
         style.addLayer(liveLine)
         style.addLayer(guidanceLine)
@@ -817,6 +896,7 @@ class MapController(
         routeSource = route
         historySource = history
         liveSource = live
+        gapSource = gaps
         puckSource = puck
         guidanceSource = guidance
         targetSource = target
@@ -824,6 +904,7 @@ class MapController(
         routeLayer = routeLine
         historyLayer = historyLine
         liveLayer = liveLine
+        gapLayer = gapLine
         puckLayer = puckSymbol
         guidanceLayer = guidanceLine
         targetLayer = targetSymbol
@@ -835,12 +916,14 @@ class MapController(
         routeSource = null
         historySource = null
         liveSource = null
+        gapSource = null
         puckSource = null
         guidanceSource = null
         targetSource = null
         routeLayer = null
         historyLayer = null
         liveLayer = null
+        gapLayer = null
         puckLayer = null
         guidanceLayer = null
         targetLayer = null
@@ -862,6 +945,11 @@ class MapController(
     private fun pushLive() {
         if (!styleReady) return
         liveSource?.setGeoJson(lineCollection(livePoints))
+    }
+
+    private fun pushGaps() {
+        if (!styleReady) return
+        gapSource?.setGeoJson(gapCollection())
     }
 
     private fun pushPuck() {
@@ -1164,10 +1252,12 @@ class MapController(
         const val SOURCE_ROUTE = "route"
         const val SOURCE_TRACK_HISTORY = "track-history"
         const val SOURCE_TRACK_LIVE = "track-live"
+        const val SOURCE_TRACK_GAP = "track-gap"
         const val SOURCE_PUCK = "puck"
         const val LAYER_ROUTE = "route-line"
         const val LAYER_TRACK_HISTORY = "track-history-line"
         const val LAYER_TRACK_LIVE = "track-live-line"
+        const val LAYER_TRACK_GAP = "track-gap-line"
         const val LAYER_PUCK = "puck-layer"
         const val IMAGE_PUCK = "puck"
         const val SOURCE_TARGET = "target"
@@ -1189,6 +1279,10 @@ class MapController(
         private const val SOURCE_LAYER_POIS = "pois"
         private const val PLACE_QUERY_RADIUS_PX = 18f
         private const val GUIDANCE_LINE_WIDTH = 3f
+
+        /** The "not measured" line: thinner and fainter than the ride, so it never reads as riding. */
+        private const val GAP_LINE_WIDTH = 3f
+        private const val GAP_LINE_OPACITY = 0.5f
         private const val TARGET_DISC_DP = 32f
         private const val TARGET_HEIGHT_DP = 40f
         private const val TARGET_RING_WIDTH_DP = 2f

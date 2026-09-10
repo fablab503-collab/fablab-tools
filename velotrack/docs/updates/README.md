@@ -18,6 +18,7 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
 | 63 | 9 Sep 2026 | Set Home / Set Work lists every address it found and lets you tick the right one; nothing saves until you press the button | [063-choose-the-right-address.md](063-choose-the-right-address.md) |
+| 64 | 10 Sep 2026 | A stretch where the app lost GPS is drawn as a thin dashed line instead of a solid one, so a ride no longer appears to teleport across town | [064-the-gap-is-drawn-as-a-gap.md](064-the-gap-is-drawn-as-a-gap.md) |
 | 62 | 9 Sep 2026 | Continue this ride, in the Tracks menu: a ride grows instead of a new one starting. And the map stops drawing a straight line across every gap in a ride | [062-continue-an-old-ride.md](062-continue-an-old-ride.md) |
 | 61 | 9 Sep 2026 | The battery percentage is a switch: energy saver dims the screen, flattens the map and halves the GPS rate; hold it for what actually saves a battery. A ride that has not moved for ten minutes asks whether it is over | [061-energy-saver-and-forgotten-rides.md](061-energy-saver-and-forgotten-rides.md) |
 | 60 | 9 Sep 2026 | The address found by Set Home / Set Work can be tapped to use it, and the dialog button says "Use address" | — |
@@ -43,6 +44,16 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 | 30 | 8 Sep 2026 | Nothing visible. Records that Google approved the first Play submission | — |
 | 29 | 8 Sep 2026 | Nothing visible. Play Console status notes | — |
 | 28 | 8 Sep 2026 | Nothing visible. Adds the screen recording Play requires for the foreground-service declaration | — |
+
+### Numbers with no release behind them
+
+Build **61** and **63** have no release and no page. Both were consumed by builds dispatched on a
+branch to prove the code compiled, at a time when Gradle could not be run locally; the workflow's
+publish step is guarded to `main`, so they built and published nothing. The version code is the run
+number, so the number is spent either way. Build **62** shipped the work described in pages
+[061](061-energy-saver-and-forgotten-rides.md), [062](062-continue-an-old-ride.md) and
+[063](063-choose-the-right-address.md) together — those three pages are named for the features, not
+for the build that carried them.
 
 Builds 1–27 predate this log. They are recoverable from the `velotrack-v<n>` tags:
 `git ls-remote --tags origin 'refs/tags/velotrack-v*'` gives the authoritative build-to-commit
