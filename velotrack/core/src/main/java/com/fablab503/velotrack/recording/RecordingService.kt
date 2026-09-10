@@ -16,7 +16,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -385,18 +384,6 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
 
         val decision = f.offer(fix)
         lastSpeedMps = decision.speedMps
-        // Temporary, for the watch: on Wear the service runs, the notification ticks and the
-        // status says RECORDING, but distance and speed stay at zero through a hundred good
-        // fixes - moving coordinates, advancing timestamps, 5 m accuracy. The phone records the
-        // identical simulated ride correctly, so this is not the filter's arithmetic. This says
-        // which of accept / auto-pause / store is refusing. Delete once the watch records.
-        Log.d(
-            TAG,
-            "fix acc=${fix.accuracyM} vel=${fix.speedMps} -> accepted=${decision.accepted}" +
-                " store=${decision.store} autoPaused=${decision.autoPaused}" +
-                " speed=${decision.speedMps} status=$status" +
-                " distSoFar=${stats.snapshot(System.currentTimeMillis()).distanceM}",
-        )
         if (decision.accepted) {
             val newStatus = when {
                 manualPaused -> RecordingStatus.PAUSED
@@ -812,8 +799,6 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
 
         /** Longest a pending inactivity check may sleep before being re-evaluated. */
         private const val REMINDER_MAX_CHECK_MS = 5L * 60_000L
-
-        private const val TAG = "RecordingService"
 
         private const val WAKE_LOCK_TAG = "VeloTrack::Recording"
         private const val WAKE_LOCK_TIMEOUT_MS = 12L * 60L * 60L * 1000L
