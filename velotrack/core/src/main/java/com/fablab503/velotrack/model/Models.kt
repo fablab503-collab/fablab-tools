@@ -66,6 +66,13 @@ data class RideState(
     val error: String? = null,
     /** Effective speed after filtering (receiver speed, or derived from displacement when the receiver reports 0). */
     val speedMps: Float? = null,
+    /**
+     * Index of the segment being recorded into. It rises when [PointFilter] decides a gap opened -
+     * more than 200 m or six minutes between stored points - and the UI needs it because the line
+     * it draws while riding must break where the recorder broke it. Without it the map joins the
+     * two sides of a lost-signal gap with a straight line and shows a ride nobody made.
+     */
+    val segment: Int = 0,
 )
 
 data class TrackSummary(

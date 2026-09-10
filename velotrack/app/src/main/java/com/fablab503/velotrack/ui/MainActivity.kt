@@ -192,6 +192,9 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
     private var recoveryChecked = false
     private var pendingViewTrackId: Long? = null
 
+    /** Segment index last drawn, so a rise in it can break the live line. -1 until a ride is drawn. */
+    private var trackSegmentOnMap = -1
+
     /**
      * Ride the list asked to be continued, consumed in [onResume]. Not started straight from the
      * intent: a foreground service may only be started while the activity really is in front, and
@@ -1193,6 +1196,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
         if (id != trackOnMapId) {
             trackOnMapId = id
             trackPointsOnMap = -1
+            trackSegmentOnMap = -1
             pendingViewTrackId = null
             mapController.clearTrack()
             trackLoadJob?.cancel()
@@ -1204,6 +1208,7 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
                 mapController.setTrackHistory(segmentsOf(points))
                 trackPointsOnMap = points.size
                 val current = RideSession.state.value
+                trackSegmentOnMap = current.segment
                 if (current.trackId == id && current.stats.pointCount > points.size) {
                     current.lastFix?.let { mapController.appendTrackPoint(it.latLon) }
                     trackPointsOnMap = current.stats.pointCount
@@ -1212,9 +1217,16 @@ class MainActivity : AppCompatActivity(), GpsSource.Listener, FavoritesSheet.Lis
             return
         }
         if (trackPointsOnMap >= 0 && state.stats.pointCount > trackPointsOnMap) {
+            // The recorder raised the segment index, so a gap opened before this point: signal ends
+            // for a while, or six minutes standing still. Break the drawn line in the same place,
+            // or the map joins the two sides of the gap with a straight line the rider never rode.
+            if (trackSegmentOnMap >= 0 && state.segment > trackSegmentOnMap) {
+                mapController.startNewTrackSegment()
+            }
             // The fix that raised the stored-point count is the point that was stored.
             state.lastFix?.let { mapController.appendTrackPoint(it.latLon) }
             trackPointsOnMap = state.stats.pointCount
+            trackSegmentOnMap = state.segment
         }
     }
 

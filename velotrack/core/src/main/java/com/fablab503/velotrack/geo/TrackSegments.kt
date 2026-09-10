@@ -32,3 +32,25 @@ fun segmentsOf(points: List<TrackPoint>): List<List<LatLon>> {
     if (current.isNotEmpty()) result.add(current)
     return result
 }
+
+/**
+ * The straight connectors between consecutive runs of a ride: the end of one, the start of the
+ * next. These are the stretches the app did not measure - signal lost in an underpass, six minutes
+ * standing still, a ride picked up again days later.
+ *
+ * They are worth drawing rather than leaving blank, but never as ridden distance: a line that stops
+ * and reappears somewhere else looks like a broken app, while a dashed connector says what actually
+ * happened. Runs whose ends are within [joinM] of each other produce nothing, so an ordinary ride
+ * with no gaps yields an empty list.
+ */
+fun gapsBetween(runs: List<List<LatLon>>, joinM: Double): List<Pair<LatLon, LatLon>> {
+    if (runs.size < 2) return emptyList()
+    val gaps = ArrayList<Pair<LatLon, LatLon>>()
+    for (i in 0 until runs.size - 1) {
+        val from = runs[i].lastOrNull() ?: continue
+        val to = runs[i + 1].firstOrNull() ?: continue
+        if (Geo.haversineM(from.lat, from.lon, to.lat, to.lon) <= joinM) continue
+        gaps.add(from to to)
+    }
+    return gaps
+}

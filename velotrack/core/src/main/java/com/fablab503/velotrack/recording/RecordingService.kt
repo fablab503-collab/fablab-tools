@@ -426,6 +426,7 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
         val gpsNow = gpsStatus
         val error = lastError
         val speed = lastSpeedMps
+        val segmentNow = filter?.segment ?: 0
         RideSession.update {
             RideState(
                 status = currentStatus,
@@ -436,6 +437,7 @@ class RecordingService : LifecycleService(), GpsSource.Listener {
                 gps = gpsNow,
                 error = error,
                 speedMps = speed ?: it.speedMps,
+                segment = segmentNow,
             )
         }
     }
