@@ -324,10 +324,19 @@
                             android:orientation="vertical"
                             android:paddingEnd="8dp">
 
+                            <!--
+                                "24.6 km/h" is the widest thing any of these four columns ever
+                                holds, and at a weight of 1 it did not fit: the HUD read
+                                "24.6 km/" with the h cut off. Autosize shrinks this number alone,
+                                and only when it has to, so the row still lines up at rest.
+                            -->
                             <TextView
                                 android:id="@+id/avgSpeedText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:autoSizeTextType="uniform"
+                                android:autoSizeMinTextSize="14sp"
+                                android:autoSizeMaxTextSize="22sp"
                                 android:maxLines="1"
                                 android:text="@string/hud_no_value"
                                 android:textAppearance="?attr/textAppearanceTitleLarge"
