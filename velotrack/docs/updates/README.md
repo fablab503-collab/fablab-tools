@@ -18,6 +18,8 @@ Pages are named `<build>-<slug>.md`, zero-padded to three digits so they sort. S
 | Build | Date | What a rider would notice | Page |
 |---|---|---|---|
 | 63 | 9 Sep 2026 | Set Home / Set Work lists every address it found and lets you tick the right one; nothing saves until you press the button | [063-choose-the-right-address.md](063-choose-the-right-address.md) |
+| 67 | 10 Sep 2026 | A country too big to download at full detail is offered in parts — take the whole country or just the part you ride in | [067-whole-countries-in-pieces.md](067-whole-countries-in-pieces.md) |
+| 65 | 10 Sep 2026 | Nothing new in the app. The first build to reach Google Play by itself | — |
 | 64 | 10 Sep 2026 | A stretch where the app lost GPS is drawn as a thin dashed line instead of a solid one, so a ride no longer appears to teleport across town | [064-the-gap-is-drawn-as-a-gap.md](064-the-gap-is-drawn-as-a-gap.md) |
 | 62 | 9 Sep 2026 | Continue this ride, in the Tracks menu: a ride grows instead of a new one starting. And the map stops drawing a straight line across every gap in a ride | [062-continue-an-old-ride.md](062-continue-an-old-ride.md) |
 | 61 | 9 Sep 2026 | The battery percentage is a switch: energy saver dims the screen, flattens the map and halves the GPS rate; hold it for what actually saves a battery. A ride that has not moved for ten minutes asks whether it is over | [061-energy-saver-and-forgotten-rides.md](061-energy-saver-and-forgotten-rides.md) |
