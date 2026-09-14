@@ -109,7 +109,8 @@ templates and sandbox workarounds. This skill adds the product and process knowl
   `$RUNNER_TEMP`, drop every default password from Gradle, delete old releases/tags, purge the
   blob from history (`git filter-branch --index-filter 'git rm --cached --ignore-unmatch …'
   --tag-name-filter cat -- --all`, then force-push). Keep a copy of the key for the user outside
-  the repo (`~/Documents/VeloTrack signing key/`).
+  the repo, on the Synology NAS: `/Volumes/Volume1/Daniel/Projects/VeloTrack signing key/` (moved off
+  the laptop 2026-09-11; the share must be mounted).
 - Commercial fonts (Interstate, Helvetica…) cannot ship in a public repo or a free APK: swap to an
   OFL font from google/fonts (curl the TTFs from github.com/google/fonts/raw/main/ofl/<family>/).
 - 3dicons.co icons are CC0; Material Symbols Apache-2.0; Protomaps basemaps BSD-3; OSM data ODbL:
