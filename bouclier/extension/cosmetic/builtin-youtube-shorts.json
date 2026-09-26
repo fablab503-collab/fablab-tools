@@ -1,0 +1,22 @@
+{
+  "_comment": "Bouclier: hides YouTube Shorts (shelves, sidebar entry, Shorts in results and on channels) when 'Hide YouTube Shorts' is on. Best effort: YouTube renames these elements from time to time.",
+  "specific": {
+    "youtube.com": [
+      "ytd-reel-shelf-renderer",
+      "ytd-rich-shelf-renderer[is-shorts]",
+      "ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts])",
+      "ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model)",
+      "grid-shelf-view-model:has(ytm-shorts-lockup-view-model)",
+      "ytd-item-section-renderer:has(grid-shelf-view-model ytm-shorts-lockup-view-model)",
+      "ytd-guide-entry-renderer:has(a[title=\"Shorts\"])",
+      "ytd-mini-guide-entry-renderer[aria-label=\"Shorts\"]",
+      "ytd-video-renderer:has(a[href^=\"/shorts/\"])",
+      "ytd-rich-item-renderer:has(a[href^=\"/shorts/\"])",
+      "ytd-grid-video-renderer:has(a[href^=\"/shorts/\"])",
+      "yt-tab-shape[tab-title=\"Shorts\"]",
+      "ytm-reel-shelf-renderer",
+      "ytm-shorts-lockup-view-model",
+      "ytm-pivot-bar-item-renderer:has(.pivot-shorts)"
+    ]
+  }
+}

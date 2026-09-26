@@ -1,0 +1,71 @@
+{
+  "_comment": "Bouclier's App Store listing, ready to paste into App Store Connect. Checked by appstore/check_listing.py (Apple's length limits). Written 2026-09-23.",
+  "app": {
+    "bundleId": "com.danielmadac.Bouclier",
+    "sku": "bouclier-1",
+    "primaryLanguage": "en-US",
+    "platforms": [
+      "macOS",
+      "iOS"
+    ],
+    "universalPurchase": true,
+    "primaryCategory": "Utilities",
+    "secondaryCategory": "Productivity",
+    "copyright": "2026 Daniel Madac",
+    "price": "Base country or region France, 1.99 EUR (Apple sets the other storefronts, about 1.99 USD in the United States)",
+    "availability": "All countries and regions",
+    "ageRating": "4+ (answer None / No to every question; the app has no web browser of its own)",
+    "appPrivacy": "Data Not Collected",
+    "thirdPartyContent": "Yes: filter lists by the EasyList authors (CC BY-SA 3.0 / CC BY 3.0) and malware-filter (CC0); their licences allow this use with credit",
+    "encryption": "No custom encryption (ITSAppUsesNonExemptEncryption = NO is in the build)",
+    "urls": {
+      "support": "https://fablab503-collab.github.io/bouclier/support.html",
+      "privacyPolicy": "https://fablab503-collab.github.io/bouclier/support.html#privacy",
+      "marketing": "https://fablab503-collab.github.io/bouclier/"
+    }
+  },
+  "locales": {
+    "en-US": {
+      "name": "Bouclier – Ad Blocker",
+      "subtitle": "Block ads, trackers & pop-ups",
+      "promotionalText": "Faster, cleaner pages in Safari on Mac, iPhone and iPad. Ads, trackers and pop-up ads are blocked, and any site can be paused in one tap. No account, no data collected.",
+      "keywords": "adblock,adblocker,content blocker,privacy,tracker,popup,cookie,malware,ads,filter,safari,extension",
+      "description": "Bouclier is an ad blocker for Safari on Mac, iPhone and iPad. This Safari extension stops ads, trackers and malware sites before they load, so pages open faster, use less data and stop following you around.\n\nWHAT IT BLOCKS\n• Ads and ad networks, and the empty spaces they leave behind\n• Trackers and analytics scripts\n• Pop-up ads that open new tabs\n• Malware and phishing sites\n• \"Turn off your ad blocker\" walls\n• Video ads\n• Optional: cookie banners, social buttons and newsletter pop-ups\n\nCLEAN LINKS\nTracking tags such as utm_source, fbclid and gclid are removed from links before the page loads.\n\nYOU STAY IN CHARGE\n• See what was blocked on each page\n• Turn Bouclier off for one site, or pause it for an hour\n• Page broken? Allow one blocked address on that site only\n• Hide anything on a page, and bring it back later\n• Per-site controls: block web fonts, scripts from other sites or comments\n• Your own filters, in the Adblock Plus format\n• Statistics: today, this week and all time\n• On Mac: right-click menu and keyboard shortcuts\n\nPRIVATE BY DESIGN\nBouclier uses Safari's built-in blocking engine: Safari applies the rules itself, so Bouclier never sees the pages you visit. There is no account, no tracking and no data collection. Statistics stay on your device.\n\nHOW TO TURN IT ON\nMac: Safari → Settings → Extensions → Bouclier.\niPhone and iPad: Settings → Apps → Safari → Extensions → Bouclier.\nAllow it on all websites so it can also hide empty ad spaces, close pop-up ads and remove video ads.\n\nOne purchase covers Mac, iPhone and iPad.\n\nFilter lists: EasyList, EasyPrivacy, Liste FR and the Adblock Warning Removal List by the EasyList authors (CC BY-SA 3.0), the EasyList Cookie List (CC BY 3.0) and the Online Malicious URL Blocklist (CC0). Each app update brings fresh lists.",
+      "whatsNew": ""
+    },
+    "fr-FR": {
+      "name": "Bouclier – Bloqueur de pub",
+      "subtitle": "Bloque pubs, traqueurs, pop-up",
+      "promotionalText": "Des pages plus rapides et plus nettes dans Safari sur Mac, iPhone et iPad : pubs, traqueurs et pop-up bloqués, chaque site en pause d'un geste. Sans compte ni collecte.",
+      "keywords": "adblock,anti-pub,publicité,traqueur,pistage,vie privée,cookies,pop-up,malware,safari,extension",
+      "description": "Bouclier est un bloqueur de publicités pour Safari sur Mac, iPhone et iPad. Cette extension Safari arrête les pubs, les traqueurs et les sites malveillants avant qu'ils ne se chargent : les pages s'ouvrent plus vite, consomment moins de données et cessent de vous suivre.\n\nCE QU'IL BLOQUE\n• Les publicités et les régies, ainsi que les espaces vides qu'elles laissent\n• Les traqueurs et les scripts de mesure d'audience\n• Les pop-up publicitaires qui ouvrent de nouveaux onglets\n• Les sites malveillants et d'hameçonnage\n• Les messages « désactivez votre bloqueur de pub »\n• Les publicités vidéo\n• En option : bandeaux cookies, boutons de réseaux sociaux et pop-up d'inscription\n\nDES LIENS PROPRES\nLes balises de suivi comme utm_source, fbclid ou gclid sont retirées des liens avant le chargement de la page.\n\nVOUS GARDEZ LA MAIN\n• Voyez ce qui a été bloqué sur chaque page\n• Désactivez Bouclier sur un site, ou mettez-le en pause une heure\n• Une page ne marche plus ? Autorisez une adresse bloquée sur ce site seulement\n• Masquez n'importe quel élément d'une page, et faites-le revenir plus tard\n• Réglages par site : bloquer les polices web, les scripts d'autres sites ou les commentaires\n• Vos propres filtres, au format Adblock Plus\n• Statistiques : aujourd'hui, cette semaine et depuis le début\n• Sur Mac : menu contextuel et raccourcis clavier\n\nPRIVÉ PAR CONCEPTION\nBouclier utilise le moteur de blocage intégré à Safari : c'est Safari qui applique les règles, Bouclier ne voit donc jamais les pages que vous visitez. Pas de compte, pas de pistage, aucune donnée collectée. Les statistiques restent sur votre appareil.\n\nPOUR L'ACTIVER\nMac : Safari → Réglages → Extensions → Bouclier.\niPhone et iPad : Réglages → Apps → Safari → Extensions → Bouclier.\nAutorisez-le sur tous les sites pour qu'il masque aussi les espaces publicitaires vides, ferme les pop-up et retire les publicités vidéo.\n\nUn seul achat pour Mac, iPhone et iPad. L'app est en anglais.\n\nListes de filtres : EasyList, EasyPrivacy, Liste FR et Adblock Warning Removal List par les auteurs d'EasyList (CC BY-SA 3.0), EasyList Cookie List (CC BY 3.0) et Online Malicious URL Blocklist (CC0). Chaque mise à jour de l'app apporte des listes fraîches.",
+      "whatsNew": ""
+    }
+  },
+  "reviewNotes": "Bouclier is a Safari web extension: an ad and tracker blocker with a toolbar menu. There is no account or login.\n\nTo test on Mac: open Bouclier once, then Safari > Settings > Extensions > turn on Bouclier, and allow it on all websites (Edit Websites > Allow). Open any news site: the Bouclier toolbar button shows how many requests were blocked on the page, and lets you pause the site, allow a blocked address or hide an element.\n\nTo test on iPhone or iPad: Settings > Apps > Safari > Extensions > Bouclier > on, and set All Websites to Allow. In Safari, open the page menu in the address bar and tap Bouclier.\n\nA public test page that loads real ad and tracker addresses: https://adblock.turtlecute.org/ (it also lists addresses used only by phone apps and by advertisers' own dashboards, which web ad blockers leave alone, so expect about two thirds blocked).\n\nWhy it asks for access to all websites: network blocking works without it, but hiding the empty spaces ads leave, closing pop-up ads that a page opens in a new tab, and removing video ads need the extension's scripts on the pages the user visits. Nothing is collected or sent anywhere; statistics stay on the device.\n\nThe filter lists are EasyList-family lists used under CC BY-SA 3.0 / CC BY 3.0 and the URLhaus-based Online Malicious URL Blocklist (CC0); credits are in the extension's settings page and in the app.",
+  "screenshots": {
+    "_comment": "Captions used on the screenshots in appstore/screenshots/ (English; the French set uses fr).",
+    "captions": [
+      {
+        "en": "Ads and trackers, blocked",
+        "fr": "Pubs et traqueurs bloqués"
+      },
+      {
+        "en": "See what each page tried to load",
+        "fr": "Voyez ce que chaque page voulait charger"
+      },
+      {
+        "en": "Pause a site in one tap",
+        "fr": "Mettez un site en pause d'un geste"
+      },
+      {
+        "en": "Hide anything on a page",
+        "fr": "Masquez n'importe quel élément"
+      },
+      {
+        "en": "Your statistics, on your device",
+        "fr": "Vos statistiques, sur votre appareil"
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+.checks { list-style: none; padding: 0; margin: 8px 0 14px; }
+.checks li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.checks li:last-child { border-bottom: 0; }
+.checks .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; flex: 0 0 auto; background: var(--muted); }
+.checks .ok .dot { background: var(--good); }
+.checks .todo .dot { background: var(--warn); }
+.checks .body { flex: 1; min-width: 0; }
+.checks .title { font-weight: 600; }
+.checks .desc { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.checks button { margin-top: 6px; }
+.steps { padding-left: 20px; margin: 8px 0 0; }
+.steps li { margin-bottom: 8px; }
+.links { display: flex; gap: 16px; flex-wrap: wrap; }

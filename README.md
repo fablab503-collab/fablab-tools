@@ -31,11 +31,29 @@ or in [docs/index.html](docs/index.html).
 on your phone and open it. Full guide, screenshots, settings and how it is built:
 [velotrack/README.md](velotrack/README.md).
 
+## Bouclier
+
+**[bouclier/](bouclier/)** is an ad blocker for Safari on Mac, iPhone and iPad.
+
+- Blocks ads, trackers, pop-up ads and malware sites before they load, and hides the empty spaces
+  ads leave behind. Built as a Safari web extension on `declarativeNetRequest`, so Safari applies
+  the rules and Bouclier never sees the pages you visit.
+- Removes tracking tags (utm_, fbclid, gclid…) from links, strips video ads, closes pop-up tabs.
+- Per-site pause in one click, a report of what each page tried to load, "allow this address on
+  this site" for broken pages, hide any element, your own filters in Adblock Plus syntax.
+- Statistics stay on the device. No account, no analytics, no data collected.
+
+**Use it for free:** build it yourself with `./build.sh` (Xcode 26 or later), or load `extension/`
+in Safari › Settings › Developer › *Add Temporary Extension…*. **Or support the work** by buying
+the App Store version (1,99 €, one purchase for Mac, iPhone and iPad). Full guide:
+[bouclier/README.md](bouclier/README.md); filter-list licences: [bouclier/THIRD_PARTY.md](bouclier/THIRD_PARTY.md).
+
 ## Repository layout
 
 | Folder | Content |
 |---|---|
 | `velotrack/` | The Android app (Kotlin), its tools and third-party notices |
+| `bouclier/` | The Safari ad blocker (web extension, Mac/iPhone/iPad app build, tests, App Store tools) |
 | `.github/workflows/` | CI: build, test, sign and publish the APK on every push; map extraction on demand |
 | `docs/superpowers/` | Design briefs and plans written before each feature round |
 | `assets/icons3d/` | 3D icon library (CC0, from 3dicons.co) used for illustrations |
@@ -76,4 +94,5 @@ Keeping support on GitHub only is what keeps the Play release safe.
 
 MIT, see [LICENSE](LICENSE). VeloTrack bundles third-party components under their own licences,
 listed in [velotrack/THIRD_PARTY.md](velotrack/THIRD_PARTY.md). Map data is (c) OpenStreetMap
-contributors (ODbL).
+contributors (ODbL). Bouclier's filter lists keep their own licences (CC BY-SA 3.0, CC BY 3.0,
+CC0), listed in [bouclier/THIRD_PARTY.md](bouclier/THIRD_PARTY.md).

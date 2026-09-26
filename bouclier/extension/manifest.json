@@ -1,0 +1,123 @@
+{
+  "manifest_version": 3,
+  "name": "Bouclier",
+  "short_name": "Bouclier",
+  "version": "1.2.0",
+  "description": "Blocks ads, trackers, malware sites and pop-up ads in Safari, cleans tracking tags from links, pauses per site.",
+  "author": "Daniel Madac",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png",
+    "256": "icons/icon-256.png",
+    "512": "icons/icon-512.png"
+  },
+  "action": {
+    "default_title": "Bouclier",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/toolbar-16.png",
+      "19": "icons/toolbar-19.png",
+      "32": "icons/toolbar-32.png",
+      "38": "icons/toolbar-38.png",
+      "48": "icons/toolbar-48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "scripting",
+    "storage",
+    "tabs",
+    "alarms",
+    "contextMenus",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+B"
+      },
+      "description": "Open Bouclier"
+    },
+    "toggle-site": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Pause or resume Bouclier on this site"
+    },
+    "hide-element": {
+      "suggested_key": {
+        "default": "Alt+Shift+H"
+      },
+      "description": "Hide an element on this page"
+    },
+    "pause-all": {
+      "description": "Pause or resume Bouclier everywhere"
+    }
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ads",
+        "enabled": true,
+        "path": "rules/ads.json"
+      },
+      {
+        "id": "privacy",
+        "enabled": true,
+        "path": "rules/privacy.json"
+      },
+      {
+        "id": "french",
+        "enabled": true,
+        "path": "rules/french.json"
+      },
+      {
+        "id": "safety",
+        "enabled": true,
+        "path": "rules/safety.json"
+      },
+      {
+        "id": "urlclean",
+        "enabled": true,
+        "path": "rules/urlclean.json"
+      },
+      {
+        "id": "antiadblock",
+        "enabled": true,
+        "path": "rules/antiadblock.json"
+      },
+      {
+        "id": "cookies",
+        "enabled": false,
+        "path": "rules/cookies.json"
+      },
+      {
+        "id": "social",
+        "enabled": false,
+        "path": "rules/social.json"
+      },
+      {
+        "id": "annoyances",
+        "enabled": false,
+        "path": "rules/annoyances.json"
+      }
+    ]
+  },
+  "browser_specific_settings": {
+    "safari": {
+      "strict_min_version": "26.0"
+    }
+  }
+}

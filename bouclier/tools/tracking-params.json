@@ -1,0 +1,20 @@
+{
+  "_comment": "Tracking parameters removed by Bouclier's 'Clean links' ruleset (page addresses only). Keep names exact: Safari removes them case-sensitively. 'sites' lists parameters that are only tracking on one host.",
+  "global": [
+    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+    "utm_name", "utm_brand", "utm_social", "utm_reader", "utm_place", "utm_pubreferrer",
+    "utm_swu", "utm_viz_id",
+    "fbclid", "gclid", "gclsrc", "dclid", "gbraid", "wbraid", "msclkid", "yclid",
+    "twclid", "ttclid", "li_fat_id", "epik", "igshid", "igsh",
+    "mc_eid", "mc_cid", "_hsenc", "_hsmi", "__hssc", "__hstc", "__hsfp", "hsCtaTracking",
+    "mkt_tok", "oly_anon_id", "oly_enc_id", "vero_id", "vero_conv", "wickedid",
+    "rb_clickid", "s_cid", "srsltid", "ref_src"
+  ],
+  "sites": [
+    { "host": "www.youtube.com", "params": ["si"] },
+    { "host": "m.youtube.com", "params": ["si"] },
+    { "host": "music.youtube.com", "params": ["si"] },
+    { "host": "youtu.be", "params": ["si"] },
+    { "host": "open.spotify.com", "params": ["si"] }
+  ]
+}
