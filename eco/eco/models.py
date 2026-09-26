@@ -6,6 +6,7 @@ Every heavy library is imported inside the function that needs it, so the rest o
 
 from __future__ import annotations
 
+import multiprocessing
 import os
 import platform
 import sys
@@ -100,13 +101,22 @@ def transcribe(audio_path: Path, model_name: str, device: str, language: str | N
 
 
 def _transcribe_faster_whisper(audio_path, model_name, device, language):
+    # In a process of its own: CTranslate2 (under faster-whisper) and PyTorch each ship their
+    # own OpenMP runtime, and on Intel Macs loading both into one process aborts the dub.
+    context = multiprocessing.get_context("spawn")
+    with context.Pool(1) as pool:
+        detected, spans = pool.apply(_faster_whisper_worker, (str(audio_path), model_name, device, language))
+    return detected, [Word(start, end, text) for start, end, text in spans]
+
+
+def _faster_whisper_worker(audio_path, model_name, device, language):
     from faster_whisper import WhisperModel
 
     # faster-whisper runs on CUDA or the CPU; Apple GPUs are not supported by its backend.
     run_on = "cuda" if device == "cuda" else "cpu"
     model = WhisperModel(model_name, device=run_on, compute_type="float16" if run_on == "cuda" else "int8")
     segments, info = model.transcribe(
-        str(audio_path),
+        audio_path,
         language=language,
         word_timestamps=True,
         vad_filter=True,
@@ -115,12 +125,12 @@ def _transcribe_faster_whisper(audio_path, model_name, device, language):
         # and long pauses, which YouTube videos are full of.
         condition_on_previous_text=False,
     )
-    words: list[Word] = []
+    spans = []
     for segment in segments:
         print(f"  [{segment.start:7.1f}s] {segment.text.strip()}", flush=True)
         for w in segment.words or []:
-            words.append(Word(start=float(w.start), end=float(w.end), text=w.word))
-    return info.language, words
+            spans.append((float(w.start), float(w.end), w.word))
+    return info.language, spans
 
 
 def _transcribe_mlx(audio_path, repo, language):
