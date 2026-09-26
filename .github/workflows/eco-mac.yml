@@ -14,9 +14,11 @@ on:
 permissions:
   contents: write # gh release create/upload for eco-mac-latest
 
+# A new push waits for the running Mac jobs instead of cancelling them: a half-finished
+# end-to-end dub is still the most useful signal, and these jobs take a while.
 concurrency:
   group: eco-mac-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   mac:
