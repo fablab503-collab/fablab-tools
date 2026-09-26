@@ -226,7 +226,7 @@ base64-encode it and add the three secrets.
 Everything in this app was specified, implemented, reviewed and tested with Claude Code from a Mac
 without Android Studio: the design briefs in `docs/superpowers/specs/` describe each feature round
 and its contracts, parallel agents implement them, reviewers check compile and behaviour, GitHub
-Actions compiles and publishes, and the Android emulator verifies the result. The `skills/`
+Actions compiles and publishes, and the Android emulator verifies the result. The `.claude/skills/`
 folder at the repository root documents that process so it can be repeated.
 
 ## Limitations

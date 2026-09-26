@@ -2,7 +2,7 @@
 
 Sources were primary (Maven Central metadata, Google Maven, MapLibre source/changelog, Android docs,
 actions/runner-images, Protomaps docs/npm/PyPI). Re-verify anything older than two months. Full
-research notes with source URLs: `~/Documents/GitHub/fablab-tools/skills/build-1/reference/*.md`.
+research notes with source URLs: `~/Documents/GitHub/fablab-tools/.claude/skills/build-1/reference/*.md`.
 
 ## GitHub from the sandbox
 

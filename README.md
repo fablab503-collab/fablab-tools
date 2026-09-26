@@ -57,7 +57,7 @@ the App Store version (1,99 €, one purchase for Mac, iPhone and iPad). Full gu
 | `.github/workflows/` | CI: build, test, sign and publish the APK on every push; map extraction on demand |
 | `docs/superpowers/` | Design briefs and plans written before each feature round |
 | `assets/icons3d/` | 3D icon library (CC0, from 3dicons.co) used for illustrations |
-| `skills/` | The Claude Code skills that describe how this project is built and tested |
+| `.claude/skills/` | The Claude Code skills that describe how this project is built and tested; they load in every Claude Code session on this repository, web sessions included. `CLAUDE.md` says how to reach the larger library in `second-brain` |
 
 ## The map is made by people
 

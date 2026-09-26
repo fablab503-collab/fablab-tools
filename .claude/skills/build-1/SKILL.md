@@ -116,4 +116,4 @@ toolchain and wants interactive iteration.
 
 - `reference.md`: condensed verified facts and code snippets (MapLibre API, FGS, GPS, Protomaps).
 - Full research notes, templates (workflows, Gradle, plan, implement workflow, ci.sh) and the
-  VeloTrack spec/plan examples: `~/Documents/GitHub/fablab-tools/skills/build-1/` (versioned on GitHub).
+  VeloTrack spec/plan examples: `~/Documents/GitHub/fablab-tools/.claude/skills/build-1/` (versioned on GitHub).

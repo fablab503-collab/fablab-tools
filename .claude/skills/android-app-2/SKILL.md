@@ -162,5 +162,5 @@ templates and sandbox workarounds. This skill adds the product and process knowl
 
 - Repo `~/Documents/GitHub/fablab-tools`, app `velotrack/`, specs/plans under `docs/superpowers/`,
   releases `velotrack-latest` (rolling) and `velotrack-v<run>`; test map `map-mountain-view-test`.
-- Skill copies with templates/research: `fablab-tools/skills/build-1/`, `fablab-tools/skills/android-app-2/`.
-- Emulator helpers: `skills/build-1/templates/emulator-ride.sh`; PMTiles dry-run `velotrack/tools/pmtiles_dryrun.py`.
+- Skill copies with templates/research: `fablab-tools/.claude/skills/build-1/`, `fablab-tools/.claude/skills/android-app-2/`.
+- Emulator helpers: `.claude/skills/build-1/templates/emulator-ride.sh`; PMTiles dry-run `velotrack/tools/pmtiles_dryrun.py`.
