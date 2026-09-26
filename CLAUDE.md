@@ -23,7 +23,10 @@ why-is-this-failing question comes up:
   `python3 <clone>/Skills/_scripts/recall.py --show <domain>/<skill>` for one id.
 - **On the Mac**: the vault is at `/Volumes/Volume1/SecondBrain`; run the same two commands there.
 
-The `skills-recall` skill in `.claude/skills/` carries the protocol. Never read `Skills/` or its
+The `skills-recall` skill in `.claude/skills/` carries the protocol. For a whole job - build an
+iOS, Android, Mac or cross-platform app, launch an AI video ad - the library also has
+**playbooks**: `python3 <path>/Skills/_scripts/playbook.py "the job"` names one, `--show <slug>`
+is the map of stages, `--stage <slug> <n>` loads one stage's skills; work it one stage at a time. Never read `Skills/` or its
 `index.tsv` in bulk, and never install that library as skills - a search plus one skill costs
 about 440 tokens, the library is over 900,000.
 

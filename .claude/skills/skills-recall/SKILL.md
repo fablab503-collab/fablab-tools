@@ -27,6 +27,18 @@ copied into this repository.
 5. **Did not answer?** Search again with different words. Do not load two or three skills at
    once; that is the failure mode the library exists to avoid.
 
+## A whole job: playbooks
+
+When the task is a whole journey - "build an app for iPhone", "make an AI video ad" - use
+a playbook: an ordered map of stages, each naming the one to three skills to load when the
+work reaches it. From the same `<path>` as above:
+
+1. `python3 <path>/Skills/_scripts/playbook.py "the job"` - which playbook fits.
+2. `--show <slug>` - the map, about 100 tokens a stage, loading nothing. Read it once.
+3. `--stage <slug> <n>` - that stage's skills only. Work the stage, then load the next.
+   Never load the whole playbook at once.
+4. No playbook fits? `--plan "the job"` drafts one from a template; read every pick.
+
 ## Browsing, only when you cannot name the problem
 
 `Skills/DOMAINS.tsv` lists the 182 domains at about 5,400 tokens;
