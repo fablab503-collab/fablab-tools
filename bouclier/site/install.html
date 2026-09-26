@@ -114,6 +114,14 @@ code { font: 500 14px var(--mono); overflow-wrap: anywhere; }
 .note p { margin: 0; }
 .note p + p { margin-top: 6px; }
 
+/* screenshots: each figure removes itself until its picture is added (tools/guide-shots.sh) */
+.shots { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.shots figure { margin: 0; }
+.shots img { display: block; max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--mono-bg); }
+.shots.phone img { width: 240px; }
+.shots.tablet img { width: 360px; }
+.shots.mac img { width: 560px; }
+
 /* troubleshooting */
 details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
 details + details { margin-top: 10px; }
@@ -177,11 +185,13 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
           <h3><span class="en">Open Bouclier once</span><span class="fr">Ouvrez Bouclier une fois</span></h3>
           <p class="en">Tap the Bouclier icon on your Home Screen. The app shows whether the extension is on and repeats the next steps. You don't need to keep it open.</p>
           <p class="fr">Touchez l'icône Bouclier sur l'écran d'accueil. L'app indique si l'extension est activée et rappelle les étapes suivantes. Inutile de la laisser ouverte.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-app.png" alt="The Bouclier app on iPhone" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Go to Safari's extensions</span><span class="fr">Allez dans les extensions de Safari</span></h3>
           <p class="en">Open <span class="path">Settings → Apps → Safari → Extensions</span>.</p>
           <p class="fr">Ouvrez <span class="path">Réglages → Apps → Safari → Extensions</span>.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-extensions.png" alt="Settings, Apps, Safari, Extensions on iPhone" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Turn Bouclier on</span><span class="fr">Activez Bouclier</span></h3>
@@ -194,6 +204,7 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
           <p class="fr">Sur le même écran, sous <span class="path">Autorisations</span>, réglez <span class="ui">Tous les sites web</span> sur <span class="ui">Autoriser</span>.</p>
           <p class="hint en">Ads and trackers are blocked even without this. With it, Bouclier also hides empty ad spaces, closes pop-up ads and removes video ads.</p>
           <p class="hint fr">Les pubs et traqueurs sont bloqués même sans cela. Avec, Bouclier masque aussi les espaces vides, ferme les pop-up et retire les publicités vidéo.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-bouclier.png" alt="Bouclier turned on and allowed on all websites, iPhone Settings" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Optional: Private Browsing</span><span class="fr">Option : navigation privée</span></h3>
@@ -206,6 +217,7 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
           <p class="fr">Ouvrez un site dans Safari. Touchez le bouton du menu de la page, à gauche de la barre d'adresse, puis <span class="ui">Bouclier</span>. Vous y voyez ce qui a été bloqué, et pouvez mettre un site en pause, autoriser une adresse ou masquer un élément.</p>
           <p class="hint en">If Safari asks for permission the first time, choose <span class="ui">Always Allow on Every Website</span>.</p>
           <p class="hint fr">Si Safari demande une autorisation la première fois, choisissez <span class="ui">Toujours autoriser sur tous les sites web</span>.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-page-menu.png" alt="Safari's page menu with Bouclier" decoding="async" onerror="this.parentNode.remove()"></figure><figure><img src="img/install/iphone-popup.png" alt="Bouclier menu on iPhone" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
       </ol>
     </section>
@@ -234,11 +246,13 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
           <h3><span class="en">Allow it on all websites</span><span class="fr">Autorisez-le sur tous les sites</span></h3>
           <p class="en">Set <span class="ui">All Websites</span> to <span class="ui">Allow</span>. Turn on <span class="ui">Allow in Private Browsing</span> too if you use private tabs.</p>
           <p class="fr">Réglez <span class="ui">Tous les sites web</span> sur <span class="ui">Autoriser</span>. Activez aussi <span class="ui">Autoriser en navigation privée</span> si vous utilisez les onglets privés.</p>
+          <div class="shots tablet"><figure><img src="img/install/ipad-bouclier.png" alt="Bouclier turned on in iPad Settings" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Use it in Safari</span><span class="fr">Utilisez-le dans Safari</span></h3>
           <p class="en">In Safari, tap the page menu button in the address bar, then <span class="ui">Bouclier</span>. To hide something on a page, choose <span class="ui">Hide an element</span> and tap the thing you want gone.</p>
           <p class="fr">Dans Safari, touchez le bouton du menu de la page dans la barre d'adresse, puis <span class="ui">Bouclier</span>. Pour masquer quelque chose, choisissez <span class="ui">Hide an element</span> et touchez l'élément à faire disparaître.</p>
+          <div class="shots tablet"><figure><img src="img/install/ipad-popup.png" alt="Bouclier menu on iPad" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
       </ol>
     </section>
@@ -257,16 +271,19 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
           <h3><span class="en">Open Bouclier once</span><span class="fr">Ouvrez Bouclier une fois</span></h3>
           <p class="en">Open it from <span class="path">Launchpad</span> or the <span class="path">Applications</span> folder. Safari only lists the extension after the app has been opened once. Click <span class="ui">Quit and Open Safari Settings…</span> to jump to the next step.</p>
           <p class="fr">Ouvrez-la depuis le <span class="path">Launchpad</span> ou le dossier <span class="path">Applications</span>. Safari n'affiche l'extension qu'après une première ouverture. Cliquez sur <span class="ui">Quit and Open Safari Settings…</span> pour passer directement à l'étape suivante.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-app.png" alt="The Bouclier app window on Mac" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Tick Bouclier</span><span class="fr">Cochez Bouclier</span></h3>
           <p class="en">In Safari, choose <span class="path">Safari → Settings… → Extensions</span> (or press <span class="ui">⌘ ,</span>), then tick the box next to <span class="ui">Bouclier</span>.</p>
           <p class="fr">Dans Safari, choisissez <span class="path">Safari → Réglages… → Extensions</span> (ou <span class="ui">⌘ ,</span>), puis cochez la case à côté de <span class="ui">Bouclier</span>.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-extensions.png" alt="Safari Settings, Extensions, Bouclier ticked" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Allow it on all websites</span><span class="fr">Autorisez-le sur tous les sites</span></h3>
           <p class="en">With Bouclier selected, click <span class="ui">Edit Websites…</span> and set <span class="ui">Other websites</span> to <span class="ui">Allow</span>. If Safari asks instead, click <span class="ui">Always Allow on Every Website</span>.</p>
           <p class="fr">Bouclier sélectionné, cliquez sur <span class="ui">Modifier les sites web…</span> et réglez <span class="ui">Autres sites web</span> sur <span class="ui">Autoriser</span>. Si Safari vous le demande, cliquez sur <span class="ui">Toujours autoriser sur tous les sites web</span>.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-edit-websites.png" alt="Edit Websites: Other websites set to Allow" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <h3><span class="en">Optional: Private Browsing</span><span class="fr">Option : navigation privée</span></h3>
@@ -279,6 +296,7 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
           <p class="fr">Le bouclier de Bouclier apparaît dans la barre d'outils de Safari. Cliquez dessus pour voir ce qui a été bloqué, mettre un site en pause ou masquer un élément. Vous pouvez aussi faire un clic droit sur un élément et choisir <span class="ui">Hide This Element…</span>.</p>
           <p class="hint en">Shortcuts: <span class="ui">⌥⇧B</span> opens Bouclier, <span class="ui">⌥⇧P</span> pauses the site, <span class="ui">⌥⇧H</span> hides an element. Don't see the shield? Choose <span class="path">View → Customize Toolbar…</span> and drag it in.</p>
           <p class="hint fr">Raccourcis : <span class="ui">⌥⇧B</span> ouvre Bouclier, <span class="ui">⌥⇧P</span> met le site en pause, <span class="ui">⌥⇧H</span> masque un élément. Pas de bouclier ? Choisissez <span class="path">Présentation → Personnaliser la barre d'outils…</span> et faites-le glisser.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-popup.png" alt="Bouclier's menu from the Safari toolbar" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
       </ol>
     </section>
@@ -290,6 +308,7 @@ footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
         <li><div>
           <p class="en">Open Bouclier's menu in Safari and choose the setup check. Anything marked with an orange dot needs one tap or click from you.</p>
           <p class="fr">Ouvrez le menu de Bouclier dans Safari et lancez la vérification de l'installation. Tout ce qui a un point orange demande une action de votre part.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-setup-check.png" alt="Bouclier's setup check" decoding="async" onerror="this.parentNode.remove()"></figure></div>
         </div></li>
         <li><div>
           <p class="en">Open the independent test page <a href="https://adblock.turtlecute.org/">adblock.turtlecute.org</a>. Expect about two thirds blocked: many of its addresses are only used by phone and TV apps, so web ad blockers leave them alone.</p>
