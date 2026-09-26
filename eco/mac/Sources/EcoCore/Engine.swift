@@ -25,6 +25,33 @@ public enum Engine {
     /// Chatterbox on Apple Silicon; XTTS on Intel Macs, where PyTorch stops at 2.2.
     public static var voiceEngine: String { isAppleSilicon ? "chatterbox" : "xtts" }
 
+    /// Intel Macs compile one part of the XTTS voice while installing, which needs Apple's
+    /// Command Line Tools. (Apple silicon installs only ready-made packages.)
+    public static var needsCommandLineTools: Bool { !isAppleSilicon && !hasCommandLineTools() }
+
+    public static func hasCommandLineTools() -> Bool {
+        let check = Process()
+        check.executableURL = URL(fileURLWithPath: "/usr/bin/xcode-select")
+        check.arguments = ["-p"]
+        check.standardOutput = FileHandle.nullDevice
+        check.standardError = FileHandle.nullDevice
+        do {
+            try check.run()
+            check.waitUntilExit()
+            return check.terminationStatus == 0
+        } catch {
+            return false
+        }
+    }
+
+    /// Opens Apple's installer for the Command Line Tools.
+    public static func installCommandLineTools() {
+        let install = Process()
+        install.executableURL = URL(fileURLWithPath: "/usr/bin/xcode-select")
+        install.arguments = ["--install"]
+        try? install.run()
+    }
+
     public static func isInstalled(version: String) -> Bool {
         guard FileManager.default.isExecutableFile(atPath: python.path),
               let installed = try? String(contentsOf: marker, encoding: .utf8)

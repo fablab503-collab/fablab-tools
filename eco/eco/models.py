@@ -41,16 +41,29 @@ def separate(audio_path: Path, vocals_path: Path, background_path: Path, device:
     """Split the soundtrack into the voice and everything else (music, effects, ambience).
 
     The voice is what gets transcribed and cloned; everything else goes back under the
-    dubbed voice so the dubbed video keeps its music.
+    dubbed voice so the dubbed video keeps its music. Uses demucs' apply_model, which is the
+    same in 4.0 (the last release installable on Intel Macs) and 4.1.
     """
     import torch
-    from demucs.api import Separator
+    from demucs.apply import apply_model
+    from demucs.pretrained import get_model
 
+    separator = get_model(model)
+    separator.eval()
     audio, sr = sf.read(str(audio_path), dtype="float32", always_2d=True)
-    separator = Separator(model=model, device=device if device != "mps" else "cpu", progress=True)
-    _, stems = separator.separate_tensor(torch.from_numpy(audio.T.copy()), sr)
-    vocals = stems["vocals"]
-    background = sum(stem for name, stem in stems.items() if name != "vocals")
+    if sr != separator.samplerate:
+        raise ValueError(f"expected {separator.samplerate} Hz audio, got {sr}")
+    wav = torch.from_numpy(audio.T.copy())
+    reference = wav.mean(0)
+    mean, std = reference.mean(), reference.std() + 1e-8
+    with torch.no_grad():
+        stems = apply_model(
+            separator, ((wav - mean) / std)[None], device=device if device != "mps" else "cpu",
+            shifts=1, split=True, overlap=0.25, progress=True,
+        )[0]
+    stems = stems * std + mean
+    vocals = stems[separator.sources.index("vocals")]
+    background = stems.sum(0) - vocals
     sf.write(str(vocals_path), vocals.cpu().numpy().T, separator.samplerate, subtype="FLOAT")
     sf.write(str(background_path), background.cpu().numpy().T, separator.samplerate, subtype="FLOAT")
 

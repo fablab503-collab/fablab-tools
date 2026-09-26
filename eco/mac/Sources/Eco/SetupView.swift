@@ -4,6 +4,7 @@ import SwiftUI
 struct SetupView: View {
     @EnvironmentObject var model: AppModel
     @AppStorage(Pref.acceptedXTTSLicence) private var acceptedXTTSLicence = false
+    @State private var needsTools = Engine.needsCommandLineTools
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -28,6 +29,15 @@ struct SetupView: View {
                             + "channel that earns money from its videos is commercial.")
                             .bold()
                         Toggle("I will use it only for videos that earn no money", isOn: $acceptedXTTSLicence)
+                        if needsTools {
+                            Divider()
+                            Text("Installing the XTTS voice on an Intel Mac also needs Apple's free "
+                                + "Command Line Tools (about 1 GB).")
+                            HStack {
+                                Button("Install Command Line Tools") { Engine.installCommandLineTools() }
+                                Button("Check Again") { needsTools = Engine.needsCommandLineTools }
+                            }
+                        }
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(4)
@@ -38,7 +48,7 @@ struct SetupView: View {
                 Button(model.busy ? "Installing…" : "Install") { model.install() }
                     .keyboardShortcut(.defaultAction)
                     .controlSize(.large)
-                    .disabled(model.busy || (!Engine.isAppleSilicon && !acceptedXTTSLicence))
+                    .disabled(model.busy || (!Engine.isAppleSilicon && (!acceptedXTTSLicence || needsTools)))
                 Text("Takes 10–30 minutes depending on your connection.").foregroundStyle(.secondary)
             }
 

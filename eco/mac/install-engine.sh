@@ -15,6 +15,14 @@ WHEEL="$3"
 
 event() { printf '@eco {"event": "step", "text": "%s"}\n' "$1"; }
 
+# One part of the Intel voice (monotonic-alignment-search, used by XTTS) ships no Intel Mac
+# wheel and is compiled during the install, which needs Apple's Command Line Tools.
+if [ "$(uname -m)" != "arm64" ] && ! xcode-select -p >/dev/null 2>&1; then
+  printf '@eco {"event": "error", "message": "%s"}\n' \
+    "Install Apple's Command Line Tools first (Terminal: xcode-select --install), then try again."
+  exit 3
+fi
+
 mkdir -p "$ENGINE"
 export UV_PYTHON_INSTALL_DIR="$ENGINE/python"
 export UV_CACHE_DIR="$ENGINE/cache"
@@ -41,10 +49,13 @@ WHEEL_URL="$("$PY" -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).reso
 event "Checking the engine"
 "$ENGINE/venv/bin/python" - <<'PY'
 import importlib, platform
-modules = ["eco.cli", "demucs.api", "faster_whisper", "imageio_ffmpeg", "argostranslate.translate"]
+modules = ["eco.cli", "demucs.apply", "faster_whisper", "imageio_ffmpeg", "argostranslate.translate"]
 modules += ["chatterbox.mtl_tts", "mlx_whisper"] if platform.machine() == "arm64" else ["TTS.api"]
 for name in modules:
     importlib.import_module(name)
+if platform.machine() == "arm64":
+    import perth  # Chatterbox cannot start without its watermarker, which fails to import quietly
+    assert perth.PerthImplicitWatermarker is not None, "perth watermarker unavailable"
 import torch
 print(f"engine ready: torch {torch.__version__}, {platform.machine()}, "
       f"Apple GPU {'available' if torch.backends.mps.is_available() else 'not available'}")
