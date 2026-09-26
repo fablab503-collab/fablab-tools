@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bouclier</title>
+<meta name="description" content="Bouclier is an ad blocker for Safari on Mac, iPhone and iPad. It blocks ads, trackers, pop-up ads and malware sites, and collects no data.">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+  // language: #fr / #en in the link, then the last choice, then the browser's language
+  (function () {
+    var lang = location.hash === '#fr' ? 'fr' : location.hash === '#en' ? 'en' : null;
+    if (!lang) { try { lang = localStorage.getItem('bouclier-lang'); } catch (e) {} }
+    if (!lang) lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+    document.documentElement.lang = lang;
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ground: #f2f4f9;
+  --surface: #ffffff;
+  --ink: #0f1a33;
+  --ink-2: #4a5570;
+  --line: #dce1ec;
+  --accent: #2459db;
+  --accent-soft: #e6edfd;
+  --blocked: #b4232c;
+  --blocked-soft: #fbe9ea;
+  --loaded: #17784f;
+  --loaded-soft: #e3f4ec;
+  --mono-bg: #f7f9fd;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ground: #0a0f1e;
+    --surface: #111a30;
+    --ink: #e6ebf6;
+    --ink-2: #9aa6c0;
+    --line: #233051;
+    --accent: #86a9ff;
+    --accent-soft: #1a2750;
+    --blocked: #ff8a8f;
+    --blocked-soft: #3a1820;
+    --loaded: #5bd6a0;
+    --loaded-soft: #10301f;
+    --mono-bg: #0d1528;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 17px/1.6 var(--body);
+}
+html[lang="fr"] .en, html[lang="en"] .fr { display: none !important; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1080px; margin: 0 auto; }
+
+/* header */
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 700 20px/1 var(--display); letter-spacing: -0.01em; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; }
+nav.links { display: flex; align-items: center; gap: 6px 18px; flex-wrap: wrap; font-size: 15px; }
+nav.links a { color: var(--ink-2); text-decoration: none; }
+nav.links a:hover { color: var(--ink); }
+.lang { font: 600 13px/1 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding-block: 40px 72px; }
+.eyebrow { margin: 0 0 14px; font: 600 13px/1.3 var(--body); letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font: 700 clamp(40px, 6vw, 64px)/1.02 var(--display); letter-spacing: -0.03em; text-wrap: balance; }
+.lede { margin: 20px 0 0; max-width: 34em; font-size: 19px; color: var(--ink-2); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 0; padding: 0; list-style: none; }
+.facts li { font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.facts li.soon { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
+/* the request ledger: what one page asked for, and what Bouclier stopped */
+.ledger { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 26, 51, .05), 0 18px 40px -24px rgba(15, 26, 51, .35); overflow: hidden; }
+.ledger-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.ledger-head strong { display: flex; align-items: center; gap: 8px; font: 700 15px/1.2 var(--display); }
+.ledger-head svg { width: 18px; height: 18px; flex: none; }
+.ledger-head span { font: 400 13px/1.2 var(--mono); color: var(--ink-2); }
+.ledger ol { list-style: none; margin: 0; padding: 6px 0; background: var(--mono-bg); }
+.ledger li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 7px 18px; font: 400 13px/1.35 var(--mono); }
+.ledger li .url { overflow-wrap: anywhere; min-width: 0; }
+.ledger li.b .url { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--blocked); text-decoration-thickness: 1.5px; }
+.tag { font: 500 11px/1 var(--mono); letter-spacing: .04em; padding: 5px 7px; border-radius: 6px; white-space: nowrap; }
+.b .tag { color: var(--blocked); background: var(--blocked-soft); }
+.l .tag { color: var(--loaded); background: var(--loaded-soft); }
+.ledger-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--line); font-size: 14px; }
+.ledger-foot b { font: 700 22px/1 var(--display); color: var(--blocked); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips span { font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); color: var(--ink-2); }
+.caption { margin: 10px 2px 0; font-size: 13px; color: var(--ink-2); }
+
+/* sections */
+section.band { padding-block: 64px; border-top: 1px solid var(--line); }
+h2 { margin: 0 0 8px; font: 700 clamp(26px, 3.4vw, 34px)/1.15 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+.intro { margin: 0 0 32px; max-width: 40em; color: var(--ink-2); }
+.cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+h3 { margin: 0 0 12px; font: 700 19px/1.3 var(--display); }
+.cols ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.cols p { margin: 0 0 10px; }
+.note { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); font-size: 15px; }
+.note code { font: 500 13px var(--mono); }
+
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.device { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+.device ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+.device ol li::marker { font-weight: 700; color: var(--accent); }
+.path { font-weight: 600; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 560px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px/1.3 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+tr:last-child td { border-bottom: 0; }
+td.off { color: var(--ink-2); }
+
+footer { padding-block: 40px 56px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; font-size: 15px; color: var(--ink-2); }
+footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; gap: 36px; padding-block: 24px 56px; }
+  .cols { grid-template-columns: 1fr; gap: 32px; }
+  .steps { grid-template-columns: 1fr; }
+  section.band { padding-block: 48px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ledger li.b .url { transition: text-decoration-color .2s; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="icon.png" alt="" width="34" height="34">Bouclier</a>
+    <nav class="links" aria-label="Site">
+      <a href="support.html"><span class="en">Support</span><span class="fr">Assistance</span></a>
+      <a href="support.html#privacy"><span class="en">Privacy</span><span class="fr">Confidentialité</span></a>
+      <button class="lang" id="lang-toggle" type="button"><span class="en" lang="fr">Français</span><span class="fr" lang="en">English</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <p class="eyebrow"><span class="en">Safari extension · Mac, iPhone, iPad</span><span class="fr">Extension Safari · Mac, iPhone, iPad</span></p>
+        <h1><span class="en">Ads and trackers, stopped before they load.</span><span class="fr">Pubs et traqueurs arrêtés avant de se charger.</span></h1>
+        <p class="lede">
+          <span class="en">Bouclier is an ad blocker for Safari. Safari applies its rules itself, so pages open faster, use less data, and Bouclier never sees the sites you visit.</span>
+          <span class="fr">Bouclier est un bloqueur de publicités pour Safari. C'est Safari qui applique ses règles : les pages s'ouvrent plus vite, consomment moins de données, et Bouclier ne voit jamais les sites que vous visitez.</span>
+        </p>
+        <ul class="facts">
+          <li class="soon"><span class="en">Coming soon to the App Store</span><span class="fr">Bientôt sur l'App Store</span></li>
+          <li><span class="en">One purchase for Mac, iPhone and iPad</span><span class="fr">Un seul achat pour Mac, iPhone et iPad</span></li>
+          <li><span class="en">No data collected</span><span class="fr">Aucune donnée collectée</span></li>
+        </ul>
+      </div>
+
+      <figure style="margin:0">
+        <div class="ledger">
+          <div class="ledger-head">
+            <strong>
+              <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4 L90 18 V46 C90 72 73 88 50 97 C27 88 10 72 10 46 V18 Z" fill="#2f6fea"/><rect x="28" y="42" width="44" height="14" rx="7" fill="#fff"/></svg>
+              <span class="en">This page</span><span class="fr">Cette page</span>
+            </strong>
+            <span>news.example</span>
+          </div>
+          <ol>
+            <li class="b"><span class="url">securepubads.g.doubleclick.net/tag/js/gpt.js</span><span class="tag"><span class="en">AD</span><span class="fr">PUB</span></span></li>
+            <li class="b"><span class="url">pagead2.googlesyndication.com/pagead/js/adsbygoogle.js</span><span class="tag"><span class="en">AD</span><span class="fr">PUB</span></span></li>
+            <li class="l"><span class="url">news.example/assets/article.css</span><span class="tag">PAGE</span></li>
+            <li class="b"><span class="url">www.googletagmanager.com/gtm.js</span><span class="tag"><span class="en">TRACKER</span><span class="fr">TRAQUEUR</span></span></li>
+            <li class="b"><span class="url">static.criteo.net/js/ld/publishertag.js</span><span class="tag"><span class="en">AD</span><span class="fr">PUB</span></span></li>
+            <li class="l"><span class="url">img.news.example/2026/09/cover.jpg</span><span class="tag">PAGE</span></li>
+            <li class="b"><span class="url">cdn.taboola.com/libtrc/news/loader.js</span><span class="tag"><span class="en">AD</span><span class="fr">PUB</span></span></li>
+            <li class="b"><span class="url">sb.scorecardresearch.com/beacon.js</span><span class="tag"><span class="en">TRACKER</span><span class="fr">TRAQUEUR</span></span></li>
+          </ol>
+          <div class="ledger-foot">
+            <div><b>6</b><span class="en">blocked on this page</span><span class="fr">bloquées sur cette page</span></div>
+            <div class="chips" aria-hidden="true">
+              <span class="en">Pause this site</span><span class="fr">Mettre ce site en pause</span>
+              <span class="en">Allow an address</span><span class="fr">Autoriser une adresse</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="caption"><span class="en">Example of Bouclier's menu on a news site: every blocked address, and one tap to pause the site.</span><span class="fr">Exemple du menu de Bouclier sur un site d'actualité : chaque adresse bloquée, et un geste pour mettre le site en pause.</span></figcaption>
+      </figure>
+    </div>
+
+    <section class="band" aria-labelledby="what">
+      <h2 id="what"><span class="en">What Bouclier does</span><span class="fr">Ce que fait Bouclier</span></h2>
+      <p class="intro"><span class="en">It runs on Safari's own content-blocking engine, with the filter lists most ad blockers use, and adds the controls you need when a page misbehaves.</span><span class="fr">Il s'appuie sur le moteur de blocage de Safari, avec les listes de filtres utilisées par la plupart des bloqueurs, et ajoute les réglages utiles quand une page se comporte mal.</span></p>
+      <div class="cols">
+        <div>
+          <h3><span class="en">Blocks</span><span class="fr">Bloque</span></h3>
+          <ul class="en">
+            <li>Ads and ad networks, and the empty spaces they leave</li>
+            <li>Trackers and analytics scripts</li>
+            <li>Pop-up ads that open new tabs</li>
+            <li>Malware and phishing sites</li>
+            <li>“Turn off your ad blocker” walls</li>
+            <li>Video ads</li>
+            <li>Optional: cookie banners, social buttons, newsletter pop-ups</li>
+          </ul>
+          <ul class="fr">
+            <li>Les publicités et les régies, et les espaces vides qu'elles laissent</li>
+            <li>Les traqueurs et les scripts de mesure d'audience</li>
+            <li>Les pop-up publicitaires qui ouvrent de nouveaux onglets</li>
+            <li>Les sites malveillants et d'hameçonnage</li>
+            <li>Les messages « désactivez votre bloqueur de pub »</li>
+            <li>Les publicités vidéo</li>
+            <li>En option : bandeaux cookies, boutons sociaux, pop-up d'inscription</li>
+          </ul>
+          <p class="note"><span class="en">Clean links: tracking tags such as <code>utm_source</code>, <code>fbclid</code> and <code>gclid</code> are removed before the page loads.</span><span class="fr">Liens propres : les balises de suivi comme <code>utm_source</code>, <code>fbclid</code> ou <code>gclid</code> sont retirées avant le chargement.</span></p>
+        </div>
+        <div>
+          <h3><span class="en">You stay in charge</span><span class="fr">Vous gardez la main</span></h3>
+          <ul class="en">
+            <li>See what was blocked on each page</li>
+            <li>Turn Bouclier off for one site, or pause it for an hour</li>
+            <li>Page broken? Allow one blocked address, on that site only</li>
+            <li>Hide anything on a page, and bring it back later</li>
+            <li>Per-site controls for web fonts, scripts from other sites and comments</li>
+            <li>Your own filters, in the Adblock Plus format</li>
+            <li>Statistics: today, this week and all time</li>
+            <li>On Mac: right-click menu and keyboard shortcuts</li>
+          </ul>
+          <ul class="fr">
+            <li>Voyez ce qui a été bloqué sur chaque page</li>
+            <li>Désactivez Bouclier sur un site, ou mettez-le en pause une heure</li>
+            <li>Une page ne marche plus ? Autorisez une adresse bloquée, sur ce site seulement</li>
+            <li>Masquez n'importe quel élément, et faites-le revenir plus tard</li>
+            <li>Réglages par site : polices web, scripts d'autres sites, commentaires</li>
+            <li>Vos propres filtres, au format Adblock Plus</li>
+            <li>Statistiques : aujourd'hui, cette semaine et depuis le début</li>
+            <li>Sur Mac : menu contextuel et raccourcis clavier</li>
+          </ul>
+        </div>
+        <div>
+          <h3><span class="en">Private by design</span><span class="fr">Privé par conception</span></h3>
+          <p class="en">Safari applies Bouclier's rules itself, so Bouclier never sees the pages you visit. There is no account, no analytics and no advertising, and nothing is sent to anyone. Statistics and settings stay on your device.</p>
+          <p class="fr">C'est Safari qui applique les règles de Bouclier : Bouclier ne voit jamais les pages que vous visitez. Pas de compte, pas de mesure d'audience, pas de publicité, et rien n'est envoyé à personne. Statistiques et réglages restent sur votre appareil.</p>
+          <p class="note"><span class="en">App Store privacy label: <strong>Data Not Collected</strong>. <a href="support.html#privacy">Read the privacy policy</a>.</span><span class="fr">Étiquette de confidentialité de l'App Store : <strong>aucune donnée collectée</strong>. <a href="support.html#privacy">Lire la politique de confidentialité</a>.</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" aria-labelledby="on">
+      <h2 id="on"><span class="en">Turn it on</span><span class="fr">L'activer</span></h2>
+      <p class="intro"><span class="en">Blocking starts as soon as Bouclier is on. Allowing it on all websites also lets it hide empty ad spaces, close pop-up ads and remove video ads.</span><span class="fr">Le blocage commence dès que Bouclier est activé. L'autoriser sur tous les sites lui permet aussi de masquer les espaces vides, fermer les pop-up et retirer les publicités vidéo.</span></p>
+      <div class="steps">
+        <div class="device">
+          <h3>Mac</h3>
+          <ol class="en">
+            <li>Open the Bouclier app once.</li>
+            <li><span class="path">Safari → Settings → Extensions</span>, then tick Bouclier.</li>
+            <li>Click <span class="path">Edit Websites…</span> and set Other websites to Allow.</li>
+          </ol>
+          <ol class="fr">
+            <li>Ouvrez une fois l'app Bouclier.</li>
+            <li><span class="path">Safari → Réglages → Extensions</span>, puis cochez Bouclier.</li>
+            <li>Cliquez sur <span class="path">Modifier les sites web…</span> et réglez Autres sites web sur Autoriser.</li>
+          </ol>
+        </div>
+        <div class="device">
+          <h3><span class="en">iPhone and iPad</span><span class="fr">iPhone et iPad</span></h3>
+          <ol class="en">
+            <li>Open <span class="path">Settings → Apps → Safari → Extensions</span>.</li>
+            <li>Tap Bouclier and turn it on.</li>
+            <li>Set All Websites to Allow.</li>
+          </ol>
+          <ol class="fr">
+            <li>Ouvrez <span class="path">Réglages → Apps → Safari → Extensions</span>.</li>
+            <li>Touchez Bouclier et activez-le.</li>
+            <li>Réglez Tous les sites web sur Autoriser.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" aria-labelledby="lists">
+      <h2 id="lists"><span class="en">The filter lists</span><span class="fr">Les listes de filtres</span></h2>
+      <p class="intro"><span class="en">Bouclier's rules are adapted from these community lists and shared under the same licences. Each app update brings fresh lists.</span><span class="fr">Les règles de Bouclier sont adaptées de ces listes communautaires et partagées sous les mêmes licences. Chaque mise à jour de l'app apporte des listes fraîches.</span></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th><span class="en">List</span><span class="fr">Liste</span></th><th><span class="en">Blocks</span><span class="fr">Bloque</span></th><th><span class="en">By</span><span class="fr">Auteurs</span></th><th><span class="en">Licence</span><span class="fr">Licence</span></th></tr>
+          </thead>
+          <tbody>
+            <tr><td><a href="https://easylist.to/">EasyList</a></td><td><span class="en">Ads</span><span class="fr">Publicités</span></td><td><span class="en">EasyList authors</span><span class="fr">Auteurs d'EasyList</span></td><td>CC BY-SA 3.0</td></tr>
+            <tr><td><a href="https://easylist.to/">EasyPrivacy</a></td><td><span class="en">Trackers</span><span class="fr">Traqueurs</span></td><td><span class="en">EasyList authors</span><span class="fr">Auteurs d'EasyList</span></td><td>CC BY-SA 3.0</td></tr>
+            <tr><td><a href="https://github.com/easylist/listefr">Liste FR</a></td><td><span class="en">Ads on French sites</span><span class="fr">Pubs des sites français</span></td><td><span class="en">Liste FR authors</span><span class="fr">Auteurs de Liste FR</span></td><td>CC BY-SA 3.0</td></tr>
+            <tr><td><a href="https://github.com/easylist/antiadblockfilters">Adblock Warning Removal List</a></td><td><span class="en">“Turn off your ad blocker” walls</span><span class="fr">Messages anti-bloqueur</span></td><td><span class="en">EasyList authors</span><span class="fr">Auteurs d'EasyList</span></td><td>CC BY-SA 3.0</td></tr>
+            <tr><td><a href="https://gitlab.com/malware-filter/urlhaus-filter">Online Malicious URL Blocklist</a></td><td><span class="en">Malware and phishing sites</span><span class="fr">Sites malveillants</span></td><td>malware-filter, abuse.ch URLhaus</td><td>CC0</td></tr>
+            <tr><td class="off"><a href="https://easylist.to/">EasyList Cookie List</a></td><td class="off"><span class="en">Cookie banners (optional)</span><span class="fr">Bandeaux cookies (option)</span></td><td class="off"><span class="en">EasyList authors</span><span class="fr">Auteurs d'EasyList</span></td><td class="off">CC BY 3.0</td></tr>
+            <tr><td class="off"><a href="https://easylist.to/">EasyList Social, Annoyances</a></td><td class="off"><span class="en">Social buttons, pop-ups (optional)</span><span class="fr">Boutons sociaux, pop-up (option)</span></td><td class="off"><span class="en">EasyList authors</span><span class="fr">Auteurs d'EasyList</span></td><td class="off">CC BY-SA 3.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 Daniel Madac · <span class="en">Bouclier is not affiliated with Apple or with the filter list projects.</span><span class="fr">Bouclier n'est affilié ni à Apple ni aux projets de listes de filtres.</span></span>
+    <nav aria-label="Footer">
+      <a href="support.html"><span class="en">Support</span><span class="fr">Assistance</span></a>
+      <a href="support.html#privacy"><span class="en">Privacy policy</span><span class="fr">Confidentialité</span></a>
+      <span>fablab503@gmail.com</span>
+    </nav>
+  </footer>
+</div>
+<script>
+  document.getElementById('lang-toggle').addEventListener('click', function () {
+    var next = document.documentElement.lang === 'fr' ? 'en' : 'fr';
+    document.documentElement.lang = next;
+    try { localStorage.setItem('bouclier-lang', next); } catch (e) {}
+    history.replaceState(null, '', '#' + next);
+  });
+</script>
+</body>
+</html>

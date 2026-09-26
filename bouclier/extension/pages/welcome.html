@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to Bouclier</title>
+  <link rel="stylesheet" href="../options/options.css">
+  <link rel="stylesheet" href="welcome.css">
+  <script src="../common/platform.js"></script>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <img src="../icons/icon-128.png" alt="" width="64" height="64">
+      <div>
+        <h1>Bouclier is on</h1>
+        <p class="muted" id="version-line">Setup check</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Setup check</h2>
+      <p class="muted">Bouclier checks its own setup. Anything marked with an orange dot needs one click from you.</p>
+      <ul class="checks" id="checks"></ul>
+      <button class="primary" id="recheck">Check again</button>
+    </section>
+
+    <section>
+      <h2>Worth knowing</h2>
+      <ol class="steps">
+        <li data-only="mac"><strong>The shield in the toolbar</strong> shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for an hour.</li>
+        <li data-only="ios"><strong>Bouclier in Safari's page menu</strong> (in the address bar) shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for an hour.</li>
+        <li data-only="mac"><strong>Right-click anything</strong> and choose <em>Hide This Element…</em> to make it disappear for good, or <em>Pause Bouclier on this site</em>.</li>
+        <li data-only="ios"><strong>Hide an element</strong> in Bouclier's menu, then tap the thing you want gone. It stays hidden on that site.</li>
+        <li data-only="mac"><strong>Shortcuts</strong>: <span id="shortcuts">Option-Shift-B opens Bouclier, Option-Shift-P pauses the current site, Option-Shift-H hides an element.</span> Change them in Safari Settings → Extensions.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Try it</h2>
+      <p class="muted">This independent test page loads real ad and tracker addresses and shows what got through. Expect about two thirds blocked: many of its addresses are used only by phone and TV apps, not by web pages, so web ad blockers leave them alone.</p>
+      <p class="links">
+        <a href="https://adblock.turtlecute.org/" target="_blank" rel="noopener">Open the ad blocker test</a>
+      </p>
+    </section>
+  </main>
+  <script src="welcome.js"></script>
+</body>
+</html>

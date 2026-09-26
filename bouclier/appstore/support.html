@@ -1,0 +1,138 @@
+<title>Bouclier support</title>
+<style>
+:root {
+  --ground: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #16181d;
+  --ink-2: #5b6170;
+  --line: #e1e4ea;
+  --accent: #2356d5;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0e1116;
+    --surface: #171b22;
+    --ink: #eceff4;
+    --ink-2: #a3aab8;
+    --line: #2a303b;
+    --accent: #8cb0ff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0e1116;
+  --surface: #171b22;
+  --ink: #eceff4;
+  --ink-2: #a3aab8;
+  --line: #2a303b;
+  --accent: #8cb0ff;
+}
+body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
+.page { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; display: grid; gap: 28px; }
+header h1 { margin: 0; font-size: 34px; line-height: 1.1; letter-spacing: -0.02em; }
+header p { margin: 8px 0 0; color: var(--ink-2); }
+nav { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 15px; }
+nav a, a { color: var(--accent); }
+section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; scroll-margin-top: 16px; }
+h2 { margin: 0 0 10px; font-size: 21px; line-height: 1.25; }
+h3 { margin: 18px 0 6px; font-size: 16px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 10px; }
+ul, ol { margin: 0 0 10px; padding-left: 22px; }
+li { margin-bottom: 6px; }
+.lang { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 6px; }
+.fr { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }
+.muted { color: var(--ink-2); font-size: 14px; }
+</style>
+
+<div class="page">
+  <header>
+    <h1>Bouclier</h1>
+    <p>Ad blocker for Safari on Mac, iPhone and iPad · Bloqueur de publicités pour Safari</p>
+  </header>
+  <nav aria-label="Sections">
+    <a href="#support">Support</a>
+    <a href="#privacy">Privacy policy / Confidentialité</a>
+    <a href="#credits">Credits / Crédits</a>
+  </nav>
+
+  <section id="support">
+    <p class="lang">English</p>
+    <h2>Support</h2>
+    <h3>Turn Bouclier on</h3>
+    <ul>
+      <li><strong>Mac:</strong> open the Bouclier app once, then Safari → Settings → Extensions → tick Bouclier. Click Edit Websites… and allow it on other websites.</li>
+      <li><strong>iPhone and iPad:</strong> Settings → Apps → Safari → Extensions → Bouclier → turn it on, then set All Websites to Allow.</li>
+    </ul>
+    <p>Blocking works as soon as Bouclier is on. Allowing it on all websites also lets it hide the empty spaces ads leave, close pop-up ads and remove video ads.</p>
+    <h3>A page doesn't work</h3>
+    <ul>
+      <li>Open Bouclier from Safari's toolbar (Mac) or the page menu in the address bar (iPhone, iPad), then turn the site off or pause it for an hour.</li>
+      <li>Or click one of the blocked addresses listed there to allow only that address on that site.</li>
+      <li>Something you hid by mistake: Bouclier's menu → Show them again.</li>
+    </ul>
+    <h3>Contact</h3>
+    <p>Email: <a href="mailto:fablab503@gmail.com">fablab503@gmail.com</a>. Please say which device you use and the address of the page.</p>
+
+    <div class="fr" lang="fr">
+      <p class="lang">Français</p>
+      <h2>Assistance</h2>
+      <h3>Activer Bouclier</h3>
+      <ul>
+        <li><strong>Mac :</strong> ouvrez une fois l'app Bouclier, puis Safari → Réglages → Extensions → cochez Bouclier. Cliquez sur Modifier les sites web… et autorisez-le sur les autres sites.</li>
+        <li><strong>iPhone et iPad :</strong> Réglages → Apps → Safari → Extensions → Bouclier → activez-le, puis réglez Tous les sites web sur Autoriser.</li>
+      </ul>
+      <p>Le blocage fonctionne dès que Bouclier est activé. L'autoriser sur tous les sites lui permet aussi de masquer les espaces vides laissés par les pubs, de fermer les pop-up et de retirer les publicités vidéo.</p>
+      <h3>Une page ne fonctionne plus</h3>
+      <ul>
+        <li>Ouvrez Bouclier depuis la barre d'outils de Safari (Mac) ou le menu de la page dans la barre d'adresse (iPhone, iPad), puis désactivez le site ou mettez-le en pause une heure.</li>
+        <li>Ou touchez une des adresses bloquées affichées pour l'autoriser sur ce site uniquement.</li>
+        <li>Un élément masqué par erreur : menu de Bouclier → Show them again.</li>
+      </ul>
+      <h3>Contact</h3>
+      <p>E-mail : <a href="mailto:fablab503@gmail.com">fablab503@gmail.com</a>. Précisez votre appareil et l'adresse de la page.</p>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <p class="lang">English</p>
+    <h2>Privacy policy</h2>
+    <p>Bouclier collects no personal data. It has no account, no analytics, no advertising and no tracking, and it sends nothing to its developer or to anyone else.</p>
+    <ul>
+      <li>Blocking is done by Safari's built-in engine: Safari applies Bouclier's rules itself, so Bouclier never sees the pages you visit.</li>
+      <li>To hide ad spaces, close pop-up ads and remove video ads, Bouclier's scripts run inside the pages you open, on your device only, and send nothing anywhere.</li>
+      <li>Statistics (how many requests were blocked, and on which sites and addresses) and your settings, including the sites you paused and the elements you hid, are stored on your device, in Safari's extension storage. Sites you visit in Private Browsing are not recorded. You can reset the statistics in Bouclier's settings, and deleting the app deletes everything.</li>
+      <li>Bouclier makes no network requests of its own. New filter lists arrive with app updates from the App Store.</li>
+    </ul>
+    <p class="muted">Last updated 23 September 2026. Questions: <a href="mailto:fablab503@gmail.com">fablab503@gmail.com</a>.</p>
+
+    <div class="fr" lang="fr">
+      <p class="lang">Français</p>
+      <h2>Politique de confidentialité</h2>
+      <p>Bouclier ne collecte aucune donnée personnelle. Pas de compte, pas de mesure d'audience, pas de publicité ni de pistage, et rien n'est envoyé à son développeur ni à personne.</p>
+      <ul>
+        <li>Le blocage est fait par le moteur intégré à Safari : c'est Safari qui applique les règles de Bouclier, qui ne voit donc jamais les pages que vous visitez.</li>
+        <li>Pour masquer les espaces publicitaires, fermer les pop-up et retirer les publicités vidéo, les scripts de Bouclier s'exécutent dans les pages que vous ouvrez, uniquement sur votre appareil, et n'envoient rien nulle part.</li>
+        <li>Les statistiques (nombre de requêtes bloquées, sites et adresses concernés) et vos réglages, dont les sites mis en pause et les éléments masqués, restent sur votre appareil, dans le stockage des extensions de Safari. Les sites visités en navigation privée ne sont pas enregistrés. Vous pouvez remettre les statistiques à zéro dans les réglages de Bouclier, et supprimer l'app efface tout.</li>
+        <li>Bouclier ne fait aucune requête réseau. Les nouvelles listes de filtres arrivent avec les mises à jour de l'app sur l'App Store.</li>
+      </ul>
+      <p class="muted">Mise à jour le 23 septembre 2026. Questions : <a href="mailto:fablab503@gmail.com">fablab503@gmail.com</a>.</p>
+    </div>
+  </section>
+
+  <section id="credits">
+    <h2>Credits / Crédits</h2>
+    <p>Bouclier's blocking rules are adapted from these filter lists and are shared under the same licences.</p>
+    <ul>
+      <li><a href="https://easylist.to/">EasyList, EasyPrivacy, EasyList – Social Widgets, EasyList – Annoyances</a> and the <a href="https://github.com/easylist/antiadblockfilters">Adblock Warning Removal List</a>, by the EasyList authors: <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a> (the lists are dual-licensed with GPL-3.0; Bouclier uses them under CC BY-SA 3.0).</li>
+      <li><a href="https://github.com/easylist/listefr">Liste FR</a>, by the Liste FR authors: <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>.</li>
+      <li><a href="https://easylist.to/">EasyList Cookie List</a>, by the EasyList authors: <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.</li>
+      <li><a href="https://gitlab.com/malware-filter/urlhaus-filter">Online Malicious URL Blocklist</a>, by malware-filter, with data from abuse.ch URLhaus: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>.</li>
+    </ul>
+    <p class="muted">Bouclier's YouTube ad removal is its own code; its approach follows the uBlock Origin project. Bouclier is not affiliated with Apple, Google or any of these projects.</p>
+  </section>
+
+  <p class="muted">Bouclier · © 2026 Daniel Madac</p>
+</div>

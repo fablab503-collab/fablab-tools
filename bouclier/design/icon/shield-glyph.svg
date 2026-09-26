@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Bouclier's shield for Icon Composer: white, with the slot cut out so the background shows through -->
+  <path fill="#ffffff" fill-rule="evenodd" d="M512 196 L766 290 V486 C766 652 660 770 512 836 C364 770 258 652 258 486 V290 Z M414 466 H610 A42 42 0 0 1 610 550 H414 A42 42 0 0 1 414 466 Z"/>
+</svg>

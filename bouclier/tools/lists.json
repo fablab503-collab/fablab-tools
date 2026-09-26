@@ -1,0 +1,145 @@
+{
+  "_comment": "Filter lists Bouclier is built from. Each entry becomes one declarativeNetRequest ruleset (network blocking) plus cosmetic data (element hiding). 'urls' are tried in order at build time; GitHub mirrors come second so a build still works when a list host is unreachable. Licences: the EasyList-family lists are dual-licensed GPL-3.0-or-later / CC BY-SA 3.0; Bouclier uses them under CC BY-SA 3.0 (see easylist.to/pages/licence.html), which allows a paid app with credit.",
+  "lists": [
+    {
+      "id": "ads",
+      "name": "Ads",
+      "description": "Banners, pop-ups and ad networks (EasyList)",
+      "source": "EasyList",
+      "homepage": "https://easylist.to/",
+      "license": "CC BY-SA 3.0",
+      "default": true,
+      "format": "abp",
+      "urls": [
+        "https://easylist.to/easylist/easylist.txt",
+        "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easylist.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "authors": "The EasyList authors"
+    },
+    {
+      "id": "privacy",
+      "name": "Trackers",
+      "description": "Analytics, tracking pixels and fingerprinting scripts (EasyPrivacy)",
+      "source": "EasyPrivacy",
+      "homepage": "https://easylist.to/",
+      "license": "CC BY-SA 3.0",
+      "default": true,
+      "format": "abp",
+      "urls": [
+        "https://easylist.to/easylist/easyprivacy.txt",
+        "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easyprivacy.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "authors": "The EasyList authors"
+    },
+    {
+      "id": "french",
+      "name": "French sites",
+      "description": "Ads on French-language sites (Liste FR)",
+      "source": "Liste FR",
+      "homepage": "https://github.com/easylist/listefr",
+      "license": "CC BY-SA 3.0",
+      "default": true,
+      "format": "abp",
+      "urls": [
+        "https://easylist-downloads.adblockplus.org/liste_fr.txt",
+        "https://raw.githubusercontent.com/easylist/listefr/master/liste_fr.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "authors": "The Liste FR authors"
+    },
+    {
+      "id": "safety",
+      "name": "Malware & phishing",
+      "description": "Sites that spread malware (URLhaus Malicious URL Blocklist)",
+      "source": "Malicious URL Blocklist",
+      "homepage": "https://gitlab.com/malware-filter/urlhaus-filter",
+      "license": "CC0 1.0",
+      "default": true,
+      "format": "mixed-hosts",
+      "hostAction": "all",
+      "urls": [
+        "https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-online.txt",
+        "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/urlhaus-filter/urlhaus-filter-online.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "authors": "curbengh (malware-filter), with data from abuse.ch URLhaus"
+    },
+    {
+      "id": "urlclean",
+      "name": "Clean links",
+      "description": "Removes tracking tags (utm_, fbclid, gclid...) from page addresses before the page loads",
+      "source": "Bouclier",
+      "homepage": "https://github.com/",
+      "license": "Part of Bouclier",
+      "default": true,
+      "format": "builtin-urlclean",
+      "urls": [],
+      "licenseUrl": "",
+      "authors": "Bouclier"
+    },
+    {
+      "id": "antiadblock",
+      "name": "Anti-adblock walls",
+      "description": "Removes \"please disable your ad blocker\" messages (experimental)",
+      "source": "Adblock Warning Removal List",
+      "homepage": "https://easylist.to/",
+      "license": "CC BY-SA 3.0",
+      "default": true,
+      "format": "abp",
+      "optional": true,
+      "urls": [
+        "https://easylist-downloads.adblockplus.org/antiadblockfilters.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "authors": "The EasyList authors"
+    },
+    {
+      "id": "cookies",
+      "name": "Cookie banners",
+      "description": "Hides cookie consent pop-ups (EasyList Cookie List). Can break sites that wait for consent.",
+      "source": "EasyList Cookie List",
+      "homepage": "https://easylist.to/",
+      "license": "CC BY 3.0",
+      "default": false,
+      "format": "abp",
+      "urls": [
+        "https://secure.fanboy.co.nz/fanboy-cookiemonster.txt",
+        "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easylist-cookies.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "authors": "The EasyList authors"
+    },
+    {
+      "id": "social",
+      "name": "Social widgets",
+      "description": "Like/share buttons and social embeds (EasyList Social Widgets)",
+      "source": "EasyList – Social Widgets",
+      "homepage": "https://easylist.to/",
+      "license": "CC BY-SA 3.0",
+      "default": false,
+      "format": "abp",
+      "urls": [
+        "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easylist-social.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "authors": "The EasyList authors"
+    },
+    {
+      "id": "annoyances",
+      "name": "Annoyances",
+      "description": "Newsletter pop-ups, 'open in app' banners and similar clutter (EasyList Other Annoyances)",
+      "source": "EasyList – Other Annoyances",
+      "homepage": "https://easylist.to/",
+      "license": "CC BY-SA 3.0",
+      "default": false,
+      "format": "abp",
+      "urls": [
+        "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easylist-annoyances.txt"
+      ],
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "authors": "The EasyList authors"
+    }
+  ]
+}
