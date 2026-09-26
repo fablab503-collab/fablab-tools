@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eco-dub"
-version = "0.1.0"
+version = "0.2.0"
 description = "Dub your videos into other languages in your own voice"
 readme = "README.md"
 license = "MIT"
@@ -15,6 +15,7 @@ dependencies = [
     "faster-whisper>=1.1",
     "demucs>=4.1",
     "anthropic>=1.8",
+    "imageio-ffmpeg>=0.5",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +24,11 @@ dependencies = [
 chatterbox = ["chatterbox-tts>=0.1.7"]
 xtts = ["coqui-tts>=0.27"]
 argos = ["argostranslate>=1.9"]
+# The Mac app installs one of these. Apple Silicon: Chatterbox on the GPU and Whisper through
+# MLX. Intel Macs: PyTorch stops at 2.2 there, too old for Chatterbox, so the voice is XTTS
+# on the processor, with transformers kept below 5 (which needs PyTorch 2.4).
+apple = ["chatterbox-tts>=0.1.7", "mlx-whisper>=0.4"]
+intel-mac = ["coqui-tts>=0.27", "torch==2.2.2", "torchaudio==2.2.2", "numpy<2", "transformers>=4.57,<5"]
 test = ["pytest"]
 
 [project.scripts]

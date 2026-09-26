@@ -1,0 +1,117 @@
+name: Eco for Mac
+
+# Builds the universal Eco.app, then on a real Apple silicon Mac and a real Intel Mac: installs
+# the engine exactly as the app does on first launch, runs the Python tests, and dubs a spoken
+# clip end to end. A push to main publishes the app to the eco-mac-latest release.
+on:
+  push:
+    branches: [main]
+    paths: ["eco/**", ".github/workflows/eco-mac.yml"]
+  pull_request:
+    paths: ["eco/**", ".github/workflows/eco-mac.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write # gh release create/upload for eco-mac-latest
+
+concurrency:
+  group: eco-mac-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mac:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Apple silicon
+            runner: macos-15
+            publish: true
+          - name: Intel
+            runner: macos-15-intel
+            publish: false
+    defaults:
+      run:
+        working-directory: eco/mac
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: App unit tests
+        run: swift test
+
+      - name: Build Eco.app
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: ./build.sh
+
+      - name: Install the engine as the app does on first launch
+        run: |
+          RES=build/Eco.app/Contents/Resources
+          bash "$RES/install-engine.sh" "$RES/uv" "$RUNNER_TEMP/engine" "$(ls "$RES"/engine/*.whl)"
+
+      - name: Python tests on this Mac
+        run: |
+          PY="$RUNNER_TEMP/engine/venv/bin/python"
+          build/Eco.app/Contents/Resources/uv pip install --python "$PY" pytest
+          cd .. && "$PY" -m pytest -v
+
+      - name: Dub a spoken clip end to end
+        env:
+          # XTTS asks to accept its non-commercial licence on first download; this test dub is
+          # non-commercial. Offline translation keeps the test free of API keys.
+          COQUI_TOS_AGREED: "1"
+        run: |
+          PY="$RUNNER_TEMP/engine/venv/bin/python"
+          FFMPEG="$("$PY" -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          mkdir -p "$RUNNER_TEMP/dub" && cd "$RUNNER_TEMP/dub"
+          say -o speech.aiff "Hello everyone, and welcome back to the channel. Today we are riding to the lake. It is a beautiful morning. Let's go!"
+          "$FFMPEG" -y -v error -f lavfi -i "sine=frequency=220:sample_rate=44100" -i speech.aiff \
+            -filter_complex "[0:a]volume=0.05[m];[m][1:a]amix=inputs=2:duration=shortest[a]" \
+            -f lavfi -i "color=c=navy:s=320x240:r=10" -map 2:v -map "[a]" -shortest -c:v mpeg4 -c:a aac clip.mp4
+          "$PY" -m eco clip.mp4 --to es --translator argos --whisper-model tiny --separator-model htdemucs
+          for f in clip.es.mp4 clip.es.m4a clip.es.srt clip.en.srt; do test -s "$f" || { echo "::error::$f missing"; exit 1; }; done
+          echo "--- heard"; cat clip.en.srt
+          echo "--- dubbed"; cat clip.es.srt
+
+      - name: Keep the test dub to listen to
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-dub-${{ matrix.runner }}
+          path: |
+            ${{ runner.temp }}/dub/clip.*
+          if-no-files-found: ignore
+
+      - name: Keep the app
+        if: matrix.publish
+        uses: actions/upload-artifact@v4
+        with:
+          name: Eco-mac
+          path: eco/mac/build/Eco-mac.zip
+
+  publish:
+    name: Publish eco-mac-latest
+    needs: mac
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Eco-mac
+      - name: Publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=eco-mac-latest
+          NOTES="Eco for Mac, build ${{ github.run_number }} ($(echo "${{ github.sha }}" | cut -c1-7)). One app for Apple silicon and Intel Macs. See eco/README.md for how to open it the first time."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" Eco-mac.zip --clobber
+            gh release edit "$TAG" --notes "$NOTES" --target "${{ github.sha }}"
+          else
+            gh release create "$TAG" Eco-mac.zip --prerelease --title "Eco for Mac (latest)" \
+              --notes "$NOTES" --target "${{ github.sha }}"
+          fi

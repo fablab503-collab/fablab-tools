@@ -151,3 +151,8 @@ __pycache__/
 
 # Eco working folders and outputs, when a video is dubbed inside the repository
 *.eco/
+
+# Eco for Mac build output
+eco/build/
+eco/mac/build/
+eco/mac/.build/

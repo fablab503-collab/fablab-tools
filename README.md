@@ -62,7 +62,12 @@ the App Store version (1,99 €, one purchase for Mac, iPhone and iPad). Full gu
   for each language.
 - Runs on your own computer with free, open models (Whisper, Demucs, Chatterbox).
 
-**Use it:** `eco my-video.mp4 --to es,fr,pt`. Install and guide: [eco/README.md](eco/README.md).
+- A Mac app for Apple silicon and Intel Macs: drop in a video, tick languages, review every line,
+  press Dub.
+
+**Use it:** on a Mac, download `Eco-mac.zip` from the
+[eco-mac-latest](https://github.com/fablab503-collab/fablab-tools/releases/tag/eco-mac-latest)
+release; elsewhere, `eco my-video.mp4 --to es,fr,pt`. Guide: [eco/README.md](eco/README.md).
 
 ## Repository layout
 
@@ -70,7 +75,7 @@ the App Store version (1,99 €, one purchase for Mac, iPhone and iPad). Full gu
 |---|---|
 | `velotrack/` | The Android app (Kotlin), its tools and third-party notices |
 | `bouclier/` | The Safari ad blocker (web extension, Mac/iPhone/iPad app build, tests, App Store tools) |
-| `eco/` | The video dubbing tool (Python command line, tests) |
+| `eco/` | The video dubbing tool (Python engine and command line, Mac app in `eco/mac/`, tests) |
 | `.github/workflows/` | CI: build, test, sign and publish the APK on every push; map extraction on demand; Eco tests |
 | `docs/superpowers/` | Design briefs and plans written before each feature round |
 | `assets/icons3d/` | 3D icon library (CC0, from 3dicons.co) used for illustrations |

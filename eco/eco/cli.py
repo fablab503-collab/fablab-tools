@@ -41,8 +41,9 @@ def parse(argv: list[str] | None) -> argparse.Namespace:
                    help='what the translator should know, e.g. "cycling vlog, casual, keep bike part names in English"')
 
     q = p.add_argument_group("quality")
-    q.add_argument("--engine", choices=sorted(models.ENGINES), default="chatterbox",
-                   help="voice engine: chatterbox (23 languages, MIT, default) or xtts (17 languages, non-commercial)")
+    q.add_argument("--engine", choices=["auto", *sorted(models.ENGINES)], default="auto",
+                   help="voice engine: chatterbox (23 languages, MIT) or xtts (17 languages, non-commercial). "
+                        "auto picks chatterbox, or xtts where only that is installed (Intel Macs)")
     q.add_argument("--style", choices=["line", "steady"], default="line",
                    help="line: each line is voiced from the same moment of the original, so its tone and "
                         "energy carry over (default). steady: one sample for the whole video, most consistent voice")
@@ -68,11 +69,23 @@ def parse(argv: list[str] | None) -> argparse.Namespace:
     t.add_argument("--no-separate", action="store_true",
                    help="skip separating voice from music (for videos with no music at all)")
     t.add_argument("--max-line", type=float, default=12.0, help="longest line in seconds (default 12)")
+    t.add_argument("--progress-json", action="store_true",
+                   help="also print machine-readable progress lines starting with '@eco ' (used by the Mac app)")
     return p.parse_args(argv)
+
+
+PROGRESS_JSON = False
+
+
+def emit(event: str, **data) -> None:
+    """A progress event for the Mac app: one line, '@eco ' then JSON. Silent otherwise."""
+    if PROGRESS_JSON:
+        print("@eco " + json.dumps({"event": event, **data}, ensure_ascii=False), flush=True)
 
 
 def step(text: str) -> None:
     print(f"\n== {text}", flush=True)
+    emit("step", text=text)
 
 
 def load_json(path: Path) -> dict:
@@ -88,14 +101,18 @@ def digest(*parts) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global PROGRESS_JSON
     args = parse(argv)
+    PROGRESS_JSON = args.progress_json
     try:
         return run(args)
     except (EcoError, MediaError, TranslationError) as error:
         print(f"\neco: {error}", file=sys.stderr)
+        emit("error", message=str(error))
         return 1
     except KeyboardInterrupt:
         print("\neco: stopped. Run the same command again to carry on where it left off.", file=sys.stderr)
+        emit("stopped")
         return 130
 
 
@@ -108,6 +125,8 @@ def run(args: argparse.Namespace) -> int:
     work.mkdir(exist_ok=True)
     out_dir = Path(args.out).expanduser().resolve() if args.out else source.parent
     out_dir.mkdir(parents=True, exist_ok=True)
+    if args.engine == "auto":
+        args.engine = models.default_engine()
     targets = list(dict.fromkeys(code.strip().lower() for code in args.to.split(",") if code.strip()))
     engine_class = models.ENGINES[args.engine]
     unsupported = [code for code in targets if code not in engine_class.languages]
@@ -119,6 +138,7 @@ def run(args: argparse.Namespace) -> int:
     total, has_video = media.probe(source)
     device = models.resolve_device(args.device)
     print(f"eco: {source.name}, {total / 60:.1f} min, working in {work.name}/ on {device}")
+    emit("start", work=str(work), engine=args.engine, device=device, seconds=total)
 
     # 1. Soundtrack -------------------------------------------------------------------------
     soundtrack = work / "audio.wav"
@@ -147,6 +167,7 @@ def run(args: argparse.Namespace) -> int:
     if not lines:
         raise EcoError("No speech was found in this video.")
     source_lang = args.source or transcript["language"]
+    emit("transcript", language=source_lang, lines=len(lines))
     stem = source.stem
     (out_dir / f"{stem}.{source_lang}.srt").write_text(
         srt([(l.start, l.end, l.text) for l in lines]), encoding="utf-8"
@@ -198,6 +219,7 @@ def run(args: argparse.Namespace) -> int:
             print(f"  {work / (lang + '.json')}   (edit the \"text\" of any line)")
         print("You can also fix recognition mistakes in transcript.json; changed lines are translated again.")
         print("Then run the same command without --review.")
+        emit("review", work=str(work), languages=targets)
         return 0
 
     # 5. Voice samples ----------------------------------------------------------------------
@@ -281,6 +303,7 @@ def run(args: argparse.Namespace) -> int:
         for n, entry in enumerate(entries):
             clips.append(voice(entry, n))
             print(f"  {n + 1}/{len(entries)}  {entry['text'][:70]}", flush=True)
+            emit("progress", language=lang, done=n + 1, total=len(entries))
 
         starts = [e["start"] for e in entries]
         durations = [len(c) / MIX_SR for c in clips]
@@ -335,6 +358,7 @@ def run(args: argparse.Namespace) -> int:
         )
         finished.append(out_dir / f"{name}.srt")
 
+    emit("done", work=str(work), files=[str(f) for f in finished])
     step("Done")
     for f in finished:
         print(f"  {f}")

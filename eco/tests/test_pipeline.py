@@ -1,18 +1,25 @@
 """The whole command, end to end, with real ffmpeg and stand-ins for the models."""
 
 import json
-import shutil
 import subprocess
 
 import numpy as np
 import pytest
 import soundfile as sf
 
-from eco import cli, models
+from eco import cli, media, models
 from eco.segments import Word
 from eco.translate import Translator
 
-pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
+def _has_ffmpeg():
+    try:
+        media.ffmpeg()
+        return True
+    except media.MediaError:
+        return False
+
+
+pytestmark = pytest.mark.skipif(not _has_ffmpeg(), reason="needs ffmpeg")
 
 
 class FakeEngine(models.Engine):
@@ -53,9 +60,9 @@ WORDS = [
 def video(tmp_path):
     path = tmp_path / "clip.mp4"
     subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=160x120:rate=10:duration=9",
-         "-f", "lavfi", "-i", "sine=frequency=300:duration=9", "-shortest", "-c:v", "libx264",
-         "-pix_fmt", "yuv420p", "-c:a", "aac", str(path)],
+        [media.ffmpeg(), "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=160x120:rate=10:duration=9",
+         "-f", "lavfi", "-i", "sine=frequency=300:duration=9", "-shortest", "-c:v", "mpeg4",
+         "-c:a", "aac", str(path)],
         check=True,
     )
     return path
@@ -85,14 +92,14 @@ def test_dubs_a_video(video, fakes, tmp_path):
         assert (out / f"clip.{lang}.mp4").exists()
         assert (out / f"clip.{lang}.m4a").exists()
         assert f"[{lang}] Hello everyone." in (out / f"clip.{lang}.srt").read_text()
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type:stream_tags=language",
-             "-of", "json", str(out / f"clip.{lang}.mp4")],
-            capture_output=True, text=True, check=True,
-        )
-        streams = json.loads(probe.stdout)["streams"]
-        assert [s["codec_type"] for s in streams] == ["video", "audio"]
-        assert streams[1]["tags"]["language"] == {"es": "spa", "fr": "fra"}[lang]
+        info = subprocess.run(
+            [media.ffmpeg(), "-hide_banner", "-i", str(out / f"clip.{lang}.mp4")], capture_output=True, text=True
+        ).stderr
+        streams = [line.strip() for line in info.splitlines() if line.strip().startswith("Stream #")]
+        assert len(streams) == 2 and ": Video:" in streams[0]
+        assert f"({ {'es': 'spa', 'fr': 'fra'}[lang]}): Audio: aac" in streams[1]
+        seconds, has_video = media.probe(out / f"clip.{lang}.mp4")
+        assert has_video and 8.5 < seconds < 9.5
     assert (out / "clip.en.srt").exists()
 
     work = tmp_path / "clip.eco"
@@ -123,6 +130,18 @@ def test_review_stops_before_voicing(video, fakes, tmp_path):
     assert (tmp_path / "clip.eco" / "es.json").exists()
     assert FakeEngine.calls == []
     assert not (tmp_path / "clip.es.mp4").exists()
+
+
+def test_progress_events_for_the_mac_app(video, fakes, tmp_path, capsys):
+    assert cli.main([str(video), "--to", "es", "--out", str(tmp_path / "out"), "--progress-json"]) == 0
+    events = [json.loads(line[5:]) for line in capsys.readouterr().out.splitlines() if line.startswith("@eco ")]
+    kinds = [e["event"] for e in events]
+    assert kinds[0] == "start" and kinds[-2:] == ["done", "step"]
+    assert {"transcript", "progress"} <= set(kinds)
+    last = [e for e in events if e["event"] == "progress"][-1]
+    assert (last["done"], last["total"]) == (3, 3)
+    done = next(e for e in events if e["event"] == "done")
+    assert any(f.endswith("clip.es.mp4") for f in done["files"])
 
 
 def test_rejects_a_language_the_voice_cannot_speak(video, fakes, capsys):

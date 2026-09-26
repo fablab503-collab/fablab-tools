@@ -31,7 +31,44 @@ Everything runs on your own computer except the translation, which uses Claude b
 | 6. Fit | A line that runs long uses the pause after it, then is sped up (up to 1.25×, pitch unchanged); if it still does not fit, Claude rewrites it shorter and it is voiced again | |
 | 7. Mix | Each line is matched to the loudness of your original line (a whisper stays a whisper), laid over the original music, and put back on the untouched picture | ffmpeg |
 
-## What you need
+## Eco for Mac
+
+**The easiest way on a Mac: the Eco app.** Drop in a video, tick the languages, read and fix
+every translated line in a list, press Dub. No Terminal needed. One app for both kinds of Mac:
+
+| | Apple silicon (M1, M2, M3, M4…) | Intel |
+|---|---|---|
+| Voice | Chatterbox, on the graphics chip | XTTS, on the processor |
+| Speed, 10-min video, per language | roughly 10–25 minutes | roughly 1–2 hours |
+| Monetised channels | Yes (MIT licence) | **No**: XTTS is non-commercial only |
+| Languages | 23 | 17 |
+
+Intel Macs cannot run Chatterbox: it needs PyTorch 2.6, and PyTorch's last release for Intel
+Macs is 2.2. The app picks the right engine by itself. macOS 13 Ventura or later.
+
+**Get it:** download `Eco-mac.zip` from the
+[eco-mac-latest release](https://github.com/fablab503-collab/fablab-tools/releases/tag/eco-mac-latest),
+unzip, and drag Eco to Applications. Or build it yourself with `eco/mac/build.sh --install`
+(needs Xcode or the Command Line Tools).
+
+**Opening it the first time:** the app is not notarised by Apple, so macOS says it cannot check
+it. Open it once, then go to System Settings › Privacy & Security, scroll down to "Eco was
+blocked" and click **Open Anyway**. After that it opens normally.
+
+**First launch** installs the engine into `~/Library/Application Support/Eco` (about 6–7 GB with
+the models, 10–30 minutes). Nothing is installed anywhere else; deleting that folder and the app
+removes Eco completely. For the best translations, add an Anthropic API key in Eco › Settings;
+or choose offline translation there.
+
+**How the app is tested:** every change is built on GitHub's Apple silicon and Intel Macs, the
+engine is installed on each exactly as the app does it, and a spoken clip is dubbed from English
+to Spanish end to end. The test dubs can be downloaded from each run's page to listen to.
+
+## Using it from the command line
+
+On Windows, Linux, or a Mac without the app.
+
+### What you need
 
 - **A computer with an NVIDIA graphics card (6 GB or more) is strongly recommended.** A
   10-minute video takes roughly 10-20 minutes per language on a gaming GPU. It works on a Mac
@@ -44,7 +81,7 @@ Everything runs on your own computer except the translation, which uses Claude b
   [console.anthropic.com](https://console.anthropic.com/). Translating a 10-minute video into one
   language costs a few cents.
 
-## Install
+### Install
 
 ```bash
 git clone https://github.com/fablab503-collab/fablab-tools.git
@@ -64,7 +101,7 @@ Then give it your API key (once per terminal, or put it in your shell profile):
 export ANTHROPIC_API_KEY=sk-ant-...          # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-## Use
+### Use
 
 **The recommended way, with a review step:**
 
