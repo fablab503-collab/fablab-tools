@@ -51,14 +51,33 @@ Macs is 2.2. The app picks the right engine by itself. macOS 13 Ventura or later
 unzip, and drag Eco to Applications. Or build it yourself with `eco/mac/build.sh --install`
 (needs Xcode or the Command Line Tools).
 
-**Opening it the first time:** the app is not notarised by Apple, so macOS says it cannot check
-it. Open it once, then go to System Settings › Privacy & Security, scroll down to "Eco was
-blocked" and click **Open Anyway**. After that it opens normally.
+**Opening it the first time:** until the app is notarised (below), macOS says it cannot check
+it for malicious software. Open it once, then go to System Settings › Privacy & Security,
+scroll down to "Eco was blocked" and click **Open Anyway**. After that it opens normally.
 
-**First launch** installs the engine into `~/Library/Application Support/Eco` (about 6–7 GB with
+**First launch** starts setting up straight away (on Intel Macs after the licence question) and
+installs the engine into `~/Library/Application Support/Eco` (about 6–7 GB with
 the models, 10–30 minutes). Nothing is installed anywhere else; deleting that folder and the app
 removes Eco completely. For the best translations, add an Anthropic API key in Eco › Settings;
 or choose offline translation there.
+
+**Making macOS trust the app.** macOS opens an app without any warning only when it is signed
+with an Apple *Developer ID* certificate and notarised by Apple. That needs the Apple Developer
+Program membership (the one Bouclier is published with); nothing in the code can replace it.
+Once these five repository secrets exist (GitHub › Settings › Secrets and variables › Actions),
+every build is signed and notarised automatically:
+
+| Secret | What it is |
+|---|---|
+| `MACOS_CERT_P12` | A **Developer ID Application** certificate with its private key, exported from Keychain Access as .p12, then `base64 -i cert.p12 \| pbcopy` |
+| `MACOS_CERT_PASSWORD` | The password chosen when exporting the .p12 |
+| `ASC_KEY_P8` | An App Store Connect API key (Users and Access › Integrations › Keys, "Developer" access), `base64 -i AuthKey_XXXX.p8 \| pbcopy` |
+| `ASC_KEY_ID` | That key's ID |
+| `ASC_ISSUER_ID` | The Issuer ID shown above the keys list |
+
+To create the certificate: Xcode › Settings › Accounts › Manage Certificates › + › Developer ID
+Application. Building on your own Mac works the same way: `SIGN_IDENTITY=… NOTARY_KEY=…
+NOTARY_KEY_ID=… NOTARY_ISSUER=… ./build.sh` (see the top of `mac/build.sh`).
 
 **How the app is tested:** every change is built on GitHub's Apple silicon and Intel Macs, the
 engine is installed on each exactly as the app does it, and a spoken clip is dubbed from English

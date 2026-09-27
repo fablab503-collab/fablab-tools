@@ -38,8 +38,41 @@ jobs:
     defaults:
       run:
         working-directory: eco/mac
+    env:
+      # Signing and notarisation happen only when the repository has these secrets (see
+      # eco/README.md, "Making macOS trust the app"); otherwise the app is ad-hoc signed.
+      HAS_SIGNING: ${{ secrets.MACOS_CERT_P12 != '' && secrets.ASC_KEY_P8 != '' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Load the Developer ID certificate and notary key
+        if: matrix.publish && env.HAS_SIGNING == 'true'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -n 1)"
+          if [ -z "$IDENTITY" ]; then echo "::error::No Developer ID Application identity in MACOS_CERT_P12"; exit 1; fi
+          echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          {
+            echo "SIGN_IDENTITY=$IDENTITY"
+            echo "NOTARY_KEY=$RUNNER_TEMP/notary.p8"
+            echo "NOTARY_KEY_ID=$ASC_KEY_ID"
+            echo "NOTARY_ISSUER=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
 
       - name: App unit tests
         run: swift test
@@ -50,6 +83,8 @@ jobs:
         run: ./build.sh
 
       - name: Install the engine as the app does on first launch
+        env:
+          ECO_CHECK_ENGINE: "1"
         run: |
           RES=build/Eco.app/Contents/Resources
           bash "$RES/install-engine.sh" "$RES/uv" "$RUNNER_TEMP/engine" "$(ls "$RES"/engine/*.whl)"

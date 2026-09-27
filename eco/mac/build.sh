@@ -6,8 +6,11 @@
 #
 # Needs Xcode or the Command Line Tools, and an internet connection (it downloads uv, the
 # Python installer the app uses to set up its engine on first launch).
-# SIGN_IDENTITY="Developer ID Application: …" signs with a real identity; the default is an
-# ad-hoc signature, which macOS accepts after "Open Anyway" (see README).
+# Signing: by default the app gets an ad-hoc signature, which macOS only opens after
+# "Open Anyway" in Privacy & Security. For an app macOS opens like any other, set
+#   SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"   signs with that certificate
+#   NOTARY_KEY=path/to/AuthKey_XXXX.p8 NOTARY_KEY_ID=… NOTARY_ISSUER=…   and has Apple notarise it
+# (an App Store Connect API key; the same kind Bouclier uses for its uploads).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -45,6 +48,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleName</key><string>Eco</string>
   <key>CFBundleDisplayName</key><string>Eco</string>
   <key>CFBundleExecutable</key><string>Eco</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
@@ -55,6 +59,16 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+step "App icon"
+ICONSET="$TMP/AppIcon.iconset"
+mkdir -p "$ICONSET"
+for size in 16 32 128 256 512; do
+  sips -z "$size" "$size" Resources/AppIcon.png --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
+  double=$((size * 2))
+  sips -z "$double" "$double" Resources/AppIcon.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$ICONSET" -o "$RES/AppIcon.icns"
 
 step "Downloading uv for both kinds of Mac"
 if [ -n "${UV_VERSION:-}" ]; then
@@ -87,6 +101,15 @@ else
   codesign --force --sign - "$APP"
 fi
 codesign --verify --strict "$APP"
+
+if [ -n "${SIGN_IDENTITY:-}" ] && [ -n "${NOTARY_KEY:-}" ]; then
+  step "Notarising with Apple (a few minutes)"
+  ditto -c -k --keepParent "$APP" "$TMP/notarize.zip"
+  xcrun notarytool submit "$TMP/notarize.zip" --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" \
+    --issuer "$NOTARY_ISSUER" --wait
+  xcrun stapler staple "$APP"
+  spctl --assess --type execute --verbose "$APP"
+fi
 
 rm -rf "$TMP" "$OUT/Eco-mac.zip"
 ditto -c -k --keepParent "$APP" "$OUT/Eco-mac.zip"

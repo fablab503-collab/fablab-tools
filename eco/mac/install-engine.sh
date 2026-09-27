@@ -46,8 +46,11 @@ PY="$ENGINE/venv/bin/python"
 WHEEL_URL="$("$PY" -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve().as_uri())' "$WHEEL")"
 "$UV" pip install --python "$PY" --reinstall-package eco-dub "eco-dub[$EXTRAS] @ $WHEEL_URL"
 
-event "Checking the engine"
-"$ENGINE/venv/bin/python" - <<'PY'
+# A full import check of the engine. The app skips it (the first dub would show the same
+# problem, with a clearer message); CI turns it on with ECO_CHECK_ENGINE=1.
+if [ "${ECO_CHECK_ENGINE:-0}" = "1" ]; then
+  event "Checking the engine"
+  "$ENGINE/venv/bin/python" - <<'PY'
 import importlib, platform
 modules = ["eco.cli", "demucs.apply", "faster_whisper", "imageio_ffmpeg", "argostranslate.translate"]
 modules += ["chatterbox.mtl_tts", "mlx_whisper"] if platform.machine() == "arm64" else ["TTS.api"]
@@ -60,5 +63,6 @@ import torch
 print(f"engine ready: torch {torch.__version__}, {platform.machine()}, "
       f"Apple GPU {'available' if torch.backends.mps.is_available() else 'not available'}")
 PY
+fi
 # The download cache is only needed during the install.
 "$UV" cache clean >/dev/null 2>&1 || true

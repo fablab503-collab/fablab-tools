@@ -45,7 +45,9 @@ struct SetupView: View {
             }
 
             HStack {
-                Button(model.busy ? "Installing…" : "Install") { model.install() }
+                Button(model.busy ? "Installing…" : (model.errorMessage == nil ? "Install" : "Try Again")) {
+                    model.install()
+                }
                     .keyboardShortcut(.defaultAction)
                     .controlSize(.large)
                     .disabled(model.busy || (!Engine.isAppleSilicon && (!acceptedXTTSLicence || needsTools)))
@@ -56,5 +58,10 @@ struct SetupView: View {
             Spacer()
         }
         .padding(28)
+        .onAppear {
+            // Nothing to decide on Apple silicon, so setup starts straight away. Intel Macs wait
+            // for the licence answer and the Command Line Tools.
+            if Engine.isAppleSilicon && !model.busy && model.errorMessage == nil { model.install() }
+        }
     }
 }
