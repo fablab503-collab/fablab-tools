@@ -126,6 +126,7 @@ jobs:
           cd .. && "$PY" -m pytest -v
 
       - name: Dub a spoken clip end to end
+        timeout-minutes: 45
         env:
           # XTTS asks to accept its non-commercial licence on first download; this test dub is
           # non-commercial. Offline translation keeps the test free of API keys.

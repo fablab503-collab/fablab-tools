@@ -10,6 +10,8 @@ import multiprocessing
 import os
 import platform
 import sys
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 
 import numpy as np
@@ -103,9 +105,14 @@ def transcribe(audio_path: Path, model_name: str, device: str, language: str | N
 def _transcribe_faster_whisper(audio_path, model_name, device, language):
     # In a process of its own: CTranslate2 (under faster-whisper) and PyTorch each ship their
     # own OpenMP runtime, and on Intel Macs loading both into one process aborts the dub.
-    context = multiprocessing.get_context("spawn")
-    with context.Pool(1) as pool:
-        detected, spans = pool.apply(_faster_whisper_worker, (str(audio_path), model_name, device, language))
+    # A ProcessPoolExecutor rather than a Pool: if the worker dies, this raises instead of
+    # waiting for it forever.
+    with ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn")) as pool:
+        try:
+            detected, spans = pool.submit(
+                _faster_whisper_worker, str(audio_path), model_name, device, language).result()
+        except BrokenProcessPool:
+            raise RuntimeError("speech recognition stopped unexpectedly (see the lines above)") from None
     return detected, [Word(start, end, text) for start, end, text in spans]
 
 
