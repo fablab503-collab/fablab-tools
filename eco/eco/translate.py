@@ -9,6 +9,7 @@ account or internet needed once its language packs are downloaded.
 from __future__ import annotations
 
 import json
+import os
 
 LANGUAGE_NAMES = {
     "ar": "Arabic", "cs": "Czech", "da": "Danish", "de": "German", "el": "Greek", "en": "English",
@@ -171,6 +172,10 @@ class Claude(Translator):
 
 class Argos(Translator):
     def __init__(self):
+        # Each line is translated on its own, so Argos needs no sentence splitting; MiniSBD
+        # keeps it off Stanza, which would run PyTorch next to CTranslate2 (on Intel Macs
+        # that pairing stalled the CI dub). Read by argostranslate when it is imported.
+        os.environ.setdefault("ARGOS_CHUNK_TYPE", "MINISBD")
         import argostranslate.package
         import argostranslate.translate
 
