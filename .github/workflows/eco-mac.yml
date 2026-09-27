@@ -38,7 +38,7 @@ jobs:
           uv pip install --python "$RUNNER_TEMP/build/bin/python" pip
           "$RUNNER_TEMP/build/bin/python" -m pip wheel --no-deps "monotonic-alignment-search==0.2.1" -w wheels
           ls -l wheels
-          ls wheels/monotonic_alignment_search-*-macosx_*_x86_64.whl
+          ls wheels/monotonic_alignment_search-*-macosx_*.whl  # x86_64 or universal2
       - uses: actions/upload-artifact@v4
         with:
           name: intel-wheels

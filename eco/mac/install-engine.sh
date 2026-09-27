@@ -21,7 +21,7 @@ PREBUILT=()
 # One part of the Intel voice (monotonic-alignment-search, used by XTTS) has no Intel Mac wheel
 # on PyPI. The app normally carries one built by CI; without it, it is compiled here, which
 # needs Apple's Command Line Tools.
-if ls "$WHEELS"/monotonic_alignment_search-*x86_64*.whl >/dev/null 2>&1; then
+if ls "$WHEELS"/monotonic_alignment_search-*-macosx_*.whl >/dev/null 2>&1; then
   PREBUILT=(--no-build-package monotonic-alignment-search)
 elif [ "$(uname -m)" != "arm64" ] && ! xcode-select -p >/dev/null 2>&1; then
   printf '@eco {"event": "error", "message": "%s"}\n' \

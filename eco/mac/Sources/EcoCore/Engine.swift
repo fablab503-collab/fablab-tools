@@ -37,7 +37,7 @@ public enum Engine {
         guard let engine = Bundle.main.resourceURL?.appendingPathComponent("engine"),
               let names = try? FileManager.default.contentsOfDirectory(atPath: engine.path)
         else { return false }
-        return names.contains { $0.hasPrefix("monotonic_alignment_search-") && $0.contains("x86_64") }
+        return names.contains { $0.hasPrefix("monotonic_alignment_search-") && $0.contains("macosx") }
     }
 
     public static func hasCommandLineTools() -> Bool {
