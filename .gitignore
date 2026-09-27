@@ -156,3 +156,4 @@ __pycache__/
 eco/build/
 eco/mac/build/
 eco/mac/.build/
+eco/mac/wheels/

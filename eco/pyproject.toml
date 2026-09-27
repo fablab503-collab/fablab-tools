@@ -33,11 +33,12 @@ apple = [
     "setuptools<81",
 ]
 intel-mac = [
-    # The pins are the newest releases that still ship Intel Mac wheels. One piece of XTTS
-    # (monotonic-alignment-search) has none at all and is compiled, which needs Apple's
-    # Command Line Tools; the app checks for them before installing.
+    # The pins are the newest releases that still ship Intel Mac wheels. One piece of XTTS,
+    # monotonic-alignment-search, has none at all: CI compiles it once on an Intel Mac and the
+    # app carries that wheel, so nobody needs Apple's Command Line Tools to install.
     "coqui-tts>=0.27", "transformers>=4.57,<5", "torch==2.2.2", "torchaudio==2.2.2", "numpy<2",
     "numba<0.63", "llvmlite<0.46", "onnxruntime<1.23", "demucs==4.0.1",
+    "monotonic-alignment-search==0.2.1",
 ]
 test = ["pytest"]
 

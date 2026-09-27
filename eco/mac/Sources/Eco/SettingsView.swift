@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var model: AppModel
-    @AppStorage(Pref.translator) private var translator = "claude"
+    @AppStorage(Pref.translator) private var translator = "argos"
     @AppStorage(Pref.style) private var style = "line"
     @AppStorage(Pref.maxSpeed) private var maxSpeed = 1.25
     @AppStorage(Pref.exaggeration) private var exaggeration = 0.5
@@ -15,9 +15,9 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Translation") {
-                Picker("Translator", selection: $translator) {
-                    Text("Claude (best, needs an API key)").tag("claude")
-                    Text("Offline (free, literal)").tag("argos")
+                Picker("Translate with", selection: $translator) {
+                    Text("Built in: free, offline, no account").tag("argos")
+                    Text("Claude: better wording, needs your own API key").tag("claude")
                 }
                 if translator == "claude" {
                     HStack {
@@ -29,6 +29,8 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: apiKey) { _ in saved = false }
+                    Text("Until a key is saved, Eco keeps using the built-in translator.")
+                        .font(.caption).foregroundStyle(.secondary)
                     Link("Get a key at console.anthropic.com", destination: URL(string: "https://console.anthropic.com/")!)
                         .font(.caption)
                 }

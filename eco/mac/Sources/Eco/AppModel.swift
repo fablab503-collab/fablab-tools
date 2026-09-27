@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Settings shown in the Settings window, stored in UserDefaults under these keys.
 enum Pref {
-    static let translator = "translator"          // "claude" or "argos"
+    static let translator = "translator"          // "argos" (offline, default) or "claude"
     static let style = "style"                    // "line" or "steady"
     static let maxSpeed = "maxSpeed"
     static let exaggeration = "exaggeration"
@@ -12,10 +12,11 @@ enum Pref {
     static let noMusic = "noMusic"
     static let acceptedXTTSLicence = "acceptedXTTSLicence"
     static let languages = "languages"
+    static let checkFirst = "checkFirst"          // stop after translating, to read the lines
 
     static func register() {
         UserDefaults.standard.register(defaults: [
-            translator: "claude", style: "line", maxSpeed: 1.25, exaggeration: 0.5,
+            translator: "argos", style: "line", maxSpeed: 1.25, exaggeration: 0.5, checkFirst: false,
             // Intel Macs run everything on the processor, so they default to the faster models.
             quality: Engine.isAppleSilicon ? "best" : "fast",
             noMusic: false, acceptedXTTSLicence: false, languages: "es",
@@ -30,6 +31,8 @@ final class AppModel: ObservableObject {
     @Published var busy = false
     @Published var stepText = ""
     @Published var progress: Double?
+    /// 1 or 2 while getting ready: installing the engine, then downloading the voice models.
+    @Published var setupStep = 1
     @Published var log: [String] = []
     @Published var errorMessage: String?
 
@@ -59,8 +62,10 @@ final class AppModel: ObservableObject {
 
     var workFolder: WorkFolder? { video.map { WorkFolder(video: $0) } }
 
-    var needsAPIKey: Bool {
-        defaults.string(forKey: Pref.translator) == "claude" && (Keychain.apiKey() ?? "").isEmpty
+    /// Claude translates only when chosen in Settings and given a key; otherwise the free
+    /// offline translator is used, so nothing ever waits on an account.
+    var usesClaude: Bool {
+        defaults.string(forKey: Pref.translator) == "claude" && !(Keychain.apiKey() ?? "").isEmpty
     }
 
     var hasPreviousWork: Bool {
@@ -145,12 +150,14 @@ final class AppModel: ObservableObject {
         let uv = resources.appendingPathComponent("uv")
         let wheels = (try? FileManager.default.contentsOfDirectory(
             at: resources.appendingPathComponent("engine"), includingPropertiesForKeys: nil)) ?? []
-        guard let wheel = wheels.first(where: { $0.pathExtension == "whl" }) else {
+        guard let wheel = wheels.first(where: { $0.lastPathComponent.hasPrefix("eco_dub-") }) else {
             errorMessage = "This copy of Eco is incomplete (its engine package is missing). Download it again."
             return
         }
+        setupStep = 1
         run(URL(fileURLWithPath: "/bin/bash"), [script.path, uv.path, Engine.engineDir.path, wheel.path]) { ok in
             guard ok else { return }
+            self.setupStep = 2
             self.run(Engine.python, ["-m", "eco.prefetch", "--progress-json"] + self.modelOptions) { ok in
                 guard ok else { return }
                 try? Engine.markInstalled(version: self.engineVersion)
@@ -172,14 +179,19 @@ final class AppModel: ObservableObject {
         let languages = Languages.available.map(\.code).filter { selected.contains($0) }
         var args = ["-m", "eco", video.path, "--to", languages.joined(separator: ","), "--progress-json"]
         if review { args.append("--review") }
-        if !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { args += ["--notes", notes] }
-        args += ["--translator", defaults.string(forKey: Pref.translator) ?? "claude"]
+        if usesClaude && !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { args += ["--notes", notes] }
+        args += ["--translator", usesClaude ? "claude" : "argos"]
         args += ["--style", defaults.string(forKey: Pref.style) ?? "line"]
         args += ["--max-speed", String(defaults.double(forKey: Pref.maxSpeed))]
         args += ["--engine", Engine.voiceEngine]
         if Engine.isAppleSilicon { args += ["--exaggeration", String(defaults.double(forKey: Pref.exaggeration))] }
         if defaults.bool(forKey: Pref.noMusic) { args.append("--no-separate") }
         return args + modelOptions
+    }
+
+    /// The one button: dub straight away, or first stop to read the translation if asked to.
+    func start() {
+        if defaults.bool(forKey: Pref.checkFirst) { translate() } else { dub() }
     }
 
     /// Transcribe and translate, then stop so every line can be checked.

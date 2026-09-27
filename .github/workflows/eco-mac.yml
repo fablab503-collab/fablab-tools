@@ -21,8 +21,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  intel-wheel:
+    # monotonic-alignment-search (part of the Intel voice, XTTS) has no Intel Mac wheel on
+    # PyPI. Build it once here and ship it inside the app, so installing Eco on an Intel Mac
+    # never needs Apple's Command Line Tools.
+    name: Intel wheel
+    runs-on: macos-15-intel
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - name: Build monotonic-alignment-search for Intel Macs
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv venv --python 3.11 "$RUNNER_TEMP/build"
+          uv pip install --python "$RUNNER_TEMP/build/bin/python" pip
+          "$RUNNER_TEMP/build/bin/python" -m pip wheel --no-deps "monotonic-alignment-search==0.2.1" -w wheels
+          ls -l wheels
+          ls wheels/monotonic_alignment_search-*-macosx_*_x86_64.whl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: intel-wheels
+          path: wheels/*.whl
+
   mac:
     name: ${{ matrix.name }}
+    needs: intel-wheel
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
     strategy:
@@ -74,12 +98,18 @@ jobs:
             echo "NOTARY_ISSUER=$ASC_ISSUER_ID"
           } >> "$GITHUB_ENV"
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: intel-wheels
+          path: eco/mac/wheels
+
       - name: App unit tests
         run: swift test
 
       - name: Build Eco.app
         env:
           BUILD_NUMBER: ${{ github.run_number }}
+          EXTRA_WHEELS: wheels
         run: ./build.sh
 
       - name: Install the engine as the app does on first launch
@@ -87,7 +117,7 @@ jobs:
           ECO_CHECK_ENGINE: "1"
         run: |
           RES=build/Eco.app/Contents/Resources
-          bash "$RES/install-engine.sh" "$RES/uv" "$RUNNER_TEMP/engine" "$(ls "$RES"/engine/*.whl)"
+          bash "$RES/install-engine.sh" "$RES/uv" "$RUNNER_TEMP/engine" "$(ls "$RES"/engine/eco_dub-*.whl)"
 
       - name: Python tests on this Mac
         run: |

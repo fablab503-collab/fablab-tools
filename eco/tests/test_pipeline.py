@@ -82,6 +82,7 @@ def fakes(monkeypatch):
     monkeypatch.setattr(models, "transcribe", lambda *a: ("en", WORDS))
     monkeypatch.setattr(models, "load_engine", lambda *a: FakeEngine())
     monkeypatch.setattr(cli, "Claude", lambda *a: FakeTranslator())
+    monkeypatch.setattr(cli, "Argos", lambda *a: FakeTranslator())
 
 
 def test_dubs_a_video(video, fakes, tmp_path):
@@ -147,3 +148,14 @@ def test_progress_events_for_the_mac_app(video, fakes, tmp_path, capsys):
 def test_rejects_a_language_the_voice_cannot_speak(video, fakes, capsys):
     assert cli.main([str(video), "--to", "xx"]) == 1
     assert "cannot speak xx" in capsys.readouterr().err
+
+
+def test_translation_is_offline_unless_an_api_key_is_set(video, fakes, monkeypatch):
+    used = []
+    monkeypatch.setattr(cli, "Claude", lambda *a: used.append("claude") or FakeTranslator())
+    monkeypatch.setattr(cli, "Argos", lambda *a: used.append("argos") or FakeTranslator())
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert cli.main([str(video), "--to", "es", "--review"]) == 0
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    assert cli.main([str(video), "--to", "fr", "--review"]) == 0
+    assert used == ["argos", "claude"]

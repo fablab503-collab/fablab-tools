@@ -27,7 +27,18 @@ public enum Engine {
 
     /// Intel Macs compile one part of the XTTS voice while installing, which needs Apple's
     /// Command Line Tools. (Apple silicon installs only ready-made packages.)
-    public static var needsCommandLineTools: Bool { !isAppleSilicon && !hasCommandLineTools() }
+    /// The app normally carries that part ready-built (see eco-mac.yml), so this is only true
+    /// for a build made without it.
+    public static var needsCommandLineTools: Bool {
+        !isAppleSilicon && !carriesIntelWheel && !hasCommandLineTools()
+    }
+
+    static var carriesIntelWheel: Bool {
+        guard let engine = Bundle.main.resourceURL?.appendingPathComponent("engine"),
+              let names = try? FileManager.default.contentsOfDirectory(atPath: engine.path)
+        else { return false }
+        return names.contains { $0.hasPrefix("monotonic_alignment_search-") && $0.contains("x86_64") }
+    }
 
     public static func hasCommandLineTools() -> Bool {
         let check = Process()

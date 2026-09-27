@@ -1,67 +1,93 @@
+import AppKit
 import EcoCore
 import SwiftUI
 
+/// First launch: one screen, one progress bar, nothing to fill in.
 struct SetupView: View {
     @EnvironmentObject var model: AppModel
     @AppStorage(Pref.acceptedXTTSLicence) private var acceptedXTTSLicence = false
     @State private var needsTools = Engine.needsCommandLineTools
 
+    private var canStart: Bool { Engine.isAppleSilicon || (acceptedXTTSLicence && !needsTools) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Label("Set up Eco", systemImage: "waveform.badge.mic").font(.largeTitle.bold())
-
-            Text("Eco dubs your videos into other languages in your own voice, entirely on this Mac. "
-                + "Before the first dub it downloads its engine: speech recognition, voice separation "
-                + "and your voice's cloning model. That is about \(Engine.isAppleSilicon ? "7" : "6") GB, once.")
+        VStack(spacing: 18) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
+            Text("Getting Eco ready").font(.largeTitle.bold())
+            Text("This happens only once. Eco downloads everything it needs to dub videos on this Mac "
+                + "(about 7 GB), so it can take 15 to 30 minutes. You can leave it running.")
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 520)
 
-            if Engine.isAppleSilicon {
-                Label("This Mac has Apple silicon: dubbing runs on its graphics chip with the Chatterbox voice, "
-                    + "licensed MIT, so it is fine for monetised channels.", systemImage: "cpu")
-                    .fixedSize(horizontal: false, vertical: true)
+            if !Engine.isAppleSilicon && !acceptedXTTSLicence {
+                intelQuestion
+            } else if needsTools {
+                toolsQuestion
             } else {
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("This Mac has an Intel processor. The fast Chatterbox voice needs Apple silicon, "
-                            + "so Eco uses the XTTS voice, which runs on the processor: expect roughly one to two "
-                            + "hours per ten minutes of video, per language.")
-                        Text("XTTS is licensed for non-commercial use only (Coqui Public Model License). A "
-                            + "channel that earns money from its videos is commercial.")
-                            .bold()
-                        Toggle("I will use it only for videos that earn no money", isOn: $acceptedXTTSLicence)
-                        if needsTools {
-                            Divider()
-                            Text("Installing the XTTS voice on an Intel Mac also needs Apple's free "
-                                + "Command Line Tools (about 1 GB).")
-                            HStack {
-                                Button("Install Command Line Tools") { Engine.installCommandLineTools() }
-                                Button("Check Again") { needsTools = Engine.needsCommandLineTools }
-                            }
-                        }
+                VStack(alignment: .leading, spacing: 8) {
+                    if model.busy {
+                        Text("Step \(model.setupStep) of 2: "
+                            + (model.setupStep == 1 ? "installing the dubbing engine" : "downloading the voice models"))
+                            .font(.headline)
                     }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(4)
+                    ProgressPanel(showsStop: false)
+                    if !model.busy && model.errorMessage != nil {
+                        Button("Try Again") { model.install() }
+                            .controlSize(.large)
+                            .keyboardShortcut(.defaultAction)
+                    }
                 }
+                .frame(maxWidth: 520)
             }
-
-            HStack {
-                Button(model.busy ? "Installing…" : (model.errorMessage == nil ? "Install" : "Try Again")) {
-                    model.install()
-                }
-                    .keyboardShortcut(.defaultAction)
-                    .controlSize(.large)
-                    .disabled(model.busy || (!Engine.isAppleSilicon && (!acceptedXTTSLicence || needsTools)))
-                Text("Takes 10–30 minutes depending on your connection.").foregroundStyle(.secondary)
-            }
-
-            ProgressPanel()
             Spacer()
         }
-        .padding(28)
-        .onAppear {
-            // Nothing to decide on Apple silicon, so setup starts straight away. Intel Macs wait
-            // for the licence answer and the Command Line Tools.
-            if Engine.isAppleSilicon && !model.busy && model.errorMessage == nil { model.install() }
+        .padding(32)
+        .frame(maxWidth: .infinity)
+        .onAppear(perform: startIfReady)
+        .onChange(of: acceptedXTTSLicence) { _ in startIfReady() }
+    }
+
+    private func startIfReady() {
+        if canStart && !model.busy && model.errorMessage == nil { model.install() }
+    }
+
+    /// Intel Macs get the XTTS voice, whose licence allows only non-commercial use.
+    private var intelQuestion: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("One thing first").font(.headline)
+                Text("On this Mac (Intel), Eco uses a voice that is free for personal videos only: "
+                    + "not for channels that earn money. Dubbing also takes longer here, about an hour "
+                    + "for every ten minutes of video.")
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("I understand, continue") { acceptedXTTSLicence = true }
+                    .controlSize(.large)
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(6)
         }
+        .frame(maxWidth: 520)
+    }
+
+    /// Only for a copy of Eco built without the ready-made Intel part.
+    private var toolsQuestion: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("This copy of Eco needs Apple's free Command Line Tools to finish setting up.")
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Install Them") { Engine.installCommandLineTools() }
+                    Button("Done, Continue") {
+                        needsTools = Engine.needsCommandLineTools
+                        startIfReady()
+                    }
+                }
+            }
+            .padding(6)
+        }
+        .frame(maxWidth: 520)
     }
 }

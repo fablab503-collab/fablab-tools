@@ -36,6 +36,7 @@ struct ContentView: View {
 /// What the engine is doing, with its full output one click away.
 struct ProgressPanel: View {
     @EnvironmentObject var model: AppModel
+    var showsStop = true
     @State private var showLog = false
 
     var body: some View {
@@ -44,7 +45,7 @@ struct ProgressPanel: View {
                 HStack {
                     Text(model.stepText).font(.headline)
                     Spacer()
-                    Button("Stop") { model.stop() }
+                    if showsStop { Button("Stop") { model.stop() } }
                 }
                 if let progress = model.progress {
                     ProgressView(value: progress)

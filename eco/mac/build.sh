@@ -89,6 +89,10 @@ chmod +x "$RES/uv"
 step "Packaging the Python engine"
 UV_PYTHON_INSTALL_DIR="$PWD/$TMP/python" UV_CACHE_DIR="$PWD/$TMP/cache" \
   "$RES/uv" build --wheel --out-dir "$RES/engine" ..
+# Extra wheels to ship, e.g. the Intel build of monotonic-alignment-search made by CI.
+if [ -n "${EXTRA_WHEELS:-}" ] && ls "$EXTRA_WHEELS"/*.whl >/dev/null 2>&1; then
+  cp "$EXTRA_WHEELS"/*.whl "$RES/engine/"
+fi
 cp install-engine.sh "$RES/install-engine.sh"
 cp ../THIRD_PARTY.md "$RES/THIRD_PARTY.md"
 

@@ -16,8 +16,43 @@ my-video.pt.mp4   my-video.pt.m4a   my-video.pt.srt
 my-video.en.srt   (the original, as subtitles)
 ```
 
-Everything runs on your own computer except the translation, which uses Claude by default
-(a few cents per video) and can be switched to a free offline translator.
+Everything runs on your own computer, for free, with no account or API key. (If you have an
+Anthropic API key, Claude can do the translation instead, with better wording.)
+
+## Eco for Mac
+
+**One download, nothing else to set up:** no Terminal, no API key, no accounts.
+
+1. Download **`Eco-mac.zip`** from the
+   [eco-mac-latest release](https://github.com/fablab503-collab/fablab-tools/releases/tag/eco-mac-latest),
+   unzip it and drag **Eco** to Applications.
+2. Open it. The first time, Eco gets itself ready on its own: one progress bar, about
+   15–30 minutes, about 7 GB. You can leave it running.
+3. Drop in a video, tick the languages, press **Dub**. That's it.
+
+Tick *"Let me read and fix the translation before it is spoken"* if you want to check the
+lines first.
+
+**If macOS says it cannot check Eco for malicious software:** open System Settings › Privacy &
+Security, scroll down to "Eco was blocked" and click **Open Anyway** (only once). This goes away
+for good once the app is signed with an Apple Developer ID
+([how](#signing-and-testing-the-mac-app-for-whoever-publishes-it)).
+
+**Which Mac?** One app for both. macOS 13 Ventura or later.
+
+| | Apple silicon (M1, M2, M3, M4…) | Intel |
+|---|---|---|
+| Voice | Chatterbox, on the graphics chip | XTTS, on the processor |
+| A 10-minute video, per language | roughly 10–25 minutes | roughly 1–2 hours |
+| Channels that earn money | Yes | **No**: the Intel voice is for personal videos only |
+| Languages | 23 | 17 |
+
+(Intel Macs cannot run Chatterbox: it needs PyTorch 2.6, and PyTorch's last release for Intel
+Macs is 2.2. The app picks the right voice by itself and asks Intel users once to confirm the
+personal-use limit.)
+
+Everything Eco downloads goes into `~/Library/Application Support/Eco`; deleting that folder
+and the app removes Eco completely. To build the app yourself: `eco/mac/build.sh --install`.
 
 ## How it works
 
@@ -26,40 +61,12 @@ Everything runs on your own computer except the translation, which uses Claude b
 | 1. Separate | Your voice is split from the music and sound effects | Demucs (htdemucs_ft) |
 | 2. Transcribe | Every word you say, with its timing | Whisper large-v3 |
 | 3. Cut into lines | Words are regrouped into spoken sentences, at most 12 s each | |
-| 4. Translate | The whole script at once, so tone, jokes and context carry over; each line is kept about as long to say as yours | Claude, or Argos Translate offline |
+| 4. Translate | Offline by default; with an API key, Claude translates the whole script at once, so tone, jokes and context carry over, keeping each line about as long to say as yours | Argos Translate, or Claude |
 | 5. Voice | Each line is spoken in your cloned voice, from a sample of **that same line** in the original, so its energy and emotion carry over | Chatterbox Multilingual, or XTTS-v2 |
-| 6. Fit | A line that runs long uses the pause after it, then is sped up (up to 1.25×, pitch unchanged); if it still does not fit, Claude rewrites it shorter and it is voiced again | |
+| 6. Fit | A line that runs long uses the pause after it, then is sped up (up to 1.25×, pitch unchanged); with Claude, a line that still does not fit is rewritten shorter and voiced again | |
 | 7. Mix | Each line is matched to the loudness of your original line (a whisper stays a whisper), laid over the original music, and put back on the untouched picture | ffmpeg |
 
-## Eco for Mac
-
-**The easiest way on a Mac: the Eco app.** Drop in a video, tick the languages, read and fix
-every translated line in a list, press Dub. No Terminal needed. One app for both kinds of Mac:
-
-| | Apple silicon (M1, M2, M3, M4…) | Intel |
-|---|---|---|
-| Voice | Chatterbox, on the graphics chip | XTTS, on the processor |
-| Speed, 10-min video, per language | roughly 10–25 minutes | roughly 1–2 hours |
-| Monetised channels | Yes (MIT licence) | **No**: XTTS is non-commercial only |
-| Languages | 23 | 17 |
-
-Intel Macs cannot run Chatterbox: it needs PyTorch 2.6, and PyTorch's last release for Intel
-Macs is 2.2. The app picks the right engine by itself. macOS 13 Ventura or later.
-
-**Get it:** download `Eco-mac.zip` from the
-[eco-mac-latest release](https://github.com/fablab503-collab/fablab-tools/releases/tag/eco-mac-latest),
-unzip, and drag Eco to Applications. Or build it yourself with `eco/mac/build.sh --install`
-(needs Xcode or the Command Line Tools).
-
-**Opening it the first time:** until the app is notarised (below), macOS says it cannot check
-it for malicious software. Open it once, then go to System Settings › Privacy & Security,
-scroll down to "Eco was blocked" and click **Open Anyway**. After that it opens normally.
-
-**First launch** starts setting up straight away (on Intel Macs after the licence question) and
-installs the engine into `~/Library/Application Support/Eco` (about 6–7 GB with
-the models, 10–30 minutes). Nothing is installed anywhere else; deleting that folder and the app
-removes Eco completely. For the best translations, add an Anthropic API key in Eco › Settings;
-or choose offline translation there.
+## Signing and testing the Mac app (for whoever publishes it)
 
 **Making macOS trust the app.** macOS opens an app without any warning only when it is signed
 with an Apple *Developer ID* certificate and notarised by Apple. That needs the Apple Developer
@@ -96,9 +103,8 @@ On Windows, Linux, or a Mac without the app.
   [Miniconda](https://docs.conda.io/en/latest/miniconda.html)) and **ffmpeg**
   (Windows: `winget install ffmpeg`, Mac: `brew install ffmpeg`, Linux: `sudo apt install ffmpeg`).
 - About **15 GB of free disk** for the models, which download on first use.
-- For the best translations, an **Anthropic API key** from
-  [console.anthropic.com](https://console.anthropic.com/). Translating a 10-minute video into one
-  language costs a few cents.
+- Optional: an **Anthropic API key** from [console.anthropic.com](https://console.anthropic.com/)
+  for better translations (a few cents per video). Without one, Eco translates offline.
 
 ### Install
 
@@ -114,7 +120,7 @@ pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.
 pip install -e ".[chatterbox]"
 ```
 
-Then give it your API key (once per terminal, or put it in your shell profile):
+Optional, for translation by Claude instead of the offline translator:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...          # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
@@ -165,7 +171,7 @@ eco VIDEO --to es,fr [--from en] [--out FOLDER] [--review] [--notes "..."]
     --engine chatterbox|xtts     voice engine (default chatterbox)
     --style line|steady          per-line tone (default) or one steady voice sample
     --voice-sample FILE          clone from this recording instead of the video
-    --translator claude|argos    Claude (default) or free offline Argos Translate
+    --translator auto|argos|claude   offline Argos, or Claude when ANTHROPIC_API_KEY is set (default auto)
     --claude-model MODEL         default claude-opus-5
     --max-speed 1.25             how much a long line may be sped up
     --no-shorten                 never rephrase long lines

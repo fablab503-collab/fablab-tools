@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from dataclasses import asdict
 from pathlib import Path
@@ -48,8 +49,9 @@ def parse(argv: list[str] | None) -> argparse.Namespace:
                    help="line: each line is voiced from the same moment of the original, so its tone and "
                         "energy carry over (default). steady: one sample for the whole video, most consistent voice")
     q.add_argument("--voice-sample", help="a clean recording of your voice to clone from instead of the video")
-    q.add_argument("--translator", choices=["claude", "argos"], default="claude",
-                   help="claude (best, needs an Anthropic API key) or argos (free, offline, literal)")
+    q.add_argument("--translator", choices=["auto", "claude", "argos"], default="auto",
+                   help="argos (free, offline, no account) or claude (better, needs an Anthropic API key). "
+                        "auto uses claude when ANTHROPIC_API_KEY is set, otherwise argos")
     q.add_argument("--claude-model", default="claude-opus-5", help="Claude model for translation")
     q.add_argument("--max-speed", type=float, default=1.25,
                    help="how much a long line may be sped up to stay in sync (default 1.25)")
@@ -179,6 +181,8 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     # 4. Translation ------------------------------------------------------------------------
+    if args.translator == "auto":
+        args.translator = "claude" if os.environ.get("ANTHROPIC_API_KEY") else "argos"
     translator: Translator | None = None
 
     def get_translator() -> Translator:
