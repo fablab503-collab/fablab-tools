@@ -9,7 +9,9 @@ account or internet needed once its language packs are downloaded.
 from __future__ import annotations
 
 import json
-import os
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 
 LANGUAGE_NAMES = {
     "ar": "Arabic", "cs": "Czech", "da": "Danish", "de": "German", "el": "Greek", "en": "English",
@@ -171,32 +173,76 @@ class Claude(Translator):
 
 
 class Argos(Translator):
-    def __init__(self):
-        # Each line is translated on its own, so Argos needs no sentence splitting; MiniSBD
-        # keeps it off Stanza, which would run PyTorch next to CTranslate2 (on Intel Macs
-        # that pairing stalled the CI dub). Read by argostranslate when it is imported.
-        os.environ.setdefault("ARGOS_CHUNK_TYPE", "MINISBD")
-        import argostranslate.package
-        import argostranslate.translate
+    """Argos Translate's models, run directly with CTranslate2 in a process of their own.
 
-        self.package = argostranslate.package
-        self.engine = argostranslate.translate
-
-    def _install(self, source: str, target: str) -> None:
-        installed = {(p.from_code, p.to_code) for p in self.package.get_installed_packages()}
-        wanted = [(source, target)] if source == "en" or target == "en" else [(source, "en"), ("en", target)]
-        if all(pair in installed for pair in wanted) or (source, target) in installed:
-            return
-        print(f"  Downloading Argos language packs for {source} -> {target}...")
-        self.package.update_package_index()
-        available = {(p.from_code, p.to_code): p for p in self.package.get_available_packages()}
-        if (source, target) in available:
-            wanted = [(source, target)]
-        for pair in wanted:
-            if pair not in available:
-                raise TranslationError(f"Argos Translate has no {pair[0]} -> {pair[1]} language pack.")
-            self.package.install_from_path(available[pair].download())
+    argostranslate's own translate module also imports Stanza, and with it PyTorch; CTranslate2
+    and PyTorch in one process crash on Intel Macs (as the CI dubs showed). Its package module,
+    which downloads the models and holds their tokenizers, imports neither, so the worker uses
+    that and CTranslate2 alone. Eco sends one line at a time, so no sentence splitting is needed.
+    """
 
     def translate(self, lines, source, target):
-        self._install(source, target)
-        return {l["id"]: self.engine.translate(l["text"], source, target) for l in lines}
+        texts = [l["text"] for l in lines]
+        with ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn")) as pool:
+            try:
+                translated = pool.submit(_argos_worker, texts, source, target).result()
+            except BrokenProcessPool:
+                raise TranslationError("The offline translator stopped unexpectedly (see the lines above).") from None
+        return {l["id"]: text for l, text in zip(lines, translated)}
+
+
+def _argos_worker(texts: list[str], source: str, target: str) -> list[str]:
+    import argostranslate.package as package
+    import ctranslate2
+
+    chain = _argos_chain(package, source, target)
+    translators = [ctranslate2.Translator(str(pkg.package_path / "model"), device="cpu") for pkg in chain]
+    out = []
+    for text in texts:
+        for pkg, translator in zip(chain, translators):
+            text = _argos_line(pkg, translator, text)
+        out.append(text)
+    return out
+
+
+def _argos_chain(package, source: str, target: str) -> list:
+    """The installed Argos packages that take source to target, directly or through English,
+    downloading them the first time."""
+
+    def find():
+        installed = {(p.from_code, p.to_code): p for p in package.get_installed_packages()}
+        if (source, target) in installed:
+            return [installed[(source, target)]]
+        if (source, "en") in installed and ("en", target) in installed:
+            return [installed[(source, "en")], installed[("en", target)]]
+        return None
+
+    chain = find()
+    if chain:
+        return chain
+    print(f"  Downloading the offline translator for {source} -> {target}...", flush=True)
+    package.update_package_index()
+    available = {(p.from_code, p.to_code): p for p in package.get_available_packages()}
+    pairs = [(source, target)] if (source, target) in available else [(source, "en"), ("en", target)]
+    for pair in pairs:
+        if pair not in available:
+            raise TranslationError(f"The offline translator has no {pair[0]} -> {pair[1]} model.")
+        package.install_from_path(available[pair].download())
+    chain = find()
+    if not chain:
+        raise TranslationError(f"Could not install the offline translator for {source} -> {target}.")
+    return chain
+
+
+def _argos_line(pkg, translator, text: str) -> str:
+    """One line through one Argos model, the way argostranslate itself does it."""
+    tokens = pkg.tokenizer.encode(text)
+    prefix = [[pkg.target_prefix]] if pkg.target_prefix else None
+    result = translator.translate_batch(
+        [tokens], target_prefix=prefix, replace_unknowns=True, beam_size=4, num_hypotheses=1,
+        length_penalty=0.2,
+    )
+    value = pkg.tokenizer.decode(result[0].hypotheses[0])
+    if pkg.target_prefix and value.startswith(pkg.target_prefix):
+        value = value[len(pkg.target_prefix):]
+    return value.strip()
