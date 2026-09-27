@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eco-dub"
+version = "0.2.0"
+description = "Dub your videos into other languages in your own voice"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy",
+    "soundfile",
+    "faster-whisper>=1.1",
+    "demucs>=4.0.1",
+    "anthropic>=1.8",
+    "imageio-ffmpeg>=0.5",
+]
+
+[project.optional-dependencies]
+# The two voice engines pin different versions of torch and transformers, so each goes in
+# its own virtual environment: pip install -e ".[chatterbox]"  or  pip install -e ".[xtts]"
+chatterbox = ["chatterbox-tts>=0.1.7"]
+xtts = ["coqui-tts>=0.27"]
+argos = ["argostranslate>=1.9"]
+# The Mac app installs one of these. Apple Silicon: Chatterbox on the GPU and Whisper through
+# MLX. Intel Macs: PyTorch stops at 2.2 there, too old for Chatterbox, so the voice is XTTS
+# on the processor.
+apple = [
+    "chatterbox-tts>=0.1.7", "mlx-whisper>=0.4",
+    # Chatterbox's watermarker (resemble-perth) imports pkg_resources, which setuptools 81 drops.
+    "setuptools<81",
+]
+intel-mac = [
+    # The pins are the newest releases that still ship Intel Mac wheels. One piece of XTTS,
+    # monotonic-alignment-search, has none at all: CI compiles it once on an Intel Mac and the
+    # app carries that wheel, so nobody needs Apple's Command Line Tools to install.
+    "coqui-tts>=0.27", "transformers>=4.57,<5", "torch==2.2.2", "torchaudio==2.2.2", "numpy<2",
+    "numba<0.63", "llvmlite<0.46", "onnxruntime<1.23", "demucs==4.0.1",
+    "monotonic-alignment-search==0.2.1",
+]
+test = ["pytest"]
+
+[project.scripts]
+eco = "eco.cli:main"
+
+[tool.setuptools]
+packages = ["eco"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

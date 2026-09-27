@@ -141,3 +141,19 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv*/
+.pytest_cache/
+
+# Eco working folders and outputs, when a video is dubbed inside the repository
+*.eco/
+
+# Eco for Mac build output
+eco/build/
+eco/mac/build/
+eco/mac/.build/
+eco/mac/wheels/

@@ -1,0 +1,185 @@
+name: Eco for Mac
+
+# Builds the universal Eco.app, then on a real Apple silicon Mac and a real Intel Mac: installs
+# the engine exactly as the app does on first launch, runs the Python tests, and dubs a spoken
+# clip end to end. A push to main publishes the app to the eco-mac-latest release.
+on:
+  push:
+    branches: [main]
+    paths: ["eco/**", ".github/workflows/eco-mac.yml"]
+  pull_request:
+    paths: ["eco/**", ".github/workflows/eco-mac.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write # gh release create/upload for eco-mac-latest
+
+# A new push waits for the running Mac jobs instead of cancelling them: a half-finished
+# end-to-end dub is still the most useful signal, and these jobs take a while.
+concurrency:
+  group: eco-mac-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  intel-wheel:
+    # monotonic-alignment-search (part of the Intel voice, XTTS) has no Intel Mac wheel on
+    # PyPI. Build it once here and ship it inside the app, so installing Eco on an Intel Mac
+    # never needs Apple's Command Line Tools.
+    name: Intel wheel
+    runs-on: macos-15-intel
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - name: Build monotonic-alignment-search for Intel Macs
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv venv --python 3.11 "$RUNNER_TEMP/build"
+          uv pip install --python "$RUNNER_TEMP/build/bin/python" pip
+          "$RUNNER_TEMP/build/bin/python" -m pip wheel --no-deps "monotonic-alignment-search==0.2.1" -w wheels
+          ls -l wheels
+          ls wheels/monotonic_alignment_search-*-macosx_*.whl  # x86_64 or universal2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: intel-wheels
+          path: wheels/*.whl
+
+  mac:
+    name: ${{ matrix.name }}
+    needs: intel-wheel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Apple silicon
+            runner: macos-15
+            publish: true
+          - name: Intel
+            runner: macos-15-intel
+            publish: false
+    defaults:
+      run:
+        working-directory: eco/mac
+    env:
+      # Signing and notarisation happen only when the repository has these secrets (see
+      # eco/README.md, "Making macOS trust the app"); otherwise the app is ad-hoc signed.
+      HAS_SIGNING: ${{ secrets.MACOS_CERT_P12 != '' && secrets.ASC_KEY_P8 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load the Developer ID certificate and notary key
+        if: matrix.publish && env.HAS_SIGNING == 'true'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -n 1)"
+          if [ -z "$IDENTITY" ]; then echo "::error::No Developer ID Application identity in MACOS_CERT_P12"; exit 1; fi
+          echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          {
+            echo "SIGN_IDENTITY=$IDENTITY"
+            echo "NOTARY_KEY=$RUNNER_TEMP/notary.p8"
+            echo "NOTARY_KEY_ID=$ASC_KEY_ID"
+            echo "NOTARY_ISSUER=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: intel-wheels
+          path: eco/mac/wheels
+
+      - name: App unit tests
+        run: swift test
+
+      - name: Build Eco.app
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          EXTRA_WHEELS: wheels
+        run: ./build.sh
+
+      - name: Install the engine as the app does on first launch
+        env:
+          ECO_CHECK_ENGINE: "1"
+        run: |
+          RES=build/Eco.app/Contents/Resources
+          bash "$RES/install-engine.sh" "$RES/uv" "$RUNNER_TEMP/engine" "$(ls "$RES"/engine/eco_dub-*.whl)"
+
+      - name: Python tests on this Mac
+        run: |
+          PY="$RUNNER_TEMP/engine/venv/bin/python"
+          build/Eco.app/Contents/Resources/uv pip install --python "$PY" pytest
+          cd .. && "$PY" -m pytest -v
+
+      - name: Dub a spoken clip end to end
+        timeout-minutes: 45
+        env:
+          # XTTS asks to accept its non-commercial licence on first download; this test dub is
+          # non-commercial. Offline translation keeps the test free of API keys.
+          COQUI_TOS_AGREED: "1"
+        run: |
+          PY="$RUNNER_TEMP/engine/venv/bin/python"
+          FFMPEG="$("$PY" -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          mkdir -p "$RUNNER_TEMP/dub" && cd "$RUNNER_TEMP/dub"
+          say -o speech.aiff "Hello everyone, and welcome back to the channel. Today we are riding to the lake. It is a beautiful morning. Let's go!"
+          "$FFMPEG" -y -v error -f lavfi -i "sine=frequency=220:sample_rate=44100" -i speech.aiff \
+            -filter_complex "[0:a]volume=0.05[m];[m][1:a]amix=inputs=2:duration=shortest[a]" \
+            -f lavfi -i "color=c=navy:s=320x240:r=10" -map 2:v -map "[a]" -shortest -c:v mpeg4 -c:a aac clip.mp4
+          "$PY" -m eco clip.mp4 --to es --translator argos --whisper-model tiny --separator-model htdemucs
+          for f in clip.es.mp4 clip.es.m4a clip.es.srt clip.en.srt; do test -s "$f" || { echo "::error::$f missing"; exit 1; }; done
+          echo "--- heard"; cat clip.en.srt
+          echo "--- dubbed"; cat clip.es.srt
+
+      - name: Keep the test dub to listen to
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-dub-${{ matrix.runner }}
+          path: |
+            ${{ runner.temp }}/dub/clip.*
+          if-no-files-found: ignore
+
+      - name: Keep the app
+        if: matrix.publish
+        uses: actions/upload-artifact@v4
+        with:
+          name: Eco-mac
+          path: eco/mac/build/Eco-mac.zip
+
+  publish:
+    name: Publish eco-mac-latest
+    needs: mac
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Eco-mac
+      - name: Publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG=eco-mac-latest
+          NOTES="Eco for Mac, build ${{ github.run_number }} ($(echo "${{ github.sha }}" | cut -c1-7)). One app for Apple silicon and Intel Macs. See eco/README.md for how to open it the first time."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" Eco-mac.zip --clobber
+            gh release edit "$TAG" --notes "$NOTES" --target "${{ github.sha }}"
+          else
+            gh release create "$TAG" Eco-mac.zip --prerelease --title "Eco for Mac (latest)" \
+              --notes "$NOTES" --target "${{ github.sha }}"
+          fi

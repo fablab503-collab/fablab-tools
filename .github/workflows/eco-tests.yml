@@ -1,0 +1,24 @@
+name: Eco tests
+
+on:
+  push:
+    branches: [main]
+    paths: ["eco/**", ".github/workflows/eco-tests.yml"]
+  pull_request:
+    paths: ["eco/**", ".github/workflows/eco-tests.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eco
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # The tests stand in for the models, so only the light dependencies are needed.
+      - run: pip install numpy soundfile pytest
+      - run: python -m pytest -v

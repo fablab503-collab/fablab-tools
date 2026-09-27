@@ -1,0 +1,248 @@
+"""Translating the script line by line, for speaking rather than reading.
+
+Claude is the default: it sees the whole transcript, keeps the creator's tone and slang, and
+can be asked to keep each line about as long to say as the original, which is what keeps a
+dub in sync. Argos Translate is the free, offline alternative: literal, line by line, but no
+account or internet needed once its language packs are downloaded.
+"""
+
+from __future__ import annotations
+
+import json
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
+
+LANGUAGE_NAMES = {
+    "ar": "Arabic", "cs": "Czech", "da": "Danish", "de": "German", "el": "Greek", "en": "English",
+    "es": "Spanish", "fi": "Finnish", "fr": "French", "he": "Hebrew", "hi": "Hindi", "hu": "Hungarian",
+    "it": "Italian", "ja": "Japanese", "ko": "Korean", "ms": "Malay", "nl": "Dutch", "no": "Norwegian",
+    "pl": "Polish", "pt": "Portuguese", "ru": "Russian", "sv": "Swedish", "sw": "Swahili",
+    "tr": "Turkish", "zh": "Chinese (Mandarin)",
+}
+
+
+def language_name(code: str) -> str:
+    return LANGUAGE_NAMES.get(code, code)
+
+
+class TranslationError(RuntimeError):
+    pass
+
+
+class Translator:
+    can_shorten = False
+
+    def translate(self, lines: list[dict], source: str, target: str) -> dict[int, str]:
+        """lines are {"id", "text", "seconds"}; returns {id: translated text}."""
+        raise NotImplementedError
+
+    def shorten(self, lines: list[dict], source: str, target: str) -> dict[int, str]:
+        """lines are {"id", "original", "translation", "seconds", "spoken_seconds"}."""
+        raise NotImplementedError
+
+
+# ---------------------------------------------------------------------------------------------
+# Claude
+
+SYSTEM = """You translate the spoken script of a video so it can be dubbed in the creator's own \
+cloned voice. Your text is read aloud by a voice generator and placed at the same timestamps as \
+the original line, so write for the ear:
+
+- Say it the way a native {target} speaker would say it in a video like this one: same register, \
+energy, humour and warmth as the original. Casual stays casual; slang becomes the equivalent \
+slang, not a dictionary word.
+- Keep each line about as long to say as the original. Its duration in seconds is given. When a \
+literal translation would run long, choose the shorter natural phrasing.
+- Translate each line under its own id. Never move words between lines, merge lines or split \
+them. When a sentence continues across lines, make each part sound natural spoken on its own.
+- Keep names, brands, channel names, and terms viewers would say in the original language \
+unchanged.
+- The voice reads text literally: write numbers, units, symbols and abbreviations the way they \
+should be pronounced in {target} ("25 km/h" becomes the words for it).
+- Output only what is spoken: no notes, brackets, stage directions or added quotation marks.
+{notes}
+The full transcript, in {source}, so you know what the video is about. Lines are \
+[id] (start-end seconds) text:
+
+{transcript}"""
+
+TRANSLATE = """Translate these lines into {target}. Return every id exactly once.
+
+{lines}"""
+
+SHORTEN = """These {target} lines take too long to say in the time the original line had, so \
+the dub would fall out of sync. Rewrite each one shorter, aiming for about {ratio}% of its \
+current length or less, keeping the meaning and the tone. Drop filler before meaning. Return \
+every id exactly once.
+
+{lines}"""
+
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "lines": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"id": {"type": "integer"}, "text": {"type": "string"}},
+                "required": ["id", "text"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["lines"],
+    "additionalProperties": False,
+}
+
+BATCH = 60  # lines per request; the transcript itself is cached, so batches stay cheap
+
+
+class Claude(Translator):
+    can_shorten = True
+
+    def __init__(self, transcript: list[dict], notes: str, model: str):
+        import anthropic
+
+        self.anthropic = anthropic
+        self.client = anthropic.Anthropic(max_retries=5)
+        self.model = model
+        self.notes = f"\nNotes from the creator about this video: {notes.strip()}\n" if notes.strip() else ""
+        self.transcript = "\n".join(
+            f"[{line['id']}] ({line['start']:.1f}-{line['end']:.1f}) {line['text']}" for line in transcript
+        )
+
+    def _system(self, source: str, target: str) -> list[dict]:
+        text = SYSTEM.format(
+            source=language_name(source), target=language_name(target), notes=self.notes, transcript=self.transcript
+        )
+        return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+
+    def _ask(self, system: list[dict], prompt: str, ids: set[int]) -> dict[int, str]:
+        for attempt in range(2):
+            with self.client.beta.messages.stream(
+                model=self.model,
+                max_tokens=32000,
+                betas=["server-side-fallback-2026-07-01"],
+                fallbacks="default",
+                thinking={"type": "adaptive"},
+                output_config={"effort": "high", "format": {"type": "json_schema", "schema": SCHEMA}},
+                system=system,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                response = stream.get_final_message()
+            if response.stop_reason == "refusal":
+                raise TranslationError("Claude declined to translate this script.")
+            if response.stop_reason == "max_tokens":
+                raise TranslationError("The translation was cut off; try again with fewer lines per video.")
+            text = next(block.text for block in response.content if block.type == "text")
+            result = {int(item["id"]): item["text"].strip() for item in json.loads(text)["lines"]}
+            missing = ids - result.keys()
+            if not missing:
+                return {i: result[i] for i in ids}
+            if attempt == 1:
+                raise TranslationError(f"Claude left out lines {sorted(missing)}.")
+        raise AssertionError("unreachable")
+
+    def translate(self, lines, source, target):
+        system = self._system(source, target)
+        out: dict[int, str] = {}
+        for i in range(0, len(lines), BATCH):
+            batch = lines[i : i + BATCH]
+            listing = "\n".join(f"[{l['id']}] ({l['seconds']:.1f}s) {l['text']}" for l in batch)
+            prompt = TRANSLATE.format(target=language_name(target), lines=listing)
+            out.update(self._ask(system, prompt, {l["id"] for l in batch}))
+            print(f"  {min(i + BATCH, len(lines))}/{len(lines)} lines")
+        return out
+
+    def shorten(self, lines, source, target):
+        system = self._system(source, target)
+        worst = max(l["spoken_seconds"] / max(l["seconds"], 0.1) for l in lines)
+        ratio = max(int(100 / worst), 50)
+        listing = "\n".join(
+            f"[{l['id']}] {l['seconds']:.1f}s available, currently {l['spoken_seconds']:.1f}s spoken\n"
+            f"  original: {l['original']}\n  current: {l['translation']}"
+            for l in lines
+        )
+        prompt = SHORTEN.format(target=language_name(target), ratio=ratio, lines=listing)
+        return self._ask(system, prompt, {l["id"] for l in lines})
+
+
+# ---------------------------------------------------------------------------------------------
+# Argos Translate (offline)
+
+
+class Argos(Translator):
+    """Argos Translate's models, run directly with CTranslate2 in a process of their own.
+
+    argostranslate's own translate module also imports Stanza, and with it PyTorch; CTranslate2
+    and PyTorch in one process crash on Intel Macs (as the CI dubs showed). Its package module,
+    which downloads the models and holds their tokenizers, imports neither, so the worker uses
+    that and CTranslate2 alone. Eco sends one line at a time, so no sentence splitting is needed.
+    """
+
+    def translate(self, lines, source, target):
+        texts = [l["text"] for l in lines]
+        with ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn")) as pool:
+            try:
+                translated = pool.submit(_argos_worker, texts, source, target).result()
+            except BrokenProcessPool:
+                raise TranslationError("The offline translator stopped unexpectedly (see the lines above).") from None
+        return {l["id"]: text for l, text in zip(lines, translated)}
+
+
+def _argos_worker(texts: list[str], source: str, target: str) -> list[str]:
+    import argostranslate.package as package
+    import ctranslate2
+
+    chain = _argos_chain(package, source, target)
+    translators = [ctranslate2.Translator(str(pkg.package_path / "model"), device="cpu") for pkg in chain]
+    out = []
+    for text in texts:
+        for pkg, translator in zip(chain, translators):
+            text = _argos_line(pkg, translator, text)
+        out.append(text)
+    return out
+
+
+def _argos_chain(package, source: str, target: str) -> list:
+    """The installed Argos packages that take source to target, directly or through English,
+    downloading them the first time."""
+
+    def find():
+        installed = {(p.from_code, p.to_code): p for p in package.get_installed_packages()}
+        if (source, target) in installed:
+            return [installed[(source, target)]]
+        if (source, "en") in installed and ("en", target) in installed:
+            return [installed[(source, "en")], installed[("en", target)]]
+        return None
+
+    chain = find()
+    if chain:
+        return chain
+    print(f"  Downloading the offline translator for {source} -> {target}...", flush=True)
+    package.update_package_index()
+    available = {(p.from_code, p.to_code): p for p in package.get_available_packages()}
+    pairs = [(source, target)] if (source, target) in available else [(source, "en"), ("en", target)]
+    for pair in pairs:
+        if pair not in available:
+            raise TranslationError(f"The offline translator has no {pair[0]} -> {pair[1]} model.")
+        package.install_from_path(available[pair].download())
+    chain = find()
+    if not chain:
+        raise TranslationError(f"Could not install the offline translator for {source} -> {target}.")
+    return chain
+
+
+def _argos_line(pkg, translator, text: str) -> str:
+    """One line through one Argos model, the way argostranslate itself does it."""
+    tokens = pkg.tokenizer.encode(text)
+    prefix = [[pkg.target_prefix]] if pkg.target_prefix else None
+    result = translator.translate_batch(
+        [tokens], target_prefix=prefix, replace_unknowns=True, beam_size=4, num_hypotheses=1,
+        length_penalty=0.2,
+    )
+    value = pkg.tokenizer.decode(result[0].hypotheses[0])
+    if pkg.target_prefix and value.startswith(pkg.target_prefix):
+        value = value[len(pkg.target_prefix):]
+    return value.strip()

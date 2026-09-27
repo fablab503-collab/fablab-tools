@@ -48,13 +48,35 @@ in Safari › Settings › Developer › *Add Temporary Extension…*. **Or supp
 the App Store version (1,99 €, one purchase for Mac, iPhone and iPad). Full guide:
 [bouclier/README.md](bouclier/README.md); filter-list licences: [bouclier/THIRD_PARTY.md](bouclier/THIRD_PARTY.md).
 
+## Eco
+
+**[eco/](eco/)** dubs your videos into other languages in your own voice.
+
+- Clones your voice from the video itself and speaks every line again in Spanish, French,
+  Portuguese and 20 more languages, at the same moments, with the tone of the original line.
+- Keeps your music and sound effects: the voice is separated out before dubbing and the dub is
+  mixed back over them.
+- Translates the whole script for speaking, not reading, and rewrites lines that would run too
+  long to stay in sync. You can review and fix every line before it is voiced.
+- Gives you a finished video, the audio track for YouTube's multi-language audio, and subtitles
+  for each language.
+- Runs on your own computer with free, open models (Whisper, Demucs, Chatterbox).
+
+- A Mac app for Apple silicon and Intel Macs: drop in a video, tick languages, review every line,
+  press Dub.
+
+**Use it:** on a Mac, download `Eco-mac.zip` from the
+[eco-mac-latest](https://github.com/fablab503-collab/fablab-tools/releases/tag/eco-mac-latest)
+release; elsewhere, `eco my-video.mp4 --to es,fr,pt`. Guide: [eco/README.md](eco/README.md).
+
 ## Repository layout
 
 | Folder | Content |
 |---|---|
 | `velotrack/` | The Android app (Kotlin), its tools and third-party notices |
 | `bouclier/` | The Safari ad blocker (web extension, Mac/iPhone/iPad app build, tests, App Store tools) |
-| `.github/workflows/` | CI: build, test, sign and publish the APK on every push; map extraction on demand |
+| `eco/` | The video dubbing tool (Python engine and command line, Mac app in `eco/mac/`, tests) |
+| `.github/workflows/` | CI: build, test, sign and publish the APK on every push; map extraction on demand; Eco tests |
 | `docs/superpowers/` | Design briefs and plans written before each feature round |
 | `assets/icons3d/` | 3D icon library (CC0, from 3dicons.co) used for illustrations |
 | `skills/` | The Claude Code skills that describe how this project is built and tested |
