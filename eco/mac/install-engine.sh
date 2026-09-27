@@ -22,7 +22,7 @@ PREBUILT=()
 # on PyPI. The app normally carries one built by CI; without it, it is compiled here, which
 # needs Apple's Command Line Tools.
 if ls "$WHEELS"/monotonic_alignment_search-*-macosx_*.whl >/dev/null 2>&1; then
-  PREBUILT=(--no-build-package monotonic-alignment-search)
+  PREBUILT=(--only-binary monotonic-alignment-search)
 elif [ "$(uname -m)" != "arm64" ] && ! xcode-select -p >/dev/null 2>&1; then
   printf '@eco {"event": "error", "message": "%s"}\n' \
     "Install Apple's Command Line Tools first (Terminal: xcode-select --install), then try again."
