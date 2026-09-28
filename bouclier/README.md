@@ -40,6 +40,7 @@ version 1.2 (2026-09-23) adds iPhone and iPad and prepares the App Store release
 | `extension/data/*.json` | Generated: `popups.json` (pop-up filters per list), `tracking-params.json` |
 | `extension/pages/welcome.*` | Welcome and setup-check page |
 | `tools/tracking-params.json` | Tracking tags removed by "Clean links" |
+| `tools/guide-shots.sh` | `iphone` / `ipad` / `mac`: takes the install guide's screenshots step by step (Simulator or Safari) into `site/img/install/` |
 | `tools/auto-update.sh` | `install` / `uninstall` / `run` / `status` for the weekly LaunchAgent (personal builds) |
 | `tools/xcode_setup.py` | Turns the converter's Xcode project into the App Store project: app window, icon, Info.plist keys, sandbox check |
 | `extension/common/platform.js` | Tells Mac, iPhone and iPad apart for the extension pages |

@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Install Bouclier</title>
+<meta name="description" content="Step by step: install Bouclier and turn it on in Safari on iPhone, iPad and Mac.">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+  // language: #fr / #en in the link, then the last choice, then the browser's language
+  (function () {
+    var lang = location.hash === '#fr' ? 'fr' : location.hash === '#en' ? 'en' : null;
+    if (!lang) { try { lang = localStorage.getItem('bouclier-lang'); } catch (e) {} }
+    if (!lang) lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+    document.documentElement.lang = lang;
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ground: #f2f4f9;
+  --surface: #ffffff;
+  --ink: #0f1a33;
+  --ink-2: #4a5570;
+  --line: #dce1ec;
+  --accent: #2459db;
+  --accent-soft: #e6edfd;
+  --warn: #8a5a00;
+  --warn-soft: #fdf3dc;
+  --mono-bg: #f7f9fd;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ground: #0a0f1e;
+    --surface: #111a30;
+    --ink: #e6ebf6;
+    --ink-2: #9aa6c0;
+    --line: #233051;
+    --accent: #86a9ff;
+    --accent-soft: #1a2750;
+    --warn: #ffcf70;
+    --warn-soft: #33270c;
+    --mono-bg: #0d1528;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 17px/1.6 var(--body);
+}
+html[lang="fr"] .en, html[lang="en"] .fr { display: none !important; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 860px; margin: 0 auto; }
+
+/* header */
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 700 20px/1 var(--display); letter-spacing: -0.01em; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; }
+nav.links { display: flex; align-items: center; gap: 6px 18px; flex-wrap: wrap; font-size: 15px; }
+nav.links a { color: var(--ink-2); text-decoration: none; }
+nav.links a:hover, nav.links a[aria-current] { color: var(--ink); }
+.lang { font: 600 13px/1 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+
+/* title */
+.title { padding-block: 32px 8px; }
+.eyebrow { margin: 0 0 12px; font: 600 13px/1.3 var(--body); letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font: 700 clamp(34px, 5.4vw, 52px)/1.05 var(--display); letter-spacing: -0.03em; text-wrap: balance; }
+.lede { margin: 16px 0 0; max-width: 36em; font-size: 19px; color: var(--ink-2); }
+
+/* device chooser */
+.choose { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 28px 0 0; padding: 0; list-style: none; }
+.choose a { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.choose a:hover { border-color: var(--accent); }
+.choose b { font: 700 18px/1.2 var(--display); }
+.choose span span { font-size: 14px; color: var(--ink-2); }
+
+/* sections */
+section.band { padding-block: 48px; border-top: 1px solid var(--line); margin-top: 40px; scroll-margin-top: 12px; }
+section.band + section.band { margin-top: 0; }
+h2 { margin: 0 0 8px; font: 700 clamp(26px, 3.4vw, 34px)/1.15 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+.intro { margin: 0 0 28px; max-width: 40em; color: var(--ink-2); }
+h3 { margin: 0 0 6px; font: 700 18px/1.3 var(--display); }
+
+/* numbered steps */
+ol.guide { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
+ol.guide > li { counter-increment: step; display: grid; grid-template-columns: 40px 1fr; gap: 14px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+ol.guide > li::before { content: counter(step); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--surface); font: 700 16px/1 var(--display); }
+ol.guide > li > div { min-width: 0; }
+ol.guide p { margin: 0; }
+ol.guide p + p, ol.guide ul { margin-top: 8px; }
+ol.guide ul { padding-left: 20px; display: grid; gap: 4px; }
+.path { font-weight: 600; }
+.ui { font-weight: 600; white-space: nowrap; padding: 1px 7px; border-radius: 6px; background: var(--mono-bg); border: 1px solid var(--line); }
+code { font: 500 14px var(--mono); overflow-wrap: anywhere; }
+.hint { color: var(--ink-2); font-size: 15px; }
+
+.note { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: var(--accent-soft); font-size: 15px; }
+.note.warn { background: var(--warn-soft); }
+.note.warn strong { color: var(--warn); }
+.note p { margin: 0; }
+.note p + p { margin-top: 6px; }
+
+/* screenshots: each figure removes itself until its picture is added (tools/guide-shots.sh) */
+.shots { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.shots figure { margin: 0; }
+.shots img { display: block; max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--mono-bg); }
+.shots.phone img { width: 240px; }
+.shots.tablet img { width: 360px; }
+.shots.mac img { width: 560px; }
+
+/* troubleshooting */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+details + details { margin-top: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details[open] summary { margin-bottom: 8px; }
+details p { margin: 0; }
+details p + p { margin-top: 6px; }
+
+footer { margin-top: 24px; padding-block: 40px 56px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; font-size: 15px; color: var(--ink-2); }
+footer nav { display: flex; gap: 8px 20px; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .choose { grid-template-columns: 1fr; }
+  ol.guide > li { grid-template-columns: 1fr; gap: 10px; padding: 16px; }
+  section.band { padding-block: 40px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="icon.png" alt="" width="34" height="34">Bouclier</a>
+    <nav class="links" aria-label="Site">
+      <a href="install.html" aria-current="page"><span class="en">Install</span><span class="fr">Installer</span></a>
+      <a href="support.html"><span class="en">Support</span><span class="fr">Assistance</span></a>
+      <a href="support.html#privacy"><span class="en">Privacy</span><span class="fr">Confidentialité</span></a>
+      <button class="lang" id="lang-toggle" type="button"><span class="en" lang="fr">Français</span><span class="fr" lang="en">English</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="title">
+      <p class="eyebrow"><span class="en">Install guide</span><span class="fr">Guide d'installation</span></p>
+      <h1><span class="en">Install Bouclier, step by step</span><span class="fr">Installer Bouclier, pas à pas</span></h1>
+      <p class="lede">
+        <span class="en">Bouclier is one app that adds an extension to Safari. You install the app, then switch the extension on in Safari. It takes about two minutes on each device.</span>
+        <span class="fr">Bouclier est une app qui ajoute une extension à Safari. Vous installez l'app, puis vous activez l'extension dans Safari. Comptez environ deux minutes par appareil.</span>
+      </p>
+      <ul class="choose">
+        <li><a href="#iphone"><b>iPhone</b><span><span class="en">iOS 26 or later</span><span class="fr">iOS 26 ou plus récent</span></span></a></li>
+        <li><a href="#ipad"><b>iPad</b><span><span class="en">iPadOS 26 or later</span><span class="fr">iPadOS 26 ou plus récent</span></span></a></li>
+        <li><a href="#mac"><b>Mac</b><span><span class="en">macOS 26 or later</span><span class="fr">macOS 26 ou plus récent</span></span></a></li>
+      </ul>
+      <div class="note warn">
+        <p class="en"><strong>Coming soon to the App Store.</strong> Bouclier is not on the App Store yet. The link will be added here on release day. One purchase will cover your iPhone, iPad and Mac. Want to try it before then? See <a href="#before">Before the App Store release</a>.</p>
+        <p class="fr"><strong>Bientôt sur l'App Store.</strong> Bouclier n'est pas encore sur l'App Store. Le lien sera ajouté ici le jour de la sortie. Un seul achat couvrira votre iPhone, iPad et Mac. Pour l'essayer avant, voir <a href="#before">Avant la sortie sur l'App Store</a>.</p>
+      </div>
+    </div>
+
+    <!-- iPhone -->
+    <section class="band" id="iphone" aria-labelledby="h-iphone">
+      <h2 id="h-iphone">iPhone</h2>
+      <p class="intro"><span class="en">Safari extensions on iPhone are switched on in the Settings app, not in Safari.</span><span class="fr">Sur iPhone, les extensions Safari s'activent dans l'app Réglages, pas dans Safari.</span></p>
+      <ol class="guide">
+        <li><div>
+          <h3><span class="en">Get the app</span><span class="fr">Téléchargez l'app</span></h3>
+          <p class="en">Open the <span class="path">App Store</span>, search for <span class="ui">Bouclier</span> and tap <span class="ui">Get</span> (or the price).</p>
+          <p class="fr">Ouvrez l'<span class="path">App Store</span>, cherchez <span class="ui">Bouclier</span> et touchez <span class="ui">Obtenir</span> (ou le prix).</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Open Bouclier once</span><span class="fr">Ouvrez Bouclier une fois</span></h3>
+          <p class="en">Tap the Bouclier icon on your Home Screen. The app shows whether the extension is on and repeats the next steps. You don't need to keep it open.</p>
+          <p class="fr">Touchez l'icône Bouclier sur l'écran d'accueil. L'app indique si l'extension est activée et rappelle les étapes suivantes. Inutile de la laisser ouverte.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-app.png" alt="The Bouclier app on iPhone" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Go to Safari's extensions</span><span class="fr">Allez dans les extensions de Safari</span></h3>
+          <p class="en">Open <span class="path">Settings → Apps → Safari → Extensions</span>.</p>
+          <p class="fr">Ouvrez <span class="path">Réglages → Apps → Safari → Extensions</span>.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-extensions.png" alt="Settings, Apps, Safari, Extensions on iPhone" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Turn Bouclier on</span><span class="fr">Activez Bouclier</span></h3>
+          <p class="en">Tap <span class="ui">Bouclier</span> and turn on the <span class="ui">Allow Extension</span> switch.</p>
+          <p class="fr">Touchez <span class="ui">Bouclier</span> et activez l'interrupteur <span class="ui">Autoriser l'extension</span>.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Allow it on all websites</span><span class="fr">Autorisez-le sur tous les sites</span></h3>
+          <p class="en">On the same screen, under <span class="path">Permissions</span>, set <span class="ui">All Websites</span> to <span class="ui">Allow</span>.</p>
+          <p class="fr">Sur le même écran, sous <span class="path">Autorisations</span>, réglez <span class="ui">Tous les sites web</span> sur <span class="ui">Autoriser</span>.</p>
+          <p class="hint en">Ads and trackers are blocked even without this. With it, Bouclier also hides empty ad spaces, closes pop-up ads and removes video ads.</p>
+          <p class="hint fr">Les pubs et traqueurs sont bloqués même sans cela. Avec, Bouclier masque aussi les espaces vides, ferme les pop-up et retire les publicités vidéo.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-bouclier.png" alt="Bouclier turned on and allowed on all websites, iPhone Settings" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Optional: Private Browsing</span><span class="fr">Option : navigation privée</span></h3>
+          <p class="en">Still on the same screen, turn on <span class="ui">Allow in Private Browsing</span> to block ads in private tabs as well.</p>
+          <p class="fr">Toujours sur le même écran, activez <span class="ui">Autoriser en navigation privée</span> pour bloquer aussi les pubs dans les onglets privés.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Use it in Safari</span><span class="fr">Utilisez-le dans Safari</span></h3>
+          <p class="en">Open any website in Safari. Tap the page menu button at the left of the address bar, then tap <span class="ui">Bouclier</span>. You'll see what was blocked on the page, and you can pause a site, allow one address or hide an element.</p>
+          <p class="fr">Ouvrez un site dans Safari. Touchez le bouton du menu de la page, à gauche de la barre d'adresse, puis <span class="ui">Bouclier</span>. Vous y voyez ce qui a été bloqué, et pouvez mettre un site en pause, autoriser une adresse ou masquer un élément.</p>
+          <p class="hint en">If Safari asks for permission the first time, choose <span class="ui">Always Allow on Every Website</span>.</p>
+          <p class="hint fr">Si Safari demande une autorisation la première fois, choisissez <span class="ui">Toujours autoriser sur tous les sites web</span>.</p>
+          <div class="shots phone"><figure><img src="img/install/iphone-page-menu.png" alt="Safari's page menu with Bouclier" decoding="async" onerror="this.parentNode.remove()"></figure><figure><img src="img/install/iphone-popup.png" alt="Bouclier menu on iPhone" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+      </ol>
+    </section>
+
+    <!-- iPad -->
+    <section class="band" id="ipad" aria-labelledby="h-ipad">
+      <h2 id="h-ipad">iPad</h2>
+      <p class="intro"><span class="en">The same as iPhone. If you bought Bouclier on another device with the same Apple Account, it's already paid for here.</span><span class="fr">Comme sur iPhone. Si vous avez acheté Bouclier sur un autre appareil avec le même compte Apple, il est déjà payé ici.</span></p>
+      <ol class="guide">
+        <li><div>
+          <h3><span class="en">Get the app</span><span class="fr">Téléchargez l'app</span></h3>
+          <p class="en">In the <span class="path">App Store</span>, search for <span class="ui">Bouclier</span> and tap <span class="ui">Get</span>, or the cloud icon if you already own it.</p>
+          <p class="fr">Dans l'<span class="path">App Store</span>, cherchez <span class="ui">Bouclier</span> et touchez <span class="ui">Obtenir</span>, ou le nuage si vous l'avez déjà acheté.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Open Bouclier once</span><span class="fr">Ouvrez Bouclier une fois</span></h3>
+          <p class="en">Tap its icon on the Home Screen, then go back to the Home Screen.</p>
+          <p class="fr">Touchez son icône sur l'écran d'accueil, puis revenez à l'écran d'accueil.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Turn Bouclier on</span><span class="fr">Activez Bouclier</span></h3>
+          <p class="en">Open <span class="path">Settings → Apps → Safari → Extensions → Bouclier</span> and turn on <span class="ui">Allow Extension</span>.</p>
+          <p class="fr">Ouvrez <span class="path">Réglages → Apps → Safari → Extensions → Bouclier</span> et activez <span class="ui">Autoriser l'extension</span>.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Allow it on all websites</span><span class="fr">Autorisez-le sur tous les sites</span></h3>
+          <p class="en">Set <span class="ui">All Websites</span> to <span class="ui">Allow</span>. Turn on <span class="ui">Allow in Private Browsing</span> too if you use private tabs.</p>
+          <p class="fr">Réglez <span class="ui">Tous les sites web</span> sur <span class="ui">Autoriser</span>. Activez aussi <span class="ui">Autoriser en navigation privée</span> si vous utilisez les onglets privés.</p>
+          <div class="shots tablet"><figure><img src="img/install/ipad-bouclier.png" alt="Bouclier turned on in iPad Settings" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Use it in Safari</span><span class="fr">Utilisez-le dans Safari</span></h3>
+          <p class="en">In Safari, tap the page menu button in the address bar, then <span class="ui">Bouclier</span>. To hide something on a page, choose <span class="ui">Hide an element</span> and tap the thing you want gone.</p>
+          <p class="fr">Dans Safari, touchez le bouton du menu de la page dans la barre d'adresse, puis <span class="ui">Bouclier</span>. Pour masquer quelque chose, choisissez <span class="ui">Hide an element</span> et touchez l'élément à faire disparaître.</p>
+          <div class="shots tablet"><figure><img src="img/install/ipad-popup.png" alt="Bouclier menu on iPad" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+      </ol>
+    </section>
+
+    <!-- Mac -->
+    <section class="band" id="mac" aria-labelledby="h-mac">
+      <h2 id="h-mac"><span class="en">Mac (Safari extension)</span><span class="fr">Mac (extension Safari)</span></h2>
+      <p class="intro"><span class="en">On the Mac, the extension is switched on in Safari's own settings.</span><span class="fr">Sur Mac, l'extension s'active dans les réglages de Safari.</span></p>
+      <ol class="guide">
+        <li><div>
+          <h3><span class="en">Get the app</span><span class="fr">Téléchargez l'app</span></h3>
+          <p class="en">Open the <span class="path">App Store</span> on your Mac, search for <span class="ui">Bouclier</span> and click <span class="ui">Get</span>. It installs in your Applications folder.</p>
+          <p class="fr">Ouvrez l'<span class="path">App Store</span> sur votre Mac, cherchez <span class="ui">Bouclier</span> et cliquez sur <span class="ui">Obtenir</span>. L'app s'installe dans le dossier Applications.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Open Bouclier once</span><span class="fr">Ouvrez Bouclier une fois</span></h3>
+          <p class="en">Open it from <span class="path">Launchpad</span> or the <span class="path">Applications</span> folder. Safari only lists the extension after the app has been opened once. Click <span class="ui">Quit and Open Safari Settings…</span> to jump to the next step.</p>
+          <p class="fr">Ouvrez-la depuis le <span class="path">Launchpad</span> ou le dossier <span class="path">Applications</span>. Safari n'affiche l'extension qu'après une première ouverture. Cliquez sur <span class="ui">Quit and Open Safari Settings…</span> pour passer directement à l'étape suivante.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-app.png" alt="The Bouclier app window on Mac" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Tick Bouclier</span><span class="fr">Cochez Bouclier</span></h3>
+          <p class="en">In Safari, choose <span class="path">Safari → Settings… → Extensions</span> (or press <span class="ui">⌘ ,</span>), then tick the box next to <span class="ui">Bouclier</span>.</p>
+          <p class="fr">Dans Safari, choisissez <span class="path">Safari → Réglages… → Extensions</span> (ou <span class="ui">⌘ ,</span>), puis cochez la case à côté de <span class="ui">Bouclier</span>.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-extensions.png" alt="Safari Settings, Extensions, Bouclier ticked" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Allow it on all websites</span><span class="fr">Autorisez-le sur tous les sites</span></h3>
+          <p class="en">With Bouclier selected, click <span class="ui">Edit Websites…</span> and set <span class="ui">Other websites</span> to <span class="ui">Allow</span>. If Safari asks instead, click <span class="ui">Always Allow on Every Website</span>.</p>
+          <p class="fr">Bouclier sélectionné, cliquez sur <span class="ui">Modifier les sites web…</span> et réglez <span class="ui">Autres sites web</span> sur <span class="ui">Autoriser</span>. Si Safari vous le demande, cliquez sur <span class="ui">Toujours autoriser sur tous les sites web</span>.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-edit-websites.png" alt="Edit Websites: Other websites set to Allow" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Optional: Private Browsing</span><span class="fr">Option : navigation privée</span></h3>
+          <p class="en">In the same Extensions pane, tick <span class="ui">Allow in Private Browsing</span>.</p>
+          <p class="fr">Dans le même panneau Extensions, cochez <span class="ui">Autoriser en navigation privée</span>.</p>
+        </div></li>
+        <li><div>
+          <h3><span class="en">Use the toolbar button</span><span class="fr">Utilisez le bouton de la barre d'outils</span></h3>
+          <p class="en">Bouclier's shield appears in Safari's toolbar. Click it to see what was blocked, pause a site or hide an element. You can also right-click anything on a page and choose <span class="ui">Hide This Element…</span>.</p>
+          <p class="fr">Le bouclier de Bouclier apparaît dans la barre d'outils de Safari. Cliquez dessus pour voir ce qui a été bloqué, mettre un site en pause ou masquer un élément. Vous pouvez aussi faire un clic droit sur un élément et choisir <span class="ui">Hide This Element…</span>.</p>
+          <p class="hint en">Shortcuts: <span class="ui">⌥⇧B</span> opens Bouclier, <span class="ui">⌥⇧P</span> pauses the site, <span class="ui">⌥⇧H</span> hides an element. Don't see the shield? Choose <span class="path">View → Customize Toolbar…</span> and drag it in.</p>
+          <p class="hint fr">Raccourcis : <span class="ui">⌥⇧B</span> ouvre Bouclier, <span class="ui">⌥⇧P</span> met le site en pause, <span class="ui">⌥⇧H</span> masque un élément. Pas de bouclier ? Choisissez <span class="path">Présentation → Personnaliser la barre d'outils…</span> et faites-le glisser.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-popup.png" alt="Bouclier's menu from the Safari toolbar" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+      </ol>
+    </section>
+
+    <!-- Check -->
+    <section class="band" id="check" aria-labelledby="h-check">
+      <h2 id="h-check"><span class="en">Check that it works</span><span class="fr">Vérifier que ça marche</span></h2>
+      <ol class="guide">
+        <li><div>
+          <p class="en">Open Bouclier's menu in Safari and choose the setup check. Anything marked with an orange dot needs one tap or click from you.</p>
+          <p class="fr">Ouvrez le menu de Bouclier dans Safari et lancez la vérification de l'installation. Tout ce qui a un point orange demande une action de votre part.</p>
+          <div class="shots mac"><figure><img src="img/install/mac-setup-check.png" alt="Bouclier's setup check" decoding="async" onerror="this.parentNode.remove()"></figure></div>
+        </div></li>
+        <li><div>
+          <p class="en">Open the independent test page <a href="https://adblock.turtlecute.org/">adblock.turtlecute.org</a>. Expect about two thirds blocked: many of its addresses are only used by phone and TV apps, so web ad blockers leave them alone.</p>
+          <p class="fr">Ouvrez la page de test indépendante <a href="https://adblock.turtlecute.org/">adblock.turtlecute.org</a>. Attendez-vous à environ deux tiers de blocage : beaucoup de ses adresses ne servent qu'aux apps de téléphone et de TV, que les bloqueurs web laissent passer.</p>
+        </div></li>
+      </ol>
+    </section>
+
+    <!-- Troubleshooting -->
+    <section class="band" id="help" aria-labelledby="h-help">
+      <h2 id="h-help"><span class="en">If something's wrong</span><span class="fr">En cas de problème</span></h2>
+      <details>
+        <summary><span class="en">Bouclier isn't in the Extensions list</span><span class="fr">Bouclier n'est pas dans la liste des extensions</span></summary>
+        <p class="en">Open the Bouclier app once, then close Settings (or quit Safari on the Mac) and look again. On a Mac, check the app is in the Applications folder, not still in Downloads.</p>
+        <p class="fr">Ouvrez une fois l'app Bouclier, puis fermez Réglages (ou quittez Safari sur Mac) et regardez à nouveau. Sur Mac, vérifiez que l'app est dans le dossier Applications et pas dans Téléchargements.</p>
+      </details>
+      <details>
+        <summary><span class="en">Ads still show on some pages</span><span class="fr">Des pubs apparaissent encore</span></summary>
+        <p class="en">Check that <span class="ui">All Websites</span> (iPhone, iPad) or <span class="ui">Other websites</span> (Mac) is set to <span class="ui">Allow</span>, then reload the page. Make sure the site isn't paused in Bouclier's menu.</p>
+        <p class="fr">Vérifiez que <span class="ui">Tous les sites web</span> (iPhone, iPad) ou <span class="ui">Autres sites web</span> (Mac) est sur <span class="ui">Autoriser</span>, puis rechargez la page. Vérifiez aussi que le site n'est pas en pause dans le menu de Bouclier.</p>
+      </details>
+      <details>
+        <summary><span class="en">A website doesn't work</span><span class="fr">Un site ne fonctionne plus</span></summary>
+        <p class="en">Open Bouclier's menu on that page and turn the site off, or pause it for an hour. Or tap one of the blocked addresses listed there to allow only that address on that site.</p>
+        <p class="fr">Ouvrez le menu de Bouclier sur cette page et désactivez le site, ou mettez-le en pause une heure. Ou touchez une des adresses bloquées affichées pour l'autoriser sur ce site uniquement.</p>
+      </details>
+      <details>
+        <summary><span class="en">I hid something by mistake</span><span class="fr">J'ai masqué quelque chose par erreur</span></summary>
+        <p class="en">Open Bouclier's menu on that site and choose <span class="ui">Show them again</span>.</p>
+        <p class="fr">Ouvrez le menu de Bouclier sur ce site et choisissez <span class="ui">Show them again</span>.</p>
+      </details>
+      <p class="note"><span class="en">Still stuck? Email <a href="mailto:fablab503@gmail.com">fablab503@gmail.com</a> with your device and the address of the page. More help on the <a href="support.html">support page</a>.</span><span class="fr">Toujours bloqué ? Écrivez à <a href="mailto:fablab503@gmail.com">fablab503@gmail.com</a> en précisant votre appareil et l'adresse de la page. Plus d'aide sur la <a href="support.html">page d'assistance</a>.</span></p>
+    </section>
+
+    <!-- Before release -->
+    <section class="band" id="before" aria-labelledby="h-before">
+      <h2 id="h-before"><span class="en">Before the App Store release</span><span class="fr">Avant la sortie sur l'App Store</span></h2>
+      <p class="intro"><span class="en">Until Bouclier is on the App Store, you can run it from its source code, which is free and <a href="https://github.com/fablab503-collab/fablab-tools/tree/main/bouclier">on GitHub</a>. This is meant for people comfortable with developer tools.</span><span class="fr">En attendant l'App Store, vous pouvez utiliser Bouclier depuis son code source, libre et <a href="https://github.com/fablab503-collab/fablab-tools/tree/main/bouclier">sur GitHub</a>. C'est destiné aux personnes à l'aise avec les outils de développement.</span></p>
+      <h3 style="margin-bottom:12px"><span class="en">Mac, quick try without Xcode</span><span class="fr">Mac, essai rapide sans Xcode</span></h3>
+      <ol class="guide">
+        <li><div>
+          <p class="en">Download the source from GitHub (<span class="ui">Code → Download ZIP</span>) and unzip it.</p>
+          <p class="fr">Téléchargez le code depuis GitHub (<span class="ui">Code → Download ZIP</span>) et décompressez-le.</p>
+        </div></li>
+        <li><div>
+          <p class="en">In Safari: <span class="path">Settings → Advanced</span>, tick <span class="ui">Show features for web developers</span>.</p>
+          <p class="fr">Dans Safari : <span class="path">Réglages → Avancés</span>, cochez <span class="ui">Afficher les fonctionnalités pour les développeurs web</span>.</p>
+        </div></li>
+        <li><div>
+          <p class="en">Open the new <span class="path">Developer</span> tab, click <span class="ui">Add Temporary Extension…</span> and choose the <code>bouclier/extension</code> folder. Then allow it on all websites as in the Mac steps above.</p>
+          <p class="fr">Ouvrez le nouvel onglet <span class="path">Développeur</span>, cliquez sur <span class="ui">Ajouter une extension temporaire…</span> et choisissez le dossier <code>bouclier/extension</code>. Autorisez-la ensuite sur tous les sites comme dans les étapes Mac ci-dessus.</p>
+          <p class="hint en">Safari removes a temporary extension when it quits, so you'll need to add it again next time.</p>
+          <p class="hint fr">Safari retire une extension temporaire quand il quitte : il faudra l'ajouter de nouveau la fois suivante.</p>
+        </div></li>
+      </ol>
+      <h3 style="margin:28px 0 12px"><span class="en">iPhone, iPad and a permanent Mac app</span><span class="fr">iPhone, iPad et app Mac permanente</span></h3>
+      <ol class="guide">
+        <li><div>
+          <p class="en">You need a Mac with Xcode 26 or later, signed in with your Apple Account in <span class="path">Xcode → Settings → Accounts</span>.</p>
+          <p class="fr">Il faut un Mac avec Xcode 26 ou plus récent, connecté à votre compte Apple dans <span class="path">Xcode → Réglages → Comptes</span>.</p>
+        </div></li>
+        <li><div>
+          <p class="en">In Terminal, in the <code>bouclier</code> folder, run <code>./build.sh</code> for the Mac app, or <code>./build.sh --sim</code> to try the iPhone and iPad app in the Simulator. The <a href="https://github.com/fablab503-collab/fablab-tools/tree/main/bouclier">README</a> has the details.</p>
+          <p class="fr">Dans le Terminal, dans le dossier <code>bouclier</code>, lancez <code>./build.sh</code> pour l'app Mac, ou <code>./build.sh --sim</code> pour essayer l'app iPhone et iPad dans le Simulateur. Le <a href="https://github.com/fablab503-collab/fablab-tools/tree/main/bouclier">README</a> donne les détails.</p>
+        </div></li>
+        <li><div>
+          <p class="en">To put it on your own iPhone or iPad, connect it by cable, choose it as the run destination in Xcode and press Run. Then follow the iPhone or iPad steps above from step 2. With a free Apple Account, the app stops opening after 7 days and has to be installed again.</p>
+          <p class="fr">Pour l'installer sur votre iPhone ou iPad, branchez-le par câble, choisissez-le comme destination dans Xcode et lancez l'exécution. Suivez ensuite les étapes iPhone ou iPad ci-dessus à partir de l'étape 2. Avec un compte Apple gratuit, l'app cesse de s'ouvrir après 7 jours et doit être réinstallée.</p>
+        </div></li>
+      </ol>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 Daniel Madac · <span class="en">Bouclier is not affiliated with Apple or with the filter list projects.</span><span class="fr">Bouclier n'est affilié ni à Apple ni aux projets de listes de filtres.</span></span>
+    <nav aria-label="Footer">
+      <a href="./"><span class="en">Home</span><span class="fr">Accueil</span></a>
+      <a href="support.html"><span class="en">Support</span><span class="fr">Assistance</span></a>
+      <a href="support.html#privacy"><span class="en">Privacy policy</span><span class="fr">Confidentialité</span></a>
+    </nav>
+  </footer>
+</div>
+<script>
+  document.getElementById('lang-toggle').addEventListener('click', function () {
+    var next = document.documentElement.lang === 'fr' ? 'en' : 'fr';
+    document.documentElement.lang = next;
+    try { localStorage.setItem('bouclier-lang', next); } catch (e) {}
+  });
+</script>
+</body>
+</html>
