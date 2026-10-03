@@ -30,14 +30,19 @@ final class BouclierOnIPhone: XCTestCase {
         settings.terminate()
         settings.launch()
         sleep(2)
+        backToRoot(settings)
         shot("2a-settings", settings)
         // iOS 18 and later: Settings > Apps > Safari > Extensions > Bouclier; iOS 16 and 17: Settings > Safari > …
         let ios18 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 18
-        let found = (!ios18 || tapRow(settings, ["Apps"])) && tapRow(settings, ["Safari", "com.apple.mobilesafari"])
-            && tapRow(settings, ["Extensions"]) && tapRow(settings, ["Bouclier", "com.danielmadac.Bouclier.Extension"])
+        let inApps = !ios18 || tapRow(settings, ["Apps"])
+        let list = settings.navigationBars.firstMatch.identifier
+        let atSafari = inApps && tapRow(settings, ["Safari", "com.apple.mobilesafari"]) && settings.navigationBars.firstMatch.identifier != list
+        let found = atSafari && tapRow(settings, ["Extensions"]) && tapRow(settings, ["Bouclier", "com.danielmadac.Bouclier.Extension"])
         XCTAssertTrue(found, ios18 ? "Settings > Apps > Safari > Extensions > Bouclier" : "Settings > Safari > Extensions > Bouclier")
         sleep(1)
         shot("2b-bouclier-settings", settings)
+        // on any other page the first switch is some other setting: leave it alone
+        guard found else { return }
         // the extension's own switch ("Allow Extension"; on iOS 26 the row is a switch with the toggle at its right end)
         let named = settings.switches.matching(identifier: "Allow Extension").firstMatch
         let toggle = named.exists ? named : settings.switches.firstMatch
@@ -90,8 +95,17 @@ final class BouclierOnIPhone: XCTestCase {
         dismissFirstRun(safari)
         showBars(safari)
         shot("4a-safari", safari)
-        // the page menu in the address bar ("AA" before iOS 26) lists the extensions
-        let opened = tapAny(safari, ["PageFormatMenuButton", "Page Menu", "Page menu", "Show Page Menu", "More", "Show More", "Extensions"])
+        // the page menu in the address bar ("AA" before iOS 26) lists the extensions. Once Bouclier shows a
+        // count, iOS 17 puts its icon inside the same button, beside "AA", and a tap in the middle of the
+        // button opens nothing (iOS 17.5, 3 Oct 2026): tap "AA" itself, at the button's left
+        let pageButton = safari.buttons["PageFormatMenuButton"]
+        var opened = false
+        if pageButton.exists && pageButton.isHittable {
+            pageButton.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5)).tap()
+            opened = true
+        } else {
+            opened = tapAny(safari, ["Page Menu", "Page menu", "Show Page Menu", "More", "Show More", "Extensions"])
+        }
         XCTAssertTrue(opened, "Safari's page menu opens")
         sleep(1)
         shot("4b-page-menu", safari)
@@ -148,43 +162,89 @@ final class BouclierOnIPhone: XCTestCase {
     }
 
     /// An element with one of these labels (cells and buttons first, as Settings shows rows): the first one
-    /// that can be tapped, else the first one that exists. (iOS 18's Settings keeps rows that are not on
-    /// screen in its tree, so the first match is not always the visible one.)
+    /// that can be tapped, else the first one whose frame is on screen, else the first one that exists.
+    /// (iOS 18's Settings keeps rows that are not on screen in its tree, so the first match is not always
+    /// the visible one.)
     func element(_ app: XCUIApplication, _ labels: [String]) -> XCUIElement? {
         let types: [XCUIElement.ElementType] = [.cell, .button, .staticText, .link, .menuItem, .other]
+        var visible: XCUIElement?
         var fallback: XCUIElement?
         for label in labels {
             for type in types {
                 let matches = app.descendants(matching: type).matching(NSPredicate(format: "label == %@ OR identifier == %@", label, label))
                 for e in matches.allElementsBoundByIndex.prefix(8) where e.exists {
                     if e.isHittable { return e }
+                    if visible == nil && onScreen(app, e) { visible = e }
                     if fallback == nil { fallback = e }
                 }
             }
         }
-        return fallback
+        return visible ?? fallback
     }
 
-    /// Scrolls down until a row with one of these labels can be tapped, then taps it. A tap while the list
-    /// still glides after a swipe only stops it (iPhone 13 mini, iOS 18.5): the list is given a second to
-    /// settle, and when the screen did not change the row is tapped once more.
+    /// The element lies wholly on screen, below the navigation bar (and the search field it holds).
+    func onScreen(_ app: XCUIApplication, _ e: XCUIElement) -> Bool {
+        let frame = e.frame
+        let window = app.windows.firstMatch.frame
+        let bar = app.navigationBars.firstMatch
+        let top = bar.exists ? bar.frame.maxY : window.minY
+        return !frame.isEmpty && !window.isEmpty && window.contains(frame) && frame.minY >= top
+    }
+
+    /// Scrolls down until a row with one of these labels can be tapped, then taps it; when the screen did
+    /// not change, the row is tapped once more. A row that is on screen but that XCUITest calls "not
+    /// hittable" is tapped where it is, and counts only when the screen changes: on the iPhone 13 mini with
+    /// iOS 18.5, Settings' Safari row never became hittable and the old test only kept swiping (screen
+    /// recording of 3 Oct 2026), while on iOS 17.5 a text it could not tap sits next to the row it can.
     @discardableResult
     func tapRow(_ app: XCUIApplication, _ labels: [String], swipes: Int = 14) -> Bool {
+        var nudged = false
         for _ in 0...swipes {
-            if let e = element(app, labels), e.isHittable {
-                let screen = app.navigationBars.firstMatch.identifier
-                e.tap()
-                sleep(2)
-                if app.navigationBars.firstMatch.identifier == screen, let again = element(app, labels), again.isHittable {
-                    again.tap()
+            if let e = element(app, labels) {
+                // a row at the bottom edge sits under the home indicator, where a tap does nothing (iPhone 13
+                // mini, iOS 18.5: Settings' Safari row, tapped twice, screenshot of 3 Oct 2026): bring it up first
+                let window = app.windows.firstMatch.frame
+                if !nudged && !window.isEmpty && e.frame.minY > window.midY && e.frame.maxY > window.maxY - 90 {
+                    nudged = true
+                    app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75)).press(forDuration: 0.1,
+                        thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)),
+                        withVelocity: .slow, thenHoldForDuration: 0.3)
                     sleep(2)
+                    continue
                 }
-                return true
+                let screen = app.navigationBars.firstMatch.identifier
+                if e.isHittable {
+                    e.tap()
+                    sleep(2)
+                    if app.navigationBars.firstMatch.identifier == screen, let again = element(app, labels), again.isHittable {
+                        again.tap()
+                        sleep(2)
+                    }
+                    return true
+                }
+                if onScreen(app, e) {
+                    e.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                    sleep(2)
+                    if app.navigationBars.firstMatch.identifier != screen { return true }
+                }
             }
             app.swipeUp(velocity: .slow)
-            sleep(1)
+            sleep(2)
         }
         return false
+    }
+
+    /// Settings opens again on the page it showed last (iOS 17.5, second run of 3 Oct 2026: Safari >
+    /// Extensions): go back to its first page. The back button is the navigation bar's button at its left edge.
+    func backToRoot(_ app: XCUIApplication) {
+        for _ in 0..<6 {
+            let bar = app.navigationBars.firstMatch
+            guard bar.exists else { return }
+            let back = bar.buttons.allElementsBoundByIndex.first { $0.exists && $0.frame.minX < 12 && $0.isHittable }
+            guard let button = back else { return }
+            button.tap()
+            sleep(1)
+        }
     }
 
     /// Taps the first hittable element with one of these labels, without scrolling.

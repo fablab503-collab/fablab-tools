@@ -652,7 +652,7 @@ LEGACY_SAFARI = 26   # Safari versions below this one get the "<id>_compat" rule
 COMPAT_TYPES = [t for t in SAFARI_TYPES if t not in ("main_frame", "sub_frame")]
 
 
-def compat_rules(rules):
+def compat_rules(rules, frames=frozenset()):
     """The same rules for Safari before 26 (iOS 18 / macOS 15 and older), written the way it applies them.
 
     Measured on iOS 18.5 (tests/iphone-ui, 2026-10-03; the independent test page, 132 ad and tracker
@@ -663,6 +663,8 @@ def compat_rules(rules):
         Safari 18 turns into two WebKit rules: over its 150,000 limit, nothing compiled ("Too many rules
         in JSON array"). So a block rule without types gets every type but frames: one WebKit rule.
         With that, the same 120,853 rules compiled and the test page scored 100 %.
+      - Frames come back for the hosts that served ad frames on the 100 test sites (frames, from
+        tools/frame-hosts.txt): one more rule each, for sub-frames only (one WebKit rule).
     Allow rules keep their types (few, and an exception must keep covering what it excepts)."""
     out = []
     for r in rules:
@@ -676,10 +678,38 @@ def compat_rules(rules):
         for cond in conds:
             if r["action"]["type"] == "block" and "resourceTypes" not in cond and "excludedResourceTypes" not in cond:
                 cond["resourceTypes"] = list(COMPAT_TYPES)
+                if rule_host(cond) in frames:
+                    out.append({"action": r["action"], "priority": r["priority"],
+                                "condition": dict(cond, resourceTypes=["sub_frame"])})
             out.append({"action": r["action"], "priority": r["priority"], "condition": cond})
     out.sort(key=lambda r: 0 if r["action"]["type"] in ("allow", "allowAllRequests") else 1)
     return [{"id": i, "priority": r["priority"], "action": r["action"], "condition": r["condition"]}
             for i, r in enumerate(out, 1)]
+
+
+def rule_host(cond):
+    """The host of a rule written "||host^" with no path, else None."""
+    u = cond.get("urlFilter", "")
+    if u.startswith("||") and u.endswith("^") and not any(ch in u[2:-1] for ch in "/*^|?=&:"):
+        return u[2:-1]
+    return None
+
+
+def frame_domains(path):
+    """The hosts in tools/frame-hosts.txt (hosts that served ad frames on the test sites) with all their
+    parent domains: a block rule for any of them also blocks some of those frames on Safari 26."""
+    out = set()
+    if not path or not os.path.exists(path):
+        return frozenset()
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            host = line.split("!", 1)[0].strip().lower()
+            if not host:
+                continue
+            labels = host.split(".")
+            for i in range(len(labels) - 1):
+                out.add(".".join(labels[i:]))
+    return frozenset(out)
 
 
 def webkit_count_legacy(rule):
@@ -746,7 +776,10 @@ def main():
     ap.add_argument("--dead", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "dead-hosts.json"),
                     help="domains that no longer exist, left out of the rules (made by tools/deadhosts.py)")
     ap.add_argument("--keep-dead", action="store_true", help="ignore --dead and keep every domain")
+    ap.add_argument("--frames", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "frame-hosts.txt"),
+                    help="hosts that served ad frames: Safari before 26 blocks their frames too")
     args = ap.parse_args()
+    frames = frame_domains(args.frames)
     dead = set()
     if not args.keep_dead and os.path.exists(args.dead):
         dead_info = json.load(open(args.dead, encoding="utf-8"))
@@ -808,7 +841,7 @@ def main():
         lid = cfg["id"]
         with open(os.path.join(rules_dir, lid + ".json"), "w", encoding="utf-8") as f:
             json.dump(rules, f, separators=(",", ":"))
-        compat = compat_rules(rules)
+        compat = compat_rules(rules, frames)
         with open(os.path.join(rules_dir, lid + "_compat.json"), "w", encoding="utf-8") as f:
             json.dump(compat, f, separators=(",", ":"))
         generic_static = sorted(s for s in cosm["generic"] if s not in dynamic)

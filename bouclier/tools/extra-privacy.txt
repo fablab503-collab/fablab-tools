@@ -60,3 +60,9 @@
 ! Sites' own tracking endpoints (first-party, so no $third-party here).
 ||ted.dailymail.co.uk^
 ||log.espn.com^
+! Found with the weekly 100-site scan (tests/webkit-bench, 3 Oct 2026): Kameleoon's regional data endpoint
+! (EasyPrivacy blocks data.kameleoon.io, not na-data) on apnews.com, and Dotdash Meredith's audience
+! segments call on allrecipes.com and people.com. The other leaks of that scan are let through on purpose
+! by the lists' own exceptions, so those sites keep working.
+||na-data.kameleoon.io^$third-party
+||d30qdagvt44524.cloudfront.net/production/segments$third-party

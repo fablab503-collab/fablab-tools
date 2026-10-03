@@ -7,6 +7,7 @@
 #   out/<simulator name><TAG>/: <step>.png, <step>-tree.txt, test.log, result.xcresult
 # options (environment): APP=<another Bouclier.app>  TAG=<suffix for the out folder>
 #   FRESH=1 removes Bouclier from the simulator first (Safari forgets it: off, no website access)
+#   ONLY=<test name> runs one step, for example ONLY=test2_TurnOnInSettings
 set -uo pipefail
 cd "$(dirname "$0")"
 export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
@@ -21,8 +22,11 @@ for U in "$@"; do
   xcrun simctl bootstatus "$U" -b > /dev/null
   [ "${FRESH:-0}" = 1 ] && xcrun simctl uninstall "$U" com.danielmadac.Bouclier
   xcrun simctl install "$U" "$APP"
+  # no diagnostics collection after a failure: "simctl diagnose" hung for 10 minutes (3 Oct 2026), and
+  # stopping it crashed xcodebuild before it wrote the screenshots
   xcodebuild test -project BouclierIPhoneTests.xcodeproj -scheme BouclierIPhoneTests -destination "id=$U" \
-    -derivedDataPath build/dd -resultBundlePath "$OUT/result.xcresult" > "$OUT/test.log" 2>&1
+    -derivedDataPath build/dd -resultBundlePath "$OUT/result.xcresult" -collect-test-diagnostics never \
+    ${ONLY:+-only-testing:BouclierUITests/BouclierOnIPhone/$ONLY} > "$OUT/test.log" 2>&1
   echo "$NAME: test exit $?"
   xcrun xcresulttool export attachments --path "$OUT/result.xcresult" --output-path "$OUT/attachments" > /dev/null 2>&1
   /usr/bin/python3 - "$OUT" <<'PY'

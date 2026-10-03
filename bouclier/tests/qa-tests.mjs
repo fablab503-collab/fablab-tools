@@ -289,6 +289,31 @@ const resetAll = async () => { await msg({ type: 'options:reset' }); };
     JSON.stringify({ compatSets, regular, problems: st.problems, blocked, loaded, hits: hits.filter(h => /google|news/.test(h)) }));
 }
 
+// Q32 Safari 16.4-17 sends the menu's messages without an address (iOS 17.5 simulator, 3 Oct 2026: no url,
+//     origin "null", no tab), and the menu showed "Could not load". Bouclier's own pages still get answers
+//     that way; web pages (through the content script) still only get what the content script needs.
+{
+  const out = await sw.evaluate(() => {
+    const id = chrome.runtime.id;
+    const base = chrome.runtime.getURL('');
+    const m = { type: 'popup:state', tabId: 1 };
+    const cosmetic = gateMessage({ type: 'cosmetic', url: 'https://x.test/' }, { id, url: 'https://y.test/', tab: { id: 5, url: 'https://y.test/' } });
+    return {
+      menu: !!gateMessage(m, { id, url: base + 'popup/popup.html' }),
+      menuWithoutAddress: !!gateMessage(m, { id, origin: 'null' }),
+      settingsTabWithoutAddress: !!gateMessage(m, { id, tab: { id: 3, url: base + 'options/options.html' } }),
+      webPage: !!gateMessage(m, { id, url: 'https://evil.test/', tab: { id: 4, url: 'https://evil.test/' } }),
+      webPageWithoutAddress: !!gateMessage(m, { id, tab: { id: 4, url: 'https://evil.test/' } }),
+      webTabUnknownAddress: !!gateMessage(m, { id, tab: { id: 4 } }),
+      otherExtension: !!gateMessage(m, { id: 'abcdefghijklmnopabcdefghijklmnop' }),
+      cosmeticUrl: cosmetic && cosmetic.url,
+    };
+  });
+  check('Q32 messages without an address (Safari 16.4-17): the menu is answered, web pages still are not',
+    out.menu && out.menuWithoutAddress && out.settingsTabWithoutAddress && !out.webPage && !out.webPageWithoutAddress &&
+    !out.webTabUnknownAddress && !out.otherExtension && out.cosmeticUrl === 'https://y.test/', JSON.stringify(out));
+}
+
 /* ---------------------------------------------------------------- small screens and accessibility */
 
 const IPHONE8_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_10 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';

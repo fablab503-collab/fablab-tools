@@ -57,6 +57,7 @@ the iPhone 6 and older cannot run Safari extensions at all. The QA pass of 2026-
 | `appstore/` | App Store release: `README.md` (runbook), `listing.json` + `check_listing.py`, `support.html` (support + privacy policy), `AppIcon.icon`, `app/` (the app's window) |
 | `tools/lists.json` | Which filter lists are used, their URLs, licences and defaults |
 | `tools/extra-ads.txt`, `extra-privacy.txt`, `extra-french.txt` | Bouclier's own additions (1.3), compiled into the Ads, Trackers and French sites rulesets |
+| `tools/frame-hosts.txt` | Hosts that served ad frames on the 100 test sites; Safari before 26 blocks their frames too |
 | `tools/deadhosts.py`, `tools/dead-hosts.json` | Finds blocked domains that no longer exist (NXDOMAIN from two resolvers); `convert.py` leaves them out, and ignores the list once it is 90 days old |
 | `tests/webkit-bench/` | Benchmark in WebKit with the extension loaded (no Safari window needed): what gets through, judged by lists Bouclier does not ship |
 | `tests/safari-sites/` | The same in the real Safari with the installed app (`run.sh`, `bench.sh` for the public test pages, `compare.py`) |
@@ -104,7 +105,12 @@ every website (needed for element hiding and YouTube; network blocking works wit
   rules. So every list also comes as `rules/<id>_compat.json`: each domain its own `urlFilter`
   rule, block rules without types limited to every type but frames. `background.js` turns these
   on instead when Safari is older than 26. Measured on simulated iPhones (`tests/iphone-ui`,
-  3 October 2026): the independent test page went from 16 % to 100 % on iOS 18.5.
+  3 October 2026): the independent test page went from 16 % to 100 % on iOS 18.5, and is 100 %
+  on iOS 17.5. Frames come back for the hosts that served ad frames on the 100 test sites
+  (`tools/frame-hosts.txt`, about 100 more rules). Safari 16.4–17 also sends the menu's messages
+  without an address, and drops an answer sent later with `sendResponse`: `background.js` answers
+  messages that come from no tab (the menu) or from a tab showing one of Bouclier's pages, and on
+  Safari 17 and older it answers with the listener's promise (before, the menu said "Could not load").
 * **Element hiding** – generic selectors are registered as user stylesheets
   (`cssOrigin: user`), site-specific selectors are injected on demand by the background.
 * **YouTube** – `content/youtube-main.js` runs in the page's world before YouTube's code,

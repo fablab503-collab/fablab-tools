@@ -481,6 +481,11 @@ const SAFARI_MAJOR = (() => {
   return m ? Number(m[1]) : 0;
 })();
 let compatOverride = null;   // the tests switch the compat rulesets on in Chromium (message debug:compat)
+// Safari 17 and older: a listener that returns true and answers later with sendResponse leaves the page
+// with undefined (iOS 17.5 simulator, 3 Oct 2026: the menu said "Could not load"). There the answer is
+// the promise the listener returns, as the WebExtension standard has it; Safari 18 and later, and
+// Chromium, keep sendResponse, as measured on iOS 18.5 to 27.
+const PROMISE_REPLIES = SAFARI_MAJOR > 0 && SAFARI_MAJOR < 18;
 function useCompat(cat) {
   const below = (cat && cat.compatBelowSafari) || 26;
   return compatOverride !== null ? compatOverride : (SAFARI_MAJOR > 0 && SAFARI_MAJOR < below);
@@ -1793,9 +1798,20 @@ async function handleMessage(msg, sender) {
 const EXTENSION_ORIGIN = api.runtime.getURL('');
 const PAGE_MESSAGES = new Set(['cosmetic', 'picker:add']);
 
-/** Returns the message to handle, or null when this sender may not send it. */
-const isExtensionPage = sender => typeof sender.url === 'string' && sender.url.startsWith(EXTENSION_ORIGIN);
+/**
+ * A message from one of Bouclier's own pages (the menu, the settings, the welcome page)? Safari 16.4-17
+ * leaves the address out of the menu's messages (iOS 17.5 simulator, 3 Oct 2026: no url, origin "null",
+ * no tab), and the menu then got no answer at all. Without an address, the tab decides: none is the menu,
+ * a tab showing one of Bouclier's pages is that page. Web pages cannot write to Bouclier (no
+ * externally_connectable), and the content script always sends from a tab with a web address.
+ */
+const isExtensionPage = sender => {
+  const url = typeof sender.url === 'string' && sender.url ? sender.url
+    : (sender.tab && typeof sender.tab.url === 'string' ? sender.tab.url : '');
+  return url ? url.startsWith(EXTENSION_ORIGIN) : !sender.tab;
+};
 
+/** Returns the message to handle, or null when this sender may not send it. */
 function gateMessage(msg, sender) {
   if (sender.id && sender.id !== api.runtime.id) return null;
   if (isExtensionPage(sender)) return msg;
@@ -1811,14 +1827,16 @@ api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // The menu asks for its page to be reloaded once a change is applied. Done here rather than in the
   // menu: Safari recompiles every rule for a change (several seconds), and the menu may be closed by then.
   const reloadTabId = isExtensionPage(sender) && Number.isInteger(allowed.reloadTabId) ? allowed.reloadTabId : null;
-  handleMessage(allowed, sender)
+  const reply = handleMessage(allowed, sender)
     .then(async res => {
       if (reloadTabId !== null && !(res && res.ok === false)) {
         try { await api.tabs.reload(reloadTabId); } catch { /* the tab was closed */ }
       }
       return res;
     })
-    .then(sendResponse, err => sendResponse({ ok: false, error: String(err && err.message || err) }));
+    .catch(err => ({ ok: false, error: String(err && err.message || err) }));
+  if (PROMISE_REPLIES) return reply;
+  reply.then(sendResponse);
   return true;
 });
 
