@@ -1,0 +1,58 @@
+{
+  "bg_menu_hide": { "en": "Hide This Element…", "fr": "Masquer cet élément…" },
+  "bg_menu_pause_this_site": { "en": "Pause Bouclier on This Site", "fr": "Mettre Bouclier en pause sur ce site" },
+  "bg_menu_pause_site": { "en": "Pause Bouclier on {0}", "fr": "Mettre Bouclier en pause sur {0}" },
+  "bg_menu_resume_site": { "en": "Resume Bouclier on {0}", "fr": "Reprendre Bouclier sur {0}" },
+  "bg_toast_popup_closed": { "en": "Bouclier closed a pop-up ad ({0})", "fr": "Bouclier a fermé un pop-up publicitaire ({0})" },
+  "bg_toast_protecting_again": {
+    "en": "Bouclier is protecting this page again. Reload to block everything.",
+    "fr": "Bouclier protège de nouveau cette page. Rechargez-la pour tout bloquer."
+  },
+  "bg_cannot_pause": {
+    "en": "Bouclier cannot pause this address (only site names like example.com can be paused).",
+    "fr": "Bouclier ne peut pas être mis en pause sur cette adresse (la pause ne s’applique qu’aux noms de site comme example.com)."
+  },
+  "bg_import_not_backup": { "en": "This file is not a Bouclier settings backup.", "fr": "Ce fichier n’est pas une sauvegarde des réglages de Bouclier." },
+  "bg_filter_bad_selector": {
+    "en": "Line {0}: only plain, complete CSS selectors that do not hide the whole page are supported",
+    "fr": "Ligne {0} : seuls les sélecteurs CSS simples et complets qui ne masquent pas toute la page sont pris en charge"
+  },
+  "bg_filter_plain_sites": {
+    "en": "Line {0}: write sites as plain names, like example.com (no https://, port or path)",
+    "fr": "Ligne {0} : écrivez simplement le nom des sites, comme example.com (sans https://, port ni chemin)"
+  },
+  "bg_filter_exception_site": { "en": "Line {0}: an exception (#@#) needs a site in front", "fr": "Ligne {0} : une exception (#@#) doit être précédée d’un site" },
+  "bg_filter_bad_domains": { "en": "Line {0}: unsupported domain list", "fr": "Ligne {0} : liste de domaines non prise en charge" },
+  "bg_filter_bad_option": { "en": "Line {0}: option \"{1}\" is not supported", "fr": "Ligne {0} : l’option « {1} » n’est pas prise en charge" },
+  "bg_filter_spaces": {
+    "en": "Line {0}: a filter cannot contain spaces (hosts-file lines like \"0.0.0.0 example.com\" are fine)",
+    "fr": "Ligne {0} : un filtre ne peut pas contenir d’espaces (les lignes de fichier hosts comme « 0.0.0.0 example.com » sont acceptées)"
+  },
+  "bg_filter_short": { "en": "Line {0}: pattern is too short or not ASCII", "fr": "Ligne {0} : motif trop court ou non ASCII" },
+  "bg_filter_regex": { "en": "Line {0}: regular expressions are not supported", "fr": "Ligne {0} : les expressions régulières ne sont pas prises en charge" },
+  "bg_filter_too_many": {
+    "en": "Too many filters: only the first {0} blocking and {1} allowing filters are used.",
+    "fr": "Trop de filtres : seuls les {0} premiers filtres de blocage et les {1} premiers filtres d’autorisation sont utilisés."
+  },
+  "bg_filter_cut": {
+    "en": "Only the first {0} characters are kept: the lines after that were not saved.",
+    "fr": "Seuls les {0} premiers caractères sont conservés : les lignes suivantes n’ont pas été enregistrées."
+  },
+  "bg_rule_limit": {
+    "en": "Safari accepts {0} rules of your own (paused sites, filters and site controls): the last {1} are not used.",
+    "fr": "Safari accepte jusqu’à {0} règles personnelles (sites en pause, filtres et réglages du site) : les {1} dernières ne sont pas utilisées."
+  },
+  "bg_problem_lists": { "en": "lists: {0}", "fr": "listes de filtres : {0}" },
+  "bg_problem_rules": { "en": "your rules: {0}", "fr": "vos règles : {0}" },
+  "bg_problem_hiding": { "en": "element hiding: {0}", "fr": "masquage des éléments : {0}" },
+  "bg_category_ads": { "en": "Ads", "fr": "Publicités" },
+  "bg_category_trackers": { "en": "Trackers", "fr": "Traqueurs" },
+  "bg_category_malware": { "en": "Malware", "fr": "Logiciels malveillants" },
+  "bg_category_annoyances": { "en": "Annoyances", "fr": "Nuisances" },
+  "bg_category_custom": { "en": "Your filters", "fr": "Vos filtres" },
+  "bg_category_site": { "en": "Site controls", "fr": "Réglages du site" },
+  "bg_category_links": { "en": "Links cleaned", "fr": "Liens nettoyés" },
+  "bg_category_popups": { "en": "Pop-ups closed", "fr": "Pop-ups fermés" },
+  "bg_category_other": { "en": "Other", "fr": "Autres" },
+  "bg_category_blocked": { "en": "Blocked", "fr": "Bloqués" }
+}

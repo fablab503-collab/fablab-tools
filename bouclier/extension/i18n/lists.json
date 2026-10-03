@@ -1,0 +1,74 @@
+{
+  "list_ads_name": {
+    "en": "Ads",
+    "fr": "Publicités"
+  },
+  "list_ads_desc": {
+    "en": "Banners, pop-ups and ad networks (EasyList, plus Bouclier's additions)",
+    "fr": "Bannières, pop-ups et régies publicitaires (EasyList, plus les ajouts de Bouclier)"
+  },
+  "list_privacy_name": {
+    "en": "Trackers",
+    "fr": "Traqueurs"
+  },
+  "list_privacy_desc": {
+    "en": "Analytics, tracking pixels and fingerprinting scripts (EasyPrivacy, plus Bouclier's additions)",
+    "fr": "Statistiques, pixels de suivi et scripts d’empreinte numérique (EasyPrivacy, plus les ajouts de Bouclier)"
+  },
+  "list_french_name": {
+    "en": "French sites",
+    "fr": "Sites français"
+  },
+  "list_french_desc": {
+    "en": "Ads on French-language sites (Liste FR, plus Bouclier's additions)",
+    "fr": "Publicités des sites en français (Liste FR, plus les ajouts de Bouclier)"
+  },
+  "list_safety_name": {
+    "en": "Malware & phishing",
+    "fr": "Logiciels malveillants et hameçonnage"
+  },
+  "list_safety_desc": {
+    "en": "Sites that spread malware (URLhaus Malicious URL Blocklist)",
+    "fr": "Sites qui propagent des logiciels malveillants (URLhaus Malicious URL Blocklist)"
+  },
+  "list_urlclean_name": {
+    "en": "Clean links",
+    "fr": "Liens nettoyés"
+  },
+  "list_urlclean_desc": {
+    "en": "Removes tracking tags (utm_, fbclid, gclid...) from page addresses before the page loads",
+    "fr": "Retire les balises de suivi (utm_, fbclid, gclid…) des adresses avant que la page se charge"
+  },
+  "list_antiadblock_name": {
+    "en": "Anti-adblock walls",
+    "fr": "Murs anti-bloqueur"
+  },
+  "list_antiadblock_desc": {
+    "en": "Removes \"please disable your ad blocker\" messages (experimental)",
+    "fr": "Retire les messages « désactivez votre bloqueur de publicité » (expérimental)"
+  },
+  "list_cookies_name": {
+    "en": "Cookie banners",
+    "fr": "Bandeaux cookies"
+  },
+  "list_cookies_desc": {
+    "en": "Hides cookie consent pop-ups (EasyList Cookie List). Can break sites that wait for consent.",
+    "fr": "Masque les fenêtres de consentement aux cookies (EasyList Cookie List). Peut gêner les sites qui attendent votre accord."
+  },
+  "list_social_name": {
+    "en": "Social widgets",
+    "fr": "Boutons sociaux"
+  },
+  "list_social_desc": {
+    "en": "Like/share buttons and social embeds (EasyList Social Widgets)",
+    "fr": "Boutons J’aime / Partager et contenus sociaux intégrés (EasyList Social Widgets)"
+  },
+  "list_annoyances_name": {
+    "en": "Annoyances",
+    "fr": "Nuisances"
+  },
+  "list_annoyances_desc": {
+    "en": "Newsletter pop-ups, 'open in app' banners and similar clutter (EasyList Other Annoyances)",
+    "fr": "Pop-ups de newsletter, bandeaux « ouvrir dans l’app » et autres encombrements (EasyList Other Annoyances)"
+  }
+}

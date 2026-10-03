@@ -11,3 +11,5 @@
 .steps { padding-left: 20px; margin: 8px 0 0; }
 .steps li { margin-bottom: 8px; }
 .links { display: flex; gap: 16px; flex-wrap: wrap; }
+.links a { display: inline-flex; align-items: center; min-height: 36px; padding: 8px 14px; border-radius: 10px; background: var(--bg); text-decoration: none; font-weight: 600; }
+html.ios .links a { min-height: 44px; }

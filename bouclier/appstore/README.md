@@ -18,6 +18,7 @@ forces one. Change `BUNDLE_ID` at the top of `build.sh` to an identifier of your
 ```
 
 In Safari on the Mac: Settings › Extensions › turn on Bouclier › Edit Websites… › Allow.
+The checks in `tests/` are listed in the top [README](../README.md).
 
 ## 3. Upload
 
@@ -29,12 +30,12 @@ The Mac and the iOS app share one bundle ID, so one purchase covers both (univer
 
 ## 4. The store page
 
-- `listing.json` holds the name, subtitle, promotional text, description, keywords and review notes
-  in English and French; `python3 check_listing.py` checks Apple's length limits.
+- `listing.json` holds the name, subtitle, promotional text, description, keywords, What's New and
+  review notes in English and French; `python3 check_listing.py` checks Apple's length limits.
 - `support.html` is the support page and privacy policy (host it anywhere, for example GitHub Pages).
-- Screenshots: `node tools/screenshots/capture.mjs` captures the real extension pages in headless
-  Chromium, `python3 tools/screenshots/compose.py` puts them in phone, tablet and laptop frames at
-  Apple's sizes (iPhone 6.9" 1320×2868, iPad 13" 2064×2752, Mac 2880×1800).
+- Screenshots: `node tools/screenshots/capture.mjs --lang en` (or `--lang fr`) captures the real
+  extension pages in headless Chromium, `python3 tools/screenshots/compose.py` puts them in phone,
+  tablet and laptop frames at Apple's sizes (iPhone 6.9" 1320×2868, iPad 13" 2064×2752, Mac 2880×1800).
 - App Privacy: "Data Not Collected". Bouclier has no account, no analytics and no network calls of
   its own; Safari applies the rules.
 - `tools/asc.py` can fill the store page through the App Store Connect API (`status`, `fill`,

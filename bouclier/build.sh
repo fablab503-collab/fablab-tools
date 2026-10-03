@@ -7,6 +7,7 @@
 #                          Safari's "Add Temporary Extension…", no Xcode needed)
 #   ./build.sh --app       build and install the Mac app from the rules already in extension/
 #   ./build.sh --sim       build the iPhone/iPad app and run it in the iOS Simulator
+#                          (SIM_ID=<udid> ./build.sh --sim picks the simulator)
 #   ./build.sh --release   fresh lists, then archive the Mac and iPhone/iPad apps and upload
 #                          both builds to App Store Connect (one app record, universal purchase)
 #       --no-lists           skip the list refresh (use the rules already in extension/)
@@ -47,12 +48,32 @@ if [ "$LISTS" = 1 ]; then
 fi
 [ "$MODE" = "--lists" ] && { echo; echo "Rules updated in $(pwd)/extension"; exit 0; }
 
-# App Store Connect rejects the upload when the extension's description is longer than 112 characters
+# every ruleset the manifest lists must be there (rules/*.json are not in git: tools/convert.py writes
+# them, the "<id>_compat" ones for Safari before 26 included); a missing one would stop Safari loading Bouclier
 python3 - <<'PY' || exit 1
-import json, sys
+import json, os, sys
+man = json.load(open("extension/manifest.json"))
+paths = [r["path"] for r in man.get("declarative_net_request", {}).get("rule_resources", [])]
+missing = [p for p in paths if not os.path.exists(os.path.join("extension", p))]
+if missing:
+    sys.exit("Missing rule files: " + ", ".join(missing) + "\nRun: python3 tools/convert.py --cache lists-cache --out extension")
+PY
+
+# App Store Connect rejects the upload when the extension's description is longer than 112 characters,
+# in any of its languages (__MSG_…__ is looked up in every _locales/<lang>/messages.json)
+python3 - <<'PY' || exit 1
+import glob, json, re, sys
 d = json.load(open("extension/manifest.json")).get("description", "")
-if not isinstance(d, str) or not d or len(d) > 112:
-    sys.exit(f"extension/manifest.json: the description must be 1-112 characters for the App Store (it has {len(d)})")
+texts = {"manifest.json": d}
+m = re.fullmatch(r"__MSG_(\w+)__", d if isinstance(d, str) else "")
+if m:
+    texts = {}
+    for path in sorted(glob.glob("extension/_locales/*/messages.json")):
+        messages = {k.lower(): v for k, v in json.load(open(path)).items()}
+        texts[path.split("/")[-2]] = messages.get(m.group(1).lower(), {}).get("message", "")
+for where, text in texts.items():
+    if not isinstance(text, str) or not text or len(text) > 112:
+        sys.exit(f"extension description ({where}): must be 1-112 characters for the App Store (it has {len(text) if isinstance(text, str) else 0})")
 PY
 
 step "Finding Xcode"
@@ -121,11 +142,16 @@ SCHEME_IOS="$(scheme_for iOS)"
 echo "Project: $PROJECT (schemes: $SCHEME_MAC, $SCHEME_IOS)"
 
 BUILD_NUMBER="$(date +%Y%m%d%H%M)"
+# Oldest systems Bouclier runs on. The extension needs Safari 16.4 (manifest strict_min_version):
+# iOS 16.4 reaches the iPhone 8, 8 Plus and X; macOS 12 reaches Intel Macs from 2015 on, where
+# Safari 16.4 or later is installed. Rules avoid Safari-26-only keys (tools/xcode_setup.py).
+MIN_IOS="16.4"
+MIN_MACOS="12.0"
 VERSION="$(python3 -c 'import json; print(json.load(open("extension/manifest.json"))["version"])')"
 SETTINGS=(
   DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
-  MACOSX_DEPLOYMENT_TARGET=26.0 IPHONEOS_DEPLOYMENT_TARGET=26.0
+  MACOSX_DEPLOYMENT_TARGET="$MIN_MACOS" IPHONEOS_DEPLOYMENT_TARGET="$MIN_IOS"
   INFOPLIST_KEY_ITSAppUsesNonExemptEncryption=NO
   INFOPLIST_KEY_LSApplicationCategoryType=public.app-category.utilities
   INFOPLIST_KEY_CFBundleDisplayName="$APP_NAME"
@@ -145,11 +171,21 @@ forget_build_copies() {
     done
     "$LSREGISTER" -u "$copy" >/dev/null 2>&1 || true
   done
+  # Unregistering a build copy can make Safari drop the extension altogether when that copy was the
+  # one macOS had picked (it happened after the 26 Sept release build): register the installed app again.
+  if [ -d "/Applications/$APP_NAME.app" ]; then
+    "$LSREGISTER" -f "/Applications/$APP_NAME.app" >/dev/null 2>&1 || true
+    for appex in "/Applications/$APP_NAME.app"/Contents/PlugIns/*.appex; do
+      [ -d "$appex" ] && pluginkit -a "$appex" >/dev/null 2>&1 || true
+    done
+  fi
 }
 
 if [ "$MODE" = "--sim" ]; then
   step "Building for the iOS Simulator"
-  SIM_ID="$(xcrun simctl list devices available -j | python3 -c '
+  # SIM_ID=<udid> picks the simulator; otherwise a booted iPhone, then the newest one. On a Mac shared
+  # with other projects, pass SIM_ID so Bouclier is not installed on another project's simulator.
+  [ -n "${SIM_ID:-}" ] || SIM_ID="$(xcrun simctl list devices available -j | python3 -c '
 import json, sys
 devices = json.load(sys.stdin)["devices"]
 phones = [(runtime, d) for runtime, ds in devices.items() if "iOS" in runtime for d in ds if d["name"].startswith("iPhone")]
@@ -227,9 +263,11 @@ PLIST
   exit 0
 fi
 
-step "Building the Mac app"
-xcodebuild -project "$PROJECT" -scheme "$SCHEME_MAC" -configuration Release \
-  -derivedDataPath build/DerivedData "${AUTH[@]}" "${SETTINGS[@]}" build -quiet
+step "Building the Mac app (Apple silicon and Intel)"
+# Any Mac, both architectures: the App Store archive is universal, so the installed test copy is
+# too (without a destination xcodebuild picked this Mac's architecture only, and warned about it).
+xcodebuild -project "$PROJECT" -scheme "$SCHEME_MAC" -configuration Release -destination 'generic/platform=macOS' \
+  -derivedDataPath build/DerivedData "${AUTH[@]}" "${SETTINGS[@]}" ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build -quiet
 BUILT="build/DerivedData/Build/Products/Release/$APP_NAME.app"
 [ -d "$BUILT" ] || { echo "Build output not found at $BUILT"; exit 1; }
 codesign --verify --deep --strict "$BUILT" && echo "Signature OK"

@@ -6,6 +6,7 @@ Turns Adblock Plus / uBlock Origin style filter lists into what a Safari web
 extension can use:
 
   extension/rules/<id>.json            declarativeNetRequest static ruleset
+  extension/rules/<id>_compat.json     the same rules for Safari before 26 (see compat_rules)
   extension/cosmetic/<id>.json         element-hiding data used at runtime
   extension/cosmetic/<id>.generic.css  generic element hiding, injected as a
                                         user stylesheet on every page
@@ -28,10 +29,12 @@ Standard library only, so it runs with the python3 that ships with macOS.
 """
 
 import argparse
+import calendar
 import json
 import os
 import re
 import sys
+import time
 from collections import Counter, defaultdict
 
 SAFARI_TYPES = ["main_frame", "sub_frame", "stylesheet", "script", "image", "font",
@@ -598,11 +601,15 @@ def compile_list(list_cfg, text, stats):
     return rules, cosm, scriptlets, version
 
 
-def merge_rules(rules, chunk=2000):
-    """Deduplicate rules and fold pure-host rules with identical conditions into requestDomains lists."""
+def merge_rules(rules, chunk=2000, dead=None, stats=None):
+    """Deduplicate rules and fold pure-host rules with identical conditions into requestDomains lists.
+
+    dead: domains that no longer exist (tools/dead-hosts.json, made by tools/deadhosts.py). Block rules
+    for them are left out: a page cannot load anything from them, and each one costs a Safari rule."""
     seen = set()
     folded = defaultdict(set)
     out = []
+    dead = dead or set()
     for r in rules:
         c = r["condition"]
         if set(c.keys()) - {"resourceTypes", "domainType", "initiatorDomains", "excludedInitiatorDomains"} == {"requestDomains"} \
@@ -626,6 +633,10 @@ def merge_rules(rules, chunk=2000):
             parts = h.split(".")
             if any(".".join(parts[i:]) in hostset for i in range(1, len(parts) - 1)):
                 continue
+            if base["a"]["type"] == "block" and h in dead:
+                if stats is not None:
+                    stats.add("dropped:dead-domain")
+                continue
             pruned.append(h)
         for i in range(0, len(pruned), chunk):
             cond = dict(base["c"])
@@ -635,6 +646,84 @@ def merge_rules(rules, chunk=2000):
     for i, r in enumerate(out, 1):
         r["id"] = i
     return [{"id": r["id"], "priority": r["priority"], "action": r["action"], "condition": r["condition"]} for r in out]
+
+
+LEGACY_SAFARI = 26   # Safari versions below this one get the "<id>_compat" rulesets
+COMPAT_TYPES = [t for t in SAFARI_TYPES if t not in ("main_frame", "sub_frame")]
+
+
+def compat_rules(rules, frames=frozenset()):
+    """The same rules for Safari before 26 (iOS 18 / macOS 15 and older), written the way it applies them.
+
+    Measured on iOS 18.5 (tests/iphone-ui, 2026-10-03; the independent test page, 132 ad and tracker
+    addresses):
+      - Safari 18 does not apply requestDomains: the regular rules blocked 16 % there (7 % without
+        Bouclier) against 100 % on iOS 26.5. Each domain becomes its own urlFilter "||host^" rule.
+      - Written that way, every rule without resource types covers sub-frames and other loads, which
+        Safari 18 turns into two WebKit rules: over its 150,000 limit, nothing compiled ("Too many rules
+        in JSON array"). So a block rule without types gets every type but frames: one WebKit rule.
+        With that, the same 120,853 rules compiled and the test page scored 100 %.
+      - Frames come back for the hosts that served ad frames on the 100 test sites (frames, from
+        tools/frame-hosts.txt): one more rule each, for sub-frames only (one WebKit rule).
+    Allow rules keep their types (few, and an exception must keep covering what it excepts)."""
+    out = []
+    for r in rules:
+        c = r["condition"]
+        hosts = c.get("requestDomains")
+        if hosts and "urlFilter" not in c and "regexFilter" not in c:
+            rest = {k: v for k, v in c.items() if k != "requestDomains"}
+            conds = [{"urlFilter": "||" + h + "^", **rest} for h in hosts]
+        else:
+            conds = [dict(c)]
+        for cond in conds:
+            if r["action"]["type"] == "block" and "resourceTypes" not in cond and "excludedResourceTypes" not in cond:
+                cond["resourceTypes"] = list(COMPAT_TYPES)
+                if rule_host(cond) in frames:
+                    out.append({"action": r["action"], "priority": r["priority"],
+                                "condition": dict(cond, resourceTypes=["sub_frame"])})
+            out.append({"action": r["action"], "priority": r["priority"], "condition": cond})
+    out.sort(key=lambda r: 0 if r["action"]["type"] in ("allow", "allowAllRequests") else 1)
+    return [{"id": i, "priority": r["priority"], "action": r["action"], "condition": r["condition"]}
+            for i, r in enumerate(out, 1)]
+
+
+def rule_host(cond):
+    """The host of a rule written "||host^" with no path, else None."""
+    u = cond.get("urlFilter", "")
+    if u.startswith("||") and u.endswith("^") and not any(ch in u[2:-1] for ch in "/*^|?=&:"):
+        return u[2:-1]
+    return None
+
+
+def frame_domains(path):
+    """The hosts in tools/frame-hosts.txt (hosts that served ad frames on the test sites) with all their
+    parent domains: a block rule for any of them also blocks some of those frames on Safari 26."""
+    out = set()
+    if not path or not os.path.exists(path):
+        return frozenset()
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            host = line.split("!", 1)[0].strip().lower()
+            if not host:
+                continue
+            labels = host.split(".")
+            for i in range(len(labels) - 1):
+                out.add(".".join(labels[i:]))
+    return frozenset(out)
+
+
+def webkit_count_legacy(rule):
+    """WebKit rules Safari before 26 makes of one DNR rule: a requestDomains rule is skipped, and a rule
+    that covers sub-frames and other loads, but not the main frame, counts twice (see compat_rules)."""
+    c = rule["condition"]
+    if c.get("requestDomains") and "urlFilter" not in c and "regexFilter" not in c:
+        return 0
+    types = c.get("resourceTypes")
+    if types is None:
+        excluded = set(c.get("excludedResourceTypes", ["main_frame"]))
+        types = [t for t in SAFARI_TYPES if t not in excluded]
+    split = "sub_frame" in types and "main_frame" not in types and any(t not in ("main_frame", "sub_frame") for t in types)
+    return webkit_count(rule) * (2 if split else 1)
 
 
 def allow_id_max(rules):
@@ -684,7 +773,24 @@ def main():
     ap.add_argument("--cache", required=True, help="folder holding <id>.txt downloads")
     ap.add_argument("--out", required=True, help="extension folder")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--dead", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "dead-hosts.json"),
+                    help="domains that no longer exist, left out of the rules (made by tools/deadhosts.py)")
+    ap.add_argument("--keep-dead", action="store_true", help="ignore --dead and keep every domain")
+    ap.add_argument("--frames", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "frame-hosts.txt"),
+                    help="hosts that served ad frames: Safari before 26 blocks their frames too")
     args = ap.parse_args()
+    frames = frame_domains(args.frames)
+    dead = set()
+    if not args.keep_dead and os.path.exists(args.dead):
+        dead_info = json.load(open(args.dead, encoding="utf-8"))
+        checked = calendar.timegm(time.strptime(dead_info.get("checked", "1970-01-01 00:00")[:16], "%Y-%m-%d %H:%M"))
+        age_days = (time.time() - checked) / 86400
+        if age_days > 90:
+            # a domain that was dead three months ago may be back: rather keep every rule
+            print(f"  ! {args.dead} is {age_days:.0f} days old: not used (run tools/deadhosts.py again)", file=sys.stderr)
+        else:
+            dead = set(dead_info.get("dead", []))
+            print(f"Leaving out {len(dead):,} blocked domains that no longer exist (checked {dead_info.get('checked', '?')})")
 
     catalogue = json.load(open(args.lists, encoding="utf-8"))["lists"]
     rules_dir = os.path.join(args.out, "rules")
@@ -707,9 +813,13 @@ def main():
             print(f"  ! {cfg['id']}: no download at {path}, skipped", file=sys.stderr)
             continue
         text = open(path, encoding="utf-8", errors="replace").read()
+        # Bouclier's own additions ride along with the list they belong to (same toggle)
+        for extra in cfg.get("extra", []):
+            extra_path = os.path.join(os.path.dirname(os.path.abspath(args.lists)), extra)
+            text += "\n" + open(extra_path, encoding="utf-8").read()
         stats = Stats()
         rules, cosm, scriptlets, version = compile_list(cfg, text, stats)
-        rules = merge_rules(rules)
+        rules = merge_rules(rules, dead=dead, stats=stats)
         compiled.append((cfg, rules, cosm, scriptlets, version, stats, os.path.getmtime(path)))
 
     # Generic selectors that any list excepts somewhere cannot live in the static stylesheet.
@@ -726,10 +836,14 @@ def main():
     catalogue_out = []
     popup_data = {}
     total_default_webkit = 0
+    total_default_legacy = 0
     for cfg, rules, cosm, scriptlets, version, stats, mtime in compiled:
         lid = cfg["id"]
         with open(os.path.join(rules_dir, lid + ".json"), "w", encoding="utf-8") as f:
             json.dump(rules, f, separators=(",", ":"))
+        compat = compat_rules(rules, frames)
+        with open(os.path.join(rules_dir, lid + "_compat.json"), "w", encoding="utf-8") as f:
+            json.dump(compat, f, separators=(",", ":"))
         generic_static = sorted(s for s in cosm["generic"] if s not in dynamic)
         generic_dynamic = sorted(s for s in cosm["generic"] if s in dynamic and s not in global_off)
         with open(os.path.join(cosm_dir, lid + ".generic.css"), "w", encoding="utf-8") as f:
@@ -753,6 +867,7 @@ def main():
             popup_data[lid] = {"block": cosm["popups"], "allow": cosm["popupAllow"]}
         if cfg.get("default"):
             total_default_webkit += wk
+            total_default_legacy += sum(webkit_count_legacy(r) for r in compat)
         entry = {
             "id": lid, "name": cfg["name"], "description": cfg["description"],
             "source": cfg["source"], "homepage": cfg["homepage"], "license": cfg["license"],
@@ -761,6 +876,9 @@ def main():
             "version": version,
             "downloaded": int(mtime),
             "networkRules": len(rules), "webkitRules": wk, "allowIdMax": allow_id_max(rules),
+            # Safari before 26 gets rules/<id>_compat.json instead (see compat_rules)
+            "compatRules": len(compat), "compatWebkitRules": sum(webkit_count_legacy(r) for r in compat),
+            "compatAllowIdMax": allow_id_max(compat),
             "popupFilters": len(cosm["popups"]),
             "genericSelectors": len(generic_static), "dynamicSelectors": len(generic_dynamic),
             "specificSites": len(data["specific"]),
@@ -789,7 +907,8 @@ def main():
     total_all = sum(e["webkitRules"] for e in catalogue_out)
     meta = {"generated": int(max((c[6] for c in compiled), default=0)),
             "webkitRuleCap": WEBKIT_RULE_CAP, "defaultWebkitRules": total_default_webkit,
-            "allWebkitRules": total_all, "lists": catalogue_out}
+            "allWebkitRules": total_all, "compatBelowSafari": LEGACY_SAFARI,
+            "defaultCompatWebkitRules": total_default_legacy, "lists": catalogue_out}
     with open(os.path.join(args.out, "filters.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=1)
 
@@ -798,13 +917,15 @@ def main():
     if os.path.exists(man_path):
         man = json.load(open(man_path, encoding="utf-8"))
         man.setdefault("declarative_net_request", {})["rule_resources"] = [
-            {"id": e["id"], "enabled": e["default"], "path": "rules/" + e["id"] + ".json"} for e in catalogue_out]
+            {"id": e["id"], "enabled": e["default"], "path": "rules/" + e["id"] + ".json"} for e in catalogue_out] + [
+            {"id": e["id"] + "_compat", "enabled": False, "path": "rules/" + e["id"] + "_compat.json"} for e in catalogue_out]
         with open(man_path, "w", encoding="utf-8") as f:
             json.dump(man, f, indent=2, ensure_ascii=False)
             f.write("\n")
 
-    print(f"WebKit rules: defaults {total_default_webkit:,} / everything {total_all:,} (Safari cap {WEBKIT_RULE_CAP:,})")
-    if total_default_webkit > WEBKIT_RULE_CAP * 0.9:
+    print(f"WebKit rules: defaults {total_default_webkit:,} / everything {total_all:,} (Safari cap {WEBKIT_RULE_CAP:,}); "
+          f"Safari before {LEGACY_SAFARI}: defaults {total_default_legacy:,}")
+    if max(total_default_webkit, total_default_legacy) > WEBKIT_RULE_CAP * 0.9:
         print("  !! default lists are too close to Safari's cap", file=sys.stderr)
         sys.exit(2)
 

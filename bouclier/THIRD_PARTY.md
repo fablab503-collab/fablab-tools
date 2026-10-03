@@ -22,6 +22,17 @@ Credits appear in the extension's settings page, the app window and `appstore/su
 The YouTube ad removal (`extension/content/youtube-main.js`) is Bouclier's own code; its approach
 follows uBlock Origin's public filters, whose code is not used.
 
+`tools/extra-*.txt` are Bouclier's own additions to the lists (MIT). `tools/deadhosts.py` writes
+`tools/dead-hosts.json`, the lists' domains that no longer exist; it is made from the lists, so it
+is not stored here either (`convert.py` works without it).
+
+## Test material (downloaded or opened at test time, not stored here)
+
+- `tests/webkit-bench/fetch_refs.sh` downloads the lists the benchmark judges with: the AdGuard DNS
+  filter and HaGeZi's Pro list (GPL-3.0) and the Public Suffix List (MPL-2.0).
+- The independent test page adblock.turtlecute.org (Turtlecute33/adblocktest, CC BY-NC-SA 4.0) is
+  only linked from Bouclier and read by the test scripts; none of its code is copied.
+
 ## Fonts (screenshot tool only)
 
 Familjen Grotesk and Source Sans 3 in `tools/screenshots/fonts/`, SIL Open Font License 1.1

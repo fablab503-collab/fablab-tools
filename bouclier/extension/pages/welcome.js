@@ -2,23 +2,28 @@
 const api = globalThis.browser ?? globalThis.chrome;
 const $ = id => document.getElementById(id);
 const P = globalThis.BOUCLIER_PLATFORM || { ios: false, device: 'this Mac', extensionSettings: 'Safari Settings → Extensions → Bouclier' };
+const I = globalThis.BOUCLIER_I18N || { t: key => key, lang: () => 'en', locale: () => undefined, apply: () => {} };
+const t = I.t;
 const STALE_DAYS = 45; // App Store updates bring new lists; warn when one is overdue
+
+I.apply();
 
 function item(ok, title, desc, action) {
   const li = document.createElement('li');
   li.className = ok === true ? 'ok' : ok === false ? 'todo' : 'unknown';
   const dot = document.createElement('span');
   dot.className = 'dot';
-  dot.setAttribute('aria-label', ok === true ? 'Done' : ok === false ? 'Needs attention' : 'Unknown');
+  dot.setAttribute('role', 'img');
+  dot.setAttribute('aria-label', ok === true ? t('welcome_state_done') : ok === false ? t('welcome_state_attention') : t('welcome_state_unknown'));
   const body = document.createElement('div');
   body.className = 'body';
-  const t = document.createElement('div');
-  t.className = 'title';
-  t.textContent = title;
+  const ti = document.createElement('div');
+  ti.className = 'title';
+  ti.textContent = title;
   const d = document.createElement('div');
   d.className = 'desc';
   d.textContent = desc;
-  body.append(t, d);
+  body.append(ti, d);
   if (action) {
     const b = document.createElement('button');
     b.textContent = action.label;
@@ -29,38 +34,49 @@ function item(ok, title, desc, action) {
   return li;
 }
 
+/** A filter list's name in the device's language (the catalogue's English name when there is no translation). */
+function listName(l) {
+  const s = t(`list_${l.id}_name`);
+  return s === `list_${l.id}_name` ? l.name : s;
+}
+
 async function check() {
   const st = await api.runtime.sendMessage({ type: 'welcome:state' });
-  $('version-line').textContent = `Version ${st.version} · filter lists built ${new Date(st.listsBuilt * 1000).toLocaleDateString()}`;
+  $('version-line').textContent = t('welcome_version_line', st.version, new Date(st.listsBuilt * 1000).toLocaleDateString(I.locale()));
   const ul = $('checks');
   ul.textContent = '';
-  ul.append(item(true, 'Bouclier is turned on in Safari', 'You are reading a page that only exists inside the extension, so Safari is running it.'));
-  ul.append(item(st.hostAccess, st.hostAccess ? 'Allowed on every website' : 'Not allowed on every website yet',
+  ul.append(item(true, t('welcome_on_title'), t('welcome_on_desc')));
+  const steps = P.accessSteps || (P.ios ? `In ${P.extensionSettings}, set All Websites to Allow.` : '');
+  ul.append(item(st.hostAccess, st.hostAccess ? t('welcome_access_ok_title') : t('welcome_access_todo_title'),
     st.hostAccess
-      ? 'Ad spaces are hidden, pop-ups closed and YouTube ads removed on every site.'
-      : 'Blocking already works, but hiding ad spaces, closing pop-ups and YouTube ad removal need access to websites. ' +
-        (P.ios ? `In ${P.extensionSettings}, set All Websites to Allow.` : 'Choose "Always Allow on Every Website" when Safari asks.'),
+      ? t('welcome_access_ok_desc')
+      : t('welcome_access_todo_desc') + ' ' + (P.ios ? steps : t('welcome_access_when_asked', steps)),
     st.hostAccess ? null : {
-      label: 'Allow on every website',
+      label: t('welcome_access_button'),
       run: async () => {
-        try { await api.permissions.request({ origins: ['<all_urls>'] }); } catch { /* Safari shows its own prompt */ }
-        check();
+        // Safari only asks during a click, so the request comes first; the check below shows the result
+        try { await api.permissions.request({ origins: ['<all_urls>'] }); } catch { /* not asked: the steps above */ }
+        recheck();
       },
     }));
-  const names = st.lists.filter(l => st.enabledLists.includes(l.id)).map(l => l.name);
-  ul.append(item(names.length > 0, names.length ? `${names.length} filter lists active` : 'No filter list is active',
-    names.length ? `${names.join(', ')}. ${st.webkitRules.toLocaleString()} of Safari's 150,000 rules in use.` : 'Open the toolbar shield and turn on Ads and Trackers.'));
+  const names = st.lists.filter(l => st.enabledLists.includes(l.id)).map(listName);
+  ul.append(item(names.length > 0, names.length ? t('welcome_lists_title', names.length) : t('welcome_lists_none_title'),
+    names.length ? t('welcome_lists_desc', names.join(', '), st.webkitRules.toLocaleString(I.locale())) : t('welcome_lists_none_desc')));
   if (st.incognito === true || st.incognito === false) {
-    ul.append(item(st.incognito, st.incognito ? 'Works in Private Browsing' : 'Off in Private Browsing',
-      st.incognito ? 'Private Browsing is protected too.' : `To protect Private Browsing: ${P.extensionSettings} → ${P.ios ? 'turn on' : 'tick'} "Allow in Private Browsing".`));
+    ul.append(item(st.incognito, st.incognito ? t('welcome_private_ok_title') : t('welcome_private_off_title'),
+      st.incognito ? t('welcome_private_ok_desc') : t(P.ios ? 'welcome_private_off_desc_ios' : 'welcome_private_off_desc_mac', P.extensionSettings)));
   }
   const ageDays = Math.floor((Date.now() / 1000 - st.listsBuilt) / 86400);
   const fresh = ageDays <= STALE_DAYS;
-  ul.append(item(fresh, fresh ? 'Filter lists are recent' : `Filter lists are ${ageDays} days old`,
-    fresh ? `Built ${ageDays === 0 ? 'today' : ageDays === 1 ? 'yesterday' : ageDays + ' days ago'}.` : 'Check the App Store for a Bouclier update: each one brings fresh lists.'));
+  ul.append(item(fresh, fresh ? t('welcome_fresh_title') : t('welcome_stale_title', ageDays),
+    fresh ? (ageDays === 0 ? t('welcome_built_today') : ageDays === 1 ? t('welcome_built_yesterday') : t('welcome_built_days', ageDays)) : t('welcome_stale_desc')));
   const cmds = (st.commands || []).filter(c => c.shortcut);
   if (cmds.length) $('shortcuts').textContent = cmds.map(c => `${c.shortcut} ${c.description.toLowerCase()}`).join(', ') + '.';
 }
 
-$('recheck').addEventListener('click', check);
-check().catch(err => { $('checks').textContent = 'Could not run the check: ' + err.message; });
+function recheck() {
+  return check().catch(err => { $('checks').textContent = t('welcome_check_failed', err && err.message || err); });
+}
+
+$('recheck').addEventListener('click', recheck);
+recheck();

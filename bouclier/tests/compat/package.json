@@ -1,0 +1,21 @@
+{
+  "name": "bouclier-compat-lint",
+  "private": true,
+  "description": "Checks that the extension's JavaScript and CSS only use features Safari 16.4 (iOS 16.4, macOS) supports. Run: npm install && npm run lint",
+  "browserslist": [
+    "safari >= 16.4",
+    "ios_saf >= 16.4"
+  ],
+  "scripts": {
+    "lint": "npm run lint:js && npm run lint:css",
+    "lint:js": "cd ../.. && BROWSERSLIST='safari >= 16.4, ios_saf >= 16.4' tests/compat/node_modules/.bin/eslint -c tests/compat/eslint.config.mjs extension appstore/app",
+    "lint:css": "cd ../.. && tests/compat/node_modules/.bin/stylelint --config tests/compat/.stylelintrc.json --config-basedir tests/compat \"extension/**/*.css\" \"appstore/app/*.css\" --ignore-pattern \"extension/cosmetic/**\""
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-compat": "^6.0.0",
+    "globals": "^15.0.0",
+    "stylelint": "^16.0.0",
+    "stylelint-no-unsupported-browser-features": "^8.0.0"
+  }
+}

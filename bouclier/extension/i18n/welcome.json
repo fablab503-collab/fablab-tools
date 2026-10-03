@@ -1,0 +1,178 @@
+{
+  "welcome_page_title": {
+    "en": "Welcome to Bouclier",
+    "fr": "Bienvenue dans Bouclier"
+  },
+  "welcome_heading": {
+    "en": "Bouclier is on",
+    "fr": "Bouclier est activé"
+  },
+  "welcome_setup_check": {
+    "en": "Setup check",
+    "fr": "Vérification de l’installation"
+  },
+  "welcome_setup_intro": {
+    "en": "Bouclier checks its own setup. Anything marked with an orange dot needs one click from you.",
+    "fr": "Bouclier vérifie sa propre installation. Ce qui porte un point orange attend un clic de votre part."
+  },
+  "welcome_check_again": {
+    "en": "Check again",
+    "fr": "Vérifier à nouveau"
+  },
+  "welcome_worth_knowing": {
+    "en": "Worth knowing",
+    "fr": "Bon à savoir"
+  },
+  "welcome_tip_toolbar_mac": {
+    "en": "<strong>The shield in the toolbar</strong> shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for 1 hour, 2 hours or until tomorrow.",
+    "fr": "<strong>Le bouclier dans la barre d’outils</strong> montre ce qui a été bloqué sur la page. Désactivez-y un site qui fonctionne mal, ou mettez-le en pause pendant 1 heure, 2 heures ou jusqu’à demain."
+  },
+  "welcome_tip_toolbar_ios": {
+    "en": "<strong>Bouclier in Safari's page menu</strong> (in the address bar) shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for 1 hour, 2 hours or until tomorrow.",
+    "fr": "<strong>Bouclier dans le menu de la page de Safari</strong> (dans la barre d’adresse) montre ce qui a été bloqué sur la page. Désactivez-y un site qui fonctionne mal, ou mettez-le en pause pendant 1 heure, 2 heures ou jusqu’à demain."
+  },
+  "welcome_tip_rightclick_mac": {
+    "en": "<strong>Right-click anything</strong> and choose <em>Hide This Element…</em> to make it disappear for good, or <em>Pause Bouclier on this site</em>.",
+    "fr": "<strong>Faites un clic droit sur n’importe quoi</strong> et choisissez <em>Masquer cet élément…</em> pour le faire disparaître pour de bon, ou <em>Mettre Bouclier en pause sur ce site</em>."
+  },
+  "welcome_tip_hide_ios": {
+    "en": "<strong>Hide an element</strong> in Bouclier's menu, then tap the thing you want gone. It stays hidden on that site.",
+    "fr": "<strong>Masquer un élément</strong> dans le menu de Bouclier, puis touchez ce que vous voulez faire disparaître. Il reste masqué sur ce site."
+  },
+  "welcome_tip_shortcuts_label": {
+    "en": "Shortcuts",
+    "fr": "Raccourcis"
+  },
+  "welcome_tip_shortcuts_default": {
+    "en": "Option-Shift-B opens Bouclier, Option-Shift-P pauses the current site, Option-Shift-H hides an element.",
+    "fr": "Option-Maj-B ouvre Bouclier, Option-Maj-P met en pause le site affiché, Option-Maj-H masque un élément."
+  },
+  "welcome_tip_shortcuts_change": {
+    "en": "Change them in Safari Settings → Extensions.",
+    "fr": "Modifiez-les dans Réglages de Safari → Extensions."
+  },
+  "welcome_try_it": {
+    "en": "Try it",
+    "fr": "Essayez"
+  },
+  "welcome_try_intro": {
+    "en": "This independent test page loads real ad and tracker addresses and shows what got through. With Bouclier on and allowed on all websites, it should show 100%.",
+    "fr": "Cette page de test indépendante charge de vraies adresses de publicité et de suivi, et montre ce qui passe. Avec Bouclier activé et autorisé sur tous les sites web, elle devrait afficher 100 %."
+  },
+  "welcome_try_link": {
+    "en": "Open the ad blocker test",
+    "fr": "Ouvrir le test de bloqueur de pub"
+  },
+  "welcome_version_line": {
+    "en": "Version {0} · filter lists built {1}",
+    "fr": "Version {0} · listes de filtres du {1}"
+  },
+  "welcome_on_title": {
+    "en": "Bouclier is turned on in Safari",
+    "fr": "Bouclier est activé dans Safari"
+  },
+  "welcome_on_desc": {
+    "en": "You are reading a page that only exists inside the extension, so Safari is running it.",
+    "fr": "Vous lisez une page qui n’existe que dans l’extension : Safari la fait donc bien tourner."
+  },
+  "welcome_access_ok_title": {
+    "en": "Allowed on every website",
+    "fr": "Autorisé sur tous les sites web"
+  },
+  "welcome_access_todo_title": {
+    "en": "Not allowed on every website yet",
+    "fr": "Pas encore autorisé sur tous les sites web"
+  },
+  "welcome_access_ok_desc": {
+    "en": "Ad spaces are hidden, pop-ups closed and YouTube ads removed on every site.",
+    "fr": "Les espaces publicitaires sont masqués, les pop-ups fermés et les pubs YouTube retirées sur tous les sites."
+  },
+  "welcome_access_todo_desc": {
+    "en": "Blocking already works, but hiding ad spaces, closing pop-ups and YouTube ad removal need access to websites.",
+    "fr": "Le blocage fonctionne déjà, mais masquer les espaces publicitaires, fermer les pop-ups et retirer les pubs YouTube demandent l’accès aux sites web."
+  },
+  "welcome_access_when_asked": {
+    "en": "Choose \"Always Allow on Every Website\" when Safari asks. If it does not ask: {0}",
+    "fr": "Choisissez « Toujours autoriser sur chaque site web » quand Safari le demande. S’il ne le demande pas : {0}"
+  },
+  "welcome_access_button": {
+    "en": "Allow on every website",
+    "fr": "Autoriser sur tous les sites web"
+  },
+  "welcome_lists_title": {
+    "en": "{0} filter lists active",
+    "fr": "{0} listes de filtres actives"
+  },
+  "welcome_lists_none_title": {
+    "en": "No filter list is active",
+    "fr": "Aucune liste de filtres n’est active"
+  },
+  "welcome_lists_desc": {
+    "en": "{0}. {1} of Safari's 150,000 rules in use.",
+    "fr": "{0}. {1} des 150 000 règles de Safari utilisées."
+  },
+  "welcome_lists_none_desc": {
+    "en": "Open the toolbar shield and turn on Ads and Trackers.",
+    "fr": "Ouvrez le bouclier de la barre d’outils et activez Publicités et Traqueurs."
+  },
+  "welcome_private_ok_title": {
+    "en": "Works in Private Browsing",
+    "fr": "Fonctionne en navigation privée"
+  },
+  "welcome_private_off_title": {
+    "en": "Off in Private Browsing",
+    "fr": "Désactivé en navigation privée"
+  },
+  "welcome_private_ok_desc": {
+    "en": "Private Browsing is protected too.",
+    "fr": "La navigation privée est protégée aussi."
+  },
+  "welcome_private_off_desc_mac": {
+    "en": "To protect Private Browsing: {0} → tick \"Allow in Private Browsing\".",
+    "fr": "Pour protéger la navigation privée : {0} → cochez « Autoriser en navigation privée »."
+  },
+  "welcome_private_off_desc_ios": {
+    "en": "To protect Private Browsing: {0} → turn on \"Allow in Private Browsing\".",
+    "fr": "Pour protéger la navigation privée : {0} → activez « Autoriser en navigation privée »."
+  },
+  "welcome_fresh_title": {
+    "en": "Filter lists are recent",
+    "fr": "Les listes de filtres sont récentes"
+  },
+  "welcome_stale_title": {
+    "en": "Filter lists are {0} days old",
+    "fr": "Les listes de filtres datent de {0} jours"
+  },
+  "welcome_built_today": {
+    "en": "Built today.",
+    "fr": "Faites aujourd’hui."
+  },
+  "welcome_built_yesterday": {
+    "en": "Built yesterday.",
+    "fr": "Faites hier."
+  },
+  "welcome_built_days": {
+    "en": "Built {0} days ago.",
+    "fr": "Faites il y a {0} jours."
+  },
+  "welcome_stale_desc": {
+    "en": "Check the App Store for a Bouclier update: each one brings fresh lists.",
+    "fr": "Cherchez une mise à jour de Bouclier sur l’App Store : chacune apporte des listes fraîches."
+  },
+  "welcome_state_done": {
+    "en": "Done",
+    "fr": "Fait"
+  },
+  "welcome_state_attention": {
+    "en": "Needs attention",
+    "fr": "À régler"
+  },
+  "welcome_state_unknown": {
+    "en": "Unknown",
+    "fr": "Inconnu"
+  },
+  "welcome_check_failed": {
+    "en": "Could not run the check: {0}",
+    "fr": "Impossible de faire la vérification : {0}"
+  }
+}

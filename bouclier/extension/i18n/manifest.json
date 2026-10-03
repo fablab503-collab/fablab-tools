@@ -1,0 +1,22 @@
+{
+  "ext_description": {
+    "en": "Blocks ads, trackers, malware sites and pop-up ads in Safari, cleans tracking tags from links, pauses per site.",
+    "fr": "Bloque pubs, traqueurs, sites malveillants et pop-up dans Safari, nettoie les liens, se met en pause par site."
+  },
+  "cmd_open": {
+    "en": "Open Bouclier",
+    "fr": "Ouvrir Bouclier"
+  },
+  "cmd_toggle_site": {
+    "en": "Pause or resume Bouclier on this site",
+    "fr": "Mettre en pause ou reprendre Bouclier sur ce site"
+  },
+  "cmd_hide_element": {
+    "en": "Hide an element on this page",
+    "fr": "Masquer un élément de cette page"
+  },
+  "cmd_pause_all": {
+    "en": "Pause or resume Bouclier everywhere",
+    "fr": "Mettre en pause ou reprendre Bouclier partout"
+  }
+}

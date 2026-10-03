@@ -51,6 +51,7 @@ button { font: inherit; }
 .row { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
 .site-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 .host { font-size: 16px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.site-text { flex: 1; min-width: 0; }   /* lets a long site name end with … instead of pushing the switch out */
 .count { margin-top: 8px; color: var(--muted); }
 .count strong { color: var(--text); font-variant-numeric: tabular-nums; }
 .site.off .host { color: var(--muted); }
@@ -125,6 +126,8 @@ button { font: inherit; }
 .chips-label { color: var(--muted); font-size: 12px; margin-right: 2px; }
 .chip { border: 0; border-radius: 99px; background: var(--bg); color: var(--text); padding: 5px 10px; cursor: pointer; font-size: 12px; }
 .chip:hover { filter: brightness(0.95); }
+.site-pause .chips-label { flex-basis: 100%; }   /* label on its own line: the three chips fit one row, even on a 4.7-inch iPhone */
+html[lang="fr"] #pause-chips .chips-label { flex-basis: 100%; }   /* same for « Pendant » in French, where the chips are wider */
 .banner .pill.primary { flex: 0 0 auto; }
 .footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 18px; padding: 0 2px; }
 .footer .status { color: var(--muted); font-size: 11px; flex: 1; }
@@ -159,3 +162,10 @@ html.ios .icon-btn { padding: 10px; }
 html.ios .detail .tag { padding: 4px 8px; margin: 4px 6px 0 0; }
 html.ios .more summary { padding: 11px 0 7px; }
 html.ios .link { padding: 6px 0; }
+
+/* --- QA 2026-09-28: 44-point touch targets on iPhone and iPad (Apple's minimum) --- */
+html.ios .pill, html.ios .chip, html.ios .link, html.ios .more summary, html.ios button { min-height: 44px; }
+html.ios .icon-btn { min-width: 44px; min-height: 44px; }
+html.ios .detail .tag { display: inline-flex; align-items: center; min-height: 32px; gap: 4px; }   /* the gap keeps "host 5" apart: a flex box drops the space */
+html.ios .switch { position: relative; }
+html.ios .switch::after { content: ""; position: absolute; inset: -7px -4px; }   /* larger hit area, same look */

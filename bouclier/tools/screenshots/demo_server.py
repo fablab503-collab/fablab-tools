@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Demo web for App Store screenshots: "The Daily Example", a made-up newspaper with the ad
-spaces and ad-network scripts a real news site has. Every host resolves here (Chromium is
-started with --host-resolver-rules), so the page is the same everywhere and shows no real brand.
+"""Demo web for App Store screenshots: "The Daily Example" (daily.example) and its French twin
+"Le Quotidien Exemple" (quotidien.example), a made-up newspaper with the ad spaces and ad-network
+scripts a real news site has. Every host resolves here (Chromium is started with
+--host-resolver-rules), so the page is the same everywhere and shows no real brand.
 
 usage: demo_server.py [port]   (default 80; capture.mjs starts it)
 """
@@ -9,15 +10,62 @@ import http.server
 import sys
 
 ADS = {
-    "leader": '''<div class="creative flights"><b>SkyCheap</b><span>Flights from <em>€9</em> · this weekend only</span><i>Book now ›</i></div>''',
-    "side": '''<div class="creative watch"><small>SPONSORED</small><b>Smartwatch X</b><em>-70%</em><span>Today only. 214 left in stock.</span><i>Shop ›</i></div>''',
-    "inline": '''<div class="creative loan"><small>Advertisement</small><b>Need cash fast?</b><span>Approval in 2 minutes. No questions asked.</span><i>Apply ›</i></div>''',
+    "en": {
+        "leader": '''<div class="creative flights"><b>SkyCheap</b><span>Flights from <em>€9</em> · this weekend only</span><i>Book now ›</i></div>''',
+        "side": '''<div class="creative watch"><small>SPONSORED</small><b>Smartwatch X</b><em>-70%</em><span>Today only. 214 left in stock.</span><i>Shop ›</i></div>''',
+        "inline": '''<div class="creative loan"><small>Advertisement</small><b>Need cash fast?</b><span>Approval in 2 minutes. No questions asked.</span><i>Apply ›</i></div>''',
+    },
+    "fr": {
+        "leader": '''<div class="creative flights"><b>SkyCheap</b><span>Vols dès <em>9&nbsp;€</em> · ce week-end seulement</span><i>Réserver ›</i></div>''',
+        "side": '''<div class="creative watch"><small>SPONSORISÉ</small><b>Montre X</b><em>-70&nbsp;%</em><span>Aujourd’hui seulement. Plus que 214 en stock.</span><i>Acheter ›</i></div>''',
+        "inline": '''<div class="creative loan"><small>Publicité</small><b>Besoin d’argent vite&nbsp;?</b><span>Réponse en 2 minutes. Sans justificatif.</span><i>Demander ›</i></div>''',
+    },
+}
+
+# the page's words, in English and French (the markup and the ad spaces are the same)
+WORDS = {
+    "en": {
+        "lang": "en", "host": "daily.example", "title": "The Daily Example", "date": "Wednesday 23 September 2026", "account": "Subscribe · Sign in",
+        "motto": "Independent news since 1926",
+        "nav": ["World", "Cities", "Science", "Business", "Culture", "Sport", "Weather"],
+        "brief": "Get the Morning Briefing", "brief_text": "The day's news in five minutes, every morning at 7.", "brief_button": "Sign up free",
+        "kicker": "Cities", "lead": "Bike lanes double as the city goes car-free on Sundays",
+        "standfirst": "Traffic fell by a third in the first month, and cafés on the old ring road say business has never been better.",
+        "credit": "The ring road on the first car-free Sunday.",
+        "p1": "When the council closed the ring road to cars every Sunday, shop owners feared the worst. Six weeks later, the pavements are full and the new cycle lanes carry more than twelve thousand trips a day.",
+        "p2": "The plan will be reviewed in the spring, but a survey of residents found broad support, especially among families with young children.",
+        "more": ["Night trains are back, and they are full", "A quiet revolution in the school canteen", "Five walks for the first cool weekend"],
+        "sponsored": "Sponsored stories you may like",
+        "tiles": [("Doctors can't explain this one simple trick", "Sponsored · HealthyToday"),
+                  ("This new gadget is selling out everywhere", "Sponsored · GadgetDeals"),
+                  ("You won't believe what these stars look like now", "Sponsored · Buzzly")],
+        "most_read": "Most read",
+        "read": ["Heat pump grants: who can apply", "The bakery that never closes", "Rain returns on Friday", "A library opens in the old station"],
+    },
+    "fr": {
+        "lang": "fr", "host": "quotidien.example", "title": "Le Quotidien Exemple", "date": "Mercredi 23 septembre 2026", "account": "S’abonner · Se connecter",
+        "motto": "Un journal indépendant depuis 1926",
+        "nav": ["Monde", "Villes", "Sciences", "Économie", "Culture", "Sport", "Météo"],
+        "brief": "Recevez le Brief du matin", "brief_text": "L’essentiel de l’actualité en cinq minutes, chaque matin à 7&nbsp;h.", "brief_button": "S’inscrire gratuitement",
+        "kicker": "Villes", "lead": "Deux fois plus de pistes cyclables&nbsp;: la ville sans voitures le dimanche",
+        "standfirst": "La circulation a baissé d’un tiers dès le premier mois, et les cafés de l’ancien périphérique n’ont jamais eu autant de clients.",
+        "credit": "Le périphérique lors du premier dimanche sans voitures.",
+        "p1": "Quand la mairie a fermé le périphérique aux voitures chaque dimanche, les commerçants craignaient le pire. Six semaines plus tard, les trottoirs sont pleins et les nouvelles pistes cyclables comptent plus de douze mille trajets par jour.",
+        "p2": "Le dispositif sera réexaminé au printemps, mais une enquête auprès des habitants montre un large soutien, surtout chez les familles avec de jeunes enfants.",
+        "more": ["Les trains de nuit sont de retour, et ils sont complets", "Une révolution discrète à la cantine", "Cinq balades pour le premier week-end frais"],
+        "sponsored": "Contenus sponsorisés qui pourraient vous plaire",
+        "tiles": [("Les médecins n’expliquent pas cette astuce toute simple", "Sponsorisé · SantéDuJour"),
+                  ("Ce nouveau gadget est en rupture partout", "Sponsorisé · BonsPlansGadgets"),
+                  ("Vous ne croirez pas à quoi ressemblent ces stars aujourd’hui", "Sponsorisé · Buzzly")],
+        "most_read": "Les plus lus",
+        "read": ["Pompes à chaleur&nbsp;: qui a droit aux aides", "La boulangerie qui ne ferme jamais", "Le retour de la pluie vendredi", "Une bibliothèque ouvre dans l’ancienne gare"],
+    },
 }
 
 PAGE = '''<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="%(lang)s"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Daily Example</title>
+<title>%(title)s</title>
 <style>
 :root { --ink:#1b1b1f; --muted:#5f6068; --line:#e3e1dc; --paper:#fbfaf7; --red:#c4302b; }
 * { box-sizing:border-box; }
@@ -83,46 +131,44 @@ aside li { margin-bottom:10px; font-weight:700; }
 <script src="http://www.googletagmanager.com/gtm.js?id=GTM-DEMO01"></script>
 <script src="http://static.criteo.net/js/ld/publishertag.js"></script>
 <script src="http://c.amazon-adsystem.com/aax2/apstag.js"></script>
-<script src="http://www.daily.example/app.js"></script>
+<script src="http://www.%(host)s/app.js"></script>
 </head><body>
-<div class="bar"><span>Wednesday 23 September 2026</span><span>Subscribe · Sign in</span></div>
+<div class="bar"><span>%(date)s</span><span>%(account)s</span></div>
 <div id="ad-container-leaderboard">%(leader)s</div>
-<header class="mast"><h1>The Daily Example</h1><p>Independent news since 1926</p></header>
-<nav><span>World</span><span>Cities</span><span>Science</span><span>Business</span><span>Culture</span><span>Sport</span><span>Weather</span></nav>
+<header class="mast"><h1>%(title)s</h1><p>%(motto)s</p></header>
+<nav>%(nav)s</nav>
 <div class="wrap">
-  <div class="briefing"><b>Get the Morning Briefing</b><span>The day's news in five minutes, every morning at 7.</span><i>Sign up free</i></div>
+  <div class="briefing"><b>%(brief)s</b><span>%(brief_text)s</span><i>%(brief_button)s</i></div>
   <div class="grid">
     <article>
-      <div class="kicker">Cities</div>
-      <h2 class="lead">Bike lanes double as the city goes car-free on Sundays</h2>
-      <p class="standfirst">Traffic fell by a third in the first month, and cafés on the old ring road say business has never been better.</p>
+      <div class="kicker">%(kicker)s</div>
+      <h2 class="lead">%(lead)s</h2>
+      <p class="standfirst">%(standfirst)s</p>
       <div class="photo"></div>
-      <div class="credit">The ring road on the first car-free Sunday.</div>
-      <p>When the council closed the ring road to cars every Sunday, shop owners feared the worst. Six weeks later, the pavements are full and the new cycle lanes carry more than twelve thousand trips a day.</p>
+      <div class="credit">%(credit)s</div>
+      <p>%(p1)s</p>
       <div class="ad-slot--inline">%(inline)s</div>
-      <p>The plan will be reviewed in the spring, but a survey of residents found broad support, especially among families with young children.</p>
+      <p>%(p2)s</p>
       <div class="more">
-        <div><div class="photo b"></div><h3>Night trains are back, and they are full</h3></div>
-        <div><div class="photo c"></div><h3>A quiet revolution in the school canteen</h3></div>
-        <div><div class="photo"></div><h3>Five walks for the first cool weekend</h3></div>
+        <div><div class="photo b"></div><h3>%(more0)s</h3></div>
+        <div><div class="photo c"></div><h3>%(more1)s</h3></div>
+        <div><div class="photo"></div><h3>%(more2)s</h3></div>
       </div>
       <div class="trc_related_container">
-        <h4>Sponsored stories you may like</h4>
+        <h4>%(sponsored)s</h4>
         <div class="tiles">
-          <div class="tile"><div></div>Doctors can't explain this one simple trick<span>Sponsored · HealthyToday</span></div>
-          <div class="tile"><div></div>This new gadget is selling out everywhere<span>Sponsored · GadgetDeals</span></div>
-          <div class="tile"><div></div>You won't believe what these stars look like now<span>Sponsored · Buzzly</span></div>
+%(tiles)s
         </div>
       </div>
     </article>
     <aside>
       <div id="ad-sidebar">%(side)s</div>
-      <h4>Most read</h4>
-      <ol><li>Heat pump grants: who can apply</li><li>The bakery that never closes</li><li>Rain returns on Friday</li><li>A library opens in the old station</li></ol>
+      <h4>%(most_read)s</h4>
+      <ol>%(read)s</ol>
     </aside>
   </div>
 </div>
-<script src="http://cdn.taboola.com/libtrc/dailyexample/loader.js"></script>
+<script src="http://cdn.taboola.com/libtrc/%(host)s/loader.js"></script>
 <script src="http://sb.scorecardresearch.com/beacon.js"></script>
 <script src="http://connect.facebook.net/en_US/fbevents.js"></script>
 <script src="http://www.google-analytics.com/analytics.js"></script>
@@ -133,8 +179,25 @@ aside li { margin-bottom:10px; font-weight:700; }
 <img src="http://www.facebook.com/tr?id=1&ev=PageView" width="1" height="1" alt="">
 <img src="http://pagead2.googlesyndication.com/pagead/show_ads.gif" width="1" height="1" alt="">
 </body></html>'''
-for _slot, _html in ADS.items():
-    PAGE = PAGE.replace('%(' + _slot + ')s', _html)
+
+
+def render(lang):
+    """The demo page in English or French (same markup, same ad spaces)."""
+    w = WORDS[lang]
+    fill = {k: v for k, v in w.items() if isinstance(v, str)}
+    fill.update(ADS[lang])
+    fill["nav"] = "".join(f"<span>{x}</span>" for x in w["nav"])
+    fill.update({f"more{i}": x for i, x in enumerate(w["more"])})
+    fill["tiles"] = "\n".join(f'          <div class="tile"><div></div>{t}<span>{by}</span></div>' for t, by in w["tiles"])
+    fill["read"] = "".join(f"<li>{x}</li>" for x in w["read"])
+    html = PAGE
+    for key, value in fill.items():
+        html = html.replace("%(" + key + ")s", value)
+    assert "%(" not in html, "a placeholder was left"
+    return html
+
+
+PAGES = {WORDS[lang]["host"]: render(lang) for lang in WORDS}
 
 GIF = bytes.fromhex("47494638396101000100800000000000ffffff21f90401000000002c00000000010001000002024401003b")
 
@@ -146,8 +209,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         host = (self.headers.get("Host") or "").split(":")[0]
         path = self.path.split("?")[0]
-        if host in ("daily.example", "www.daily.example") and path in ("/", "/index.html"):
-            body, kind = PAGE.encode(), "text/html; charset=utf-8"
+        site = host[4:] if host.startswith("www.") else host
+        if site in PAGES and path in ("/", "/index.html"):
+            body, kind = PAGES[site].encode(), "text/html; charset=utf-8"
         elif path.endswith(".js"):
             body, kind = b"/* demo */", "application/javascript"
         elif path.endswith((".gif", ".png")) or "pixel" in path or "/tr" in path or "action" in path:

@@ -1,0 +1,1342 @@
+{
+ "bg_cannot_pause": {
+  "description": "background.json",
+  "message": "Bouclier cannot pause this address (only site names like example.com can be paused)."
+ },
+ "bg_category_ads": {
+  "description": "background.json",
+  "message": "Ads"
+ },
+ "bg_category_annoyances": {
+  "description": "background.json",
+  "message": "Annoyances"
+ },
+ "bg_category_blocked": {
+  "description": "background.json",
+  "message": "Blocked"
+ },
+ "bg_category_custom": {
+  "description": "background.json",
+  "message": "Your filters"
+ },
+ "bg_category_links": {
+  "description": "background.json",
+  "message": "Links cleaned"
+ },
+ "bg_category_malware": {
+  "description": "background.json",
+  "message": "Malware"
+ },
+ "bg_category_other": {
+  "description": "background.json",
+  "message": "Other"
+ },
+ "bg_category_popups": {
+  "description": "background.json",
+  "message": "Pop-ups closed"
+ },
+ "bg_category_site": {
+  "description": "background.json",
+  "message": "Site controls"
+ },
+ "bg_category_trackers": {
+  "description": "background.json",
+  "message": "Trackers"
+ },
+ "bg_filter_bad_domains": {
+  "description": "background.json",
+  "message": "Line {0}: unsupported domain list"
+ },
+ "bg_filter_bad_option": {
+  "description": "background.json",
+  "message": "Line {0}: option \"{1}\" is not supported"
+ },
+ "bg_filter_bad_selector": {
+  "description": "background.json",
+  "message": "Line {0}: only plain, complete CSS selectors that do not hide the whole page are supported"
+ },
+ "bg_filter_cut": {
+  "description": "background.json",
+  "message": "Only the first {0} characters are kept: the lines after that were not saved."
+ },
+ "bg_filter_exception_site": {
+  "description": "background.json",
+  "message": "Line {0}: an exception (#@#) needs a site in front"
+ },
+ "bg_filter_plain_sites": {
+  "description": "background.json",
+  "message": "Line {0}: write sites as plain names, like example.com (no https://, port or path)"
+ },
+ "bg_filter_regex": {
+  "description": "background.json",
+  "message": "Line {0}: regular expressions are not supported"
+ },
+ "bg_filter_short": {
+  "description": "background.json",
+  "message": "Line {0}: pattern is too short or not ASCII"
+ },
+ "bg_filter_spaces": {
+  "description": "background.json",
+  "message": "Line {0}: a filter cannot contain spaces (hosts-file lines like \"0.0.0.0 example.com\" are fine)"
+ },
+ "bg_filter_too_many": {
+  "description": "background.json",
+  "message": "Too many filters: only the first {0} blocking and {1} allowing filters are used."
+ },
+ "bg_import_not_backup": {
+  "description": "background.json",
+  "message": "This file is not a Bouclier settings backup."
+ },
+ "bg_menu_hide": {
+  "description": "background.json",
+  "message": "Hide This Element…"
+ },
+ "bg_menu_pause_site": {
+  "description": "background.json",
+  "message": "Pause Bouclier on {0}"
+ },
+ "bg_menu_pause_this_site": {
+  "description": "background.json",
+  "message": "Pause Bouclier on This Site"
+ },
+ "bg_menu_resume_site": {
+  "description": "background.json",
+  "message": "Resume Bouclier on {0}"
+ },
+ "bg_problem_hiding": {
+  "description": "background.json",
+  "message": "element hiding: {0}"
+ },
+ "bg_problem_lists": {
+  "description": "background.json",
+  "message": "lists: {0}"
+ },
+ "bg_problem_rules": {
+  "description": "background.json",
+  "message": "your rules: {0}"
+ },
+ "bg_rule_limit": {
+  "description": "background.json",
+  "message": "Safari accepts {0} rules of your own (paused sites, filters and site controls): the last {1} are not used."
+ },
+ "bg_toast_popup_closed": {
+  "description": "background.json",
+  "message": "Bouclier closed a pop-up ad ({0})"
+ },
+ "bg_toast_protecting_again": {
+  "description": "background.json",
+  "message": "Bouclier is protecting this page again. Reload to block everything."
+ },
+ "cmd_hide_element": {
+  "description": "manifest.json",
+  "message": "Hide an element on this page"
+ },
+ "cmd_open": {
+  "description": "manifest.json",
+  "message": "Open Bouclier"
+ },
+ "cmd_pause_all": {
+  "description": "manifest.json",
+  "message": "Pause or resume Bouclier everywhere"
+ },
+ "cmd_toggle_site": {
+  "description": "manifest.json",
+  "message": "Pause or resume Bouclier on this site"
+ },
+ "ext_description": {
+  "description": "manifest.json",
+  "message": "Blocks ads, trackers, malware sites and pop-up ads in Safari, cleans tracking tags from links, pauses per site."
+ },
+ "list_ads_desc": {
+  "description": "lists.json",
+  "message": "Banners, pop-ups and ad networks (EasyList, plus Bouclier's additions)"
+ },
+ "list_ads_name": {
+  "description": "lists.json",
+  "message": "Ads"
+ },
+ "list_annoyances_desc": {
+  "description": "lists.json",
+  "message": "Newsletter pop-ups, 'open in app' banners and similar clutter (EasyList Other Annoyances)"
+ },
+ "list_annoyances_name": {
+  "description": "lists.json",
+  "message": "Annoyances"
+ },
+ "list_antiadblock_desc": {
+  "description": "lists.json",
+  "message": "Removes \"please disable your ad blocker\" messages (experimental)"
+ },
+ "list_antiadblock_name": {
+  "description": "lists.json",
+  "message": "Anti-adblock walls"
+ },
+ "list_cookies_desc": {
+  "description": "lists.json",
+  "message": "Hides cookie consent pop-ups (EasyList Cookie List). Can break sites that wait for consent."
+ },
+ "list_cookies_name": {
+  "description": "lists.json",
+  "message": "Cookie banners"
+ },
+ "list_french_desc": {
+  "description": "lists.json",
+  "message": "Ads on French-language sites (Liste FR, plus Bouclier's additions)"
+ },
+ "list_french_name": {
+  "description": "lists.json",
+  "message": "French sites"
+ },
+ "list_privacy_desc": {
+  "description": "lists.json",
+  "message": "Analytics, tracking pixels and fingerprinting scripts (EasyPrivacy, plus Bouclier's additions)"
+ },
+ "list_privacy_name": {
+  "description": "lists.json",
+  "message": "Trackers"
+ },
+ "list_safety_desc": {
+  "description": "lists.json",
+  "message": "Sites that spread malware (URLhaus Malicious URL Blocklist)"
+ },
+ "list_safety_name": {
+  "description": "lists.json",
+  "message": "Malware & phishing"
+ },
+ "list_social_desc": {
+  "description": "lists.json",
+  "message": "Like/share buttons and social embeds (EasyList Social Widgets)"
+ },
+ "list_social_name": {
+  "description": "lists.json",
+  "message": "Social widgets"
+ },
+ "list_urlclean_desc": {
+  "description": "lists.json",
+  "message": "Removes tracking tags (utm_, fbclid, gclid...) from page addresses before the page loads"
+ },
+ "list_urlclean_name": {
+  "description": "lists.json",
+  "message": "Clean links"
+ },
+ "options_axis_thousands": {
+  "description": "options.json",
+  "message": "{0}k"
+ },
+ "options_backup_heading": {
+  "description": "options.json",
+  "message": "Backup"
+ },
+ "options_backup_intro": {
+  "description": "options.json",
+  "message": "Save your paused sites, hidden elements, site controls, filters and switches to a file, or bring them back from one."
+ },
+ "options_badge": {
+  "description": "options.json",
+  "message": "Show the count on the toolbar icon"
+ },
+ "options_badge_desc": {
+  "description": "options.json",
+  "message": "The number of requests blocked on the current page."
+ },
+ "options_bytes_note": {
+  "description": "options.json",
+  "message": "estimate, ~{0} KB per blocked request"
+ },
+ "options_chart_label": {
+  "description": "options.json",
+  "message": "Blocked requests per day, last 14 days"
+ },
+ "options_chart_today": {
+  "description": "options.json",
+  "message": "Today"
+ },
+ "options_control_comments": {
+  "description": "options.json",
+  "message": "comments hidden"
+ },
+ "options_control_fonts": {
+  "description": "options.json",
+  "message": "web fonts blocked"
+ },
+ "options_control_scripts": {
+  "description": "options.json",
+  "message": "scripts from other sites blocked"
+ },
+ "options_controls_heading": {
+  "description": "options.json",
+  "message": "Site controls"
+ },
+ "options_controls_intro": {
+  "description": "options.json",
+  "message": "Extra blocking you switched on for single sites (<span data-only=\"mac\">toolbar button</span><span data-only=\"ios\">Bouclier in Safari's page menu</span> → Site controls)."
+ },
+ "options_controls_remove": {
+  "description": "options.json",
+  "message": "Remove these controls"
+ },
+ "options_controls_remove_for": {
+  "description": "options.json",
+  "message": "Remove site controls for {0}"
+ },
+ "options_counting_since": {
+  "description": "options.json",
+  "message": "Counting since {0}"
+ },
+ "options_credit_by": {
+  "description": "options.json",
+  "message": "{0} by {1} · {2}"
+ },
+ "options_credits_heading": {
+  "description": "options.json",
+  "message": "Credits"
+ },
+ "options_credits_intro": {
+  "description": "options.json",
+  "message": "Bouclier's blocking rules are adapted from these filter lists and are shared under the same licences. Pop-up filters come from the same lists. The YouTube ad removal is Bouclier's own code; its approach follows the uBlock Origin project."
+ },
+ "options_custom_heading": {
+  "description": "options.json",
+  "message": "My filters"
+ },
+ "options_custom_intro": {
+  "description": "options.json",
+  "message": "One per line, in Adblock Plus syntax. Examples:"
+ },
+ "options_custom_placeholder": {
+  "description": "options.json",
+  "message": "Your filters…"
+ },
+ "options_example_allow": {
+  "description": "options.json",
+  "message": "never block example.org"
+ },
+ "options_example_comment": {
+  "description": "options.json",
+  "message": "! lines starting with ! are comments"
+ },
+ "options_example_domain": {
+  "description": "options.json",
+  "message": "block everything from example.com"
+ },
+ "options_example_explicit": {
+  "description": "options.json",
+  "message": "same, explicit form"
+ },
+ "options_example_hide_all": {
+  "description": "options.json",
+  "message": "hide .sponsored-post everywhere"
+ },
+ "options_example_hide_site": {
+  "description": "options.json",
+  "message": "hide .promo on lemonde.fr"
+ },
+ "options_example_images": {
+  "description": "options.json",
+  "message": "block images whose address contains /sponsor/"
+ },
+ "options_export": {
+  "description": "options.json",
+  "message": "Export settings"
+ },
+ "options_exported": {
+  "description": "options.json",
+  "message": "Saved to your Downloads folder."
+ },
+ "options_general_heading": {
+  "description": "options.json",
+  "message": "General"
+ },
+ "options_hidden_heading": {
+  "description": "options.json",
+  "message": "Hidden elements"
+ },
+ "options_hidden_intro": {
+  "description": "options.json",
+  "message": "Things you hid with <em>Hide an element</em><span data-only=\"mac\"> or the right-click menu</span>."
+ },
+ "options_hiding_sites": {
+  "description": "options.json",
+  "message": "{0} + {1} sites"
+ },
+ "options_hiding_sites_one": {
+  "description": "options.json",
+  "message": "{0} + {1} sites"
+ },
+ "options_how_heading": {
+  "description": "options.json",
+  "message": "How it works"
+ },
+ "options_how_hiding": {
+  "description": "options.json",
+  "message": "<strong>Element hiding.</strong> Leftover ad spaces are hidden with a stylesheet, injected only on sites you allowed Bouclier to access."
+ },
+ "options_how_links": {
+  "description": "options.json",
+  "message": "<strong>Clean links.</strong> Tracking tags such as utm_source or fbclid are removed from a page's address before it loads."
+ },
+ "options_how_network": {
+  "description": "options.json",
+  "message": "<strong>Network blocking.</strong> Filter lists are compiled into Safari's <em>declarativeNetRequest</em> rules. Safari applies them itself, so Bouclier never sees the pages you visit."
+ },
+ "options_how_popups": {
+  "description": "options.json",
+  "message": "<strong>Pop-ups.</strong> When a page opens a new tab to an address on the lists' pop-up filters, Bouclier closes it and tells you."
+ },
+ "options_how_stats": {
+  "description": "options.json",
+  "message": "<strong>Statistics</strong> stay on <span class=\"device\">this Mac</span>. \"Data not downloaded\" is an estimate that assumes about 20 KB per blocked request."
+ },
+ "options_how_updates": {
+  "description": "options.json",
+  "message": "<strong>Updates.</strong> The filter lists come with the app. Each Bouclier update from the App Store brings fresh lists."
+ },
+ "options_how_youtube": {
+  "description": "options.json",
+  "message": "<strong>YouTube.</strong> A small script removes ads from YouTube's player data before the player sees them, and skips any ad that still slips through."
+ },
+ "options_import": {
+  "description": "options.json",
+  "message": "Import settings…"
+ },
+ "options_import_failed": {
+  "description": "options.json",
+  "message": "Import failed."
+ },
+ "options_import_partial": {
+  "description": "options.json",
+  "message": "Imported, but Safari refused part of it: {0}"
+ },
+ "options_import_too_large": {
+  "description": "options.json",
+  "message": "That file is too large to be a Bouclier backup (over 5 MB)."
+ },
+ "options_import_unreadable": {
+  "description": "options.json",
+  "message": "That file could not be read as a Bouclier backup."
+ },
+ "options_imported": {
+  "description": "options.json",
+  "message": "Imported {0} settings."
+ },
+ "options_imported_one": {
+  "description": "options.json",
+  "message": "Imported {0} settings."
+ },
+ "options_license_own": {
+  "description": "options.json",
+  "message": "Part of Bouclier"
+ },
+ "options_links_cleaned": {
+  "description": "options.json",
+  "message": "{0} links cleaned"
+ },
+ "options_links_cleaned_one": {
+  "description": "options.json",
+  "message": "{0} links cleaned"
+ },
+ "options_lists_heading": {
+  "description": "options.json",
+  "message": "Filter lists"
+ },
+ "options_lists_hint": {
+  "description": "options.json",
+  "message": "Turn lists on or off from the toolbar button."
+ },
+ "options_lists_intro": {
+  "description": "options.json",
+  "message": "Safari compiles every enabled list into one set of rules with a hard limit of 150,000 rules."
+ },
+ "options_load_failed": {
+  "description": "options.json",
+  "message": "Could not load settings: {0}"
+ },
+ "options_meter": {
+  "description": "options.json",
+  "message": "{0} of 150,000 Safari rules in use."
+ },
+ "options_no_shortcut": {
+  "description": "options.json",
+  "message": "no shortcut set"
+ },
+ "options_none": {
+  "description": "options.json",
+  "message": "None"
+ },
+ "options_none_yet": {
+  "description": "options.json",
+  "message": "None yet"
+ },
+ "options_not_saved": {
+  "description": "options.json",
+  "message": "Not saved: {0}"
+ },
+ "options_nothing_yet": {
+  "description": "options.json",
+  "message": "Nothing yet"
+ },
+ "options_open_welcome": {
+  "description": "options.json",
+  "message": "Run the setup check"
+ },
+ "options_page_title": {
+  "description": "options.json",
+  "message": "Bouclier settings"
+ },
+ "options_paused_heading": {
+  "description": "options.json",
+  "message": "Paused sites"
+ },
+ "options_paused_intro": {
+  "description": "options.json",
+  "message": "Bouclier doesn't block anything on these sites. <span data-only=\"mac\">Add a site from the toolbar button or by right-clicking a page.</span><span data-only=\"ios\">Add a site from Bouclier in Safari's page menu.</span>"
+ },
+ "options_paused_until": {
+  "description": "options.json",
+  "message": "{0} (until {1})"
+ },
+ "options_popup_blocker": {
+  "description": "options.json",
+  "message": "Close pop-up ads"
+ },
+ "options_popup_blocker_desc": {
+  "description": "options.json",
+  "message": "When a page opens an ad in a new tab or window, Bouclier closes it and shows a short notice."
+ },
+ "options_popups_closed": {
+  "description": "options.json",
+  "message": "{0} pop-ups closed"
+ },
+ "options_popups_closed_one": {
+  "description": "options.json",
+  "message": "{0} pop-ups closed"
+ },
+ "options_protect_again": {
+  "description": "options.json",
+  "message": "Protect {0} again"
+ },
+ "options_reset_all": {
+  "description": "options.json",
+  "message": "Reset all settings"
+ },
+ "options_reset_confirm": {
+  "description": "options.json",
+  "message": "Reset Bouclier to its default settings? Paused sites, hidden elements, site controls and your filters will be removed."
+ },
+ "options_reset_stats_confirm": {
+  "description": "options.json",
+  "message": "Reset all statistics? This cannot be undone."
+ },
+ "options_save_filters": {
+  "description": "options.json",
+  "message": "Save filters"
+ },
+ "options_saved": {
+  "description": "options.json",
+  "message": "Saved."
+ },
+ "options_saved_skipped": {
+  "description": "options.json",
+  "message": "Saved, but some lines were skipped:"
+ },
+ "options_saving": {
+  "description": "options.json",
+  "message": "Saving… Safari recompiles its rules, this can take up to half a minute."
+ },
+ "options_shortcuts_heading": {
+  "description": "options.json",
+  "message": "Keyboard shortcuts"
+ },
+ "options_shortcuts_intro": {
+  "description": "options.json",
+  "message": "Change them in Safari Settings → Extensions → Bouclier."
+ },
+ "options_shortcuts_unavailable": {
+  "description": "options.json",
+  "message": "Not available in this browser"
+ },
+ "options_shorts": {
+  "description": "options.json",
+  "message": "Hide YouTube Shorts"
+ },
+ "options_shorts_desc": {
+  "description": "options.json",
+  "message": "Removes Shorts shelves, the Shorts tab and Shorts in search results."
+ },
+ "options_show_again": {
+  "description": "options.json",
+  "message": "Show it again"
+ },
+ "options_show_again_on": {
+  "description": "options.json",
+  "message": "Show {0} on {1} again"
+ },
+ "options_size_gb": {
+  "description": "options.json",
+  "message": "{0} GB"
+ },
+ "options_size_kb": {
+  "description": "options.json",
+  "message": "{0} KB"
+ },
+ "options_size_mb": {
+  "description": "options.json",
+  "message": "{0} MB"
+ },
+ "options_size_zero": {
+  "description": "options.json",
+  "message": "0 MB"
+ },
+ "options_stale": {
+  "description": "options.json",
+  "message": "The filter lists are {0} days old, and new ads slip through as lists age. Check the App Store for a Bouclier update."
+ },
+ "options_stats_heading": {
+  "description": "options.json",
+  "message": "Statistics"
+ },
+ "options_stats_reset": {
+  "description": "options.json",
+  "message": "Reset"
+ },
+ "options_stats_stay": {
+  "description": "options.json",
+  "message": "Statistics never leave {0}."
+ },
+ "options_status_off": {
+  "description": "options.json",
+  "message": "Off"
+ },
+ "options_status_on": {
+  "description": "options.json",
+  "message": "On"
+ },
+ "options_status_paused": {
+  "description": "options.json",
+  "message": "Paused"
+ },
+ "options_status_waiting": {
+  "description": "options.json",
+  "message": "Waiting (rule limit)"
+ },
+ "options_table_day": {
+  "description": "options.json",
+  "message": "Day"
+ },
+ "options_table_show": {
+  "description": "options.json",
+  "message": "Show as table"
+ },
+ "options_table_total": {
+  "description": "options.json",
+  "message": "Total"
+ },
+ "options_test_bouclier": {
+  "description": "options.json",
+  "message": "Test Bouclier"
+ },
+ "options_test_bouclier_hint": {
+  "description": "options.json",
+  "message": "Opens an independent test page that loads real ad and tracker addresses, in a new tab."
+ },
+ "options_th_hiding_rules": {
+  "description": "options.json",
+  "message": "Hiding rules"
+ },
+ "options_th_list": {
+  "description": "options.json",
+  "message": "List"
+ },
+ "options_th_safari_rules": {
+  "description": "options.json",
+  "message": "Safari rules"
+ },
+ "options_th_source": {
+  "description": "options.json",
+  "message": "Source"
+ },
+ "options_th_status": {
+  "description": "options.json",
+  "message": "Status"
+ },
+ "options_tile_all": {
+  "description": "options.json",
+  "message": "All time"
+ },
+ "options_tile_bytes": {
+  "description": "options.json",
+  "message": "Data not downloaded"
+ },
+ "options_tile_today": {
+  "description": "options.json",
+  "message": "Today"
+ },
+ "options_tile_week": {
+  "description": "options.json",
+  "message": "Last 7 days"
+ },
+ "options_tip_blocked": {
+  "description": "options.json",
+  "message": "{0} blocked"
+ },
+ "options_tip_blocked_one": {
+  "description": "options.json",
+  "message": "{0} blocked"
+ },
+ "options_tip_series": {
+  "description": "options.json",
+  "message": "{0}: {1}"
+ },
+ "options_top_domains": {
+  "description": "options.json",
+  "message": "Most blocked addresses"
+ },
+ "options_top_sites": {
+  "description": "options.json",
+  "message": "Sites with the most blocking"
+ },
+ "options_unknown_error": {
+  "description": "options.json",
+  "message": "unknown error"
+ },
+ "options_version_line": {
+  "description": "options.json",
+  "message": "Version {0} · filter lists built {1}"
+ },
+ "options_youtube": {
+  "description": "options.json",
+  "message": "Remove YouTube ads"
+ },
+ "options_youtube_desc": {
+  "description": "options.json",
+  "message": "Video ads, ad banners and the “ad blockers are not allowed” pop-up."
+ },
+ "picker_cancel": {
+  "description": "picker.json",
+  "message": "Cancel"
+ },
+ "picker_click_to_hide": {
+  "description": "picker.json",
+  "message": "Click the thing you want to hide"
+ },
+ "picker_hide": {
+  "description": "picker.json",
+  "message": "Hide"
+ },
+ "picker_hide_this": {
+  "description": "picker.json",
+  "message": "Hide this {0} on {1}?"
+ },
+ "picker_wider": {
+  "description": "picker.json",
+  "message": "Wider"
+ },
+ "picker_wider_hint": {
+  "description": "picker.json",
+  "message": "Select the surrounding block"
+ },
+ "platform_device_ipad": {
+  "description": "platform.json",
+  "message": "this iPad"
+ },
+ "platform_device_iphone": {
+  "description": "platform.json",
+  "message": "this iPhone"
+ },
+ "platform_device_mac": {
+  "description": "platform.json",
+  "message": "this Mac"
+ },
+ "platform_settings_ios_16": {
+  "description": "platform.json",
+  "message": "Settings → Safari → Extensions → Bouclier"
+ },
+ "platform_settings_ios_18": {
+  "description": "platform.json",
+  "message": "Settings → Apps → Safari → Extensions → Bouclier"
+ },
+ "platform_settings_mac": {
+  "description": "platform.json",
+  "message": "Safari Settings → Extensions → Bouclier"
+ },
+ "platform_steps_ios": {
+  "description": "platform.json",
+  "message": "In {0}, set All Websites to Allow."
+ },
+ "platform_steps_mac": {
+  "description": "platform.json",
+  "message": "In {0}, click “Always Allow on Every Website…” (or Edit Websites…, then Allow for other websites)."
+ },
+ "popup_access_denied": {
+  "description": "popup.json",
+  "message": "Safari did not allow it on every website."
+ },
+ "popup_access_open_settings": {
+  "description": "popup.json",
+  "message": "Open {0} and allow it on all websites."
+ },
+ "popup_access_text": {
+  "description": "popup.json",
+  "message": "Allow Bouclier on all websites so it can hide empty ad spaces, close pop-ups and remove YouTube ads."
+ },
+ "popup_allow": {
+  "description": "popup.json",
+  "message": "Allow"
+ },
+ "popup_allow_confirm": {
+  "description": "popup.json",
+  "message": "Allow {0} on {1}? Bouclier keeps blocking it everywhere else."
+ },
+ "popup_allowing": {
+  "description": "popup.json",
+  "message": "Allowing {0} on {1}…"
+ },
+ "popup_applying": {
+  "description": "popup.json",
+  "message": "Applying your last change…"
+ },
+ "popup_back_on_at": {
+  "description": "popup.json",
+  "message": "Back on automatically at {0}."
+ },
+ "popup_budget": {
+  "description": "popup.json",
+  "message": "Safari's rule limit is reached, so these filters are waiting: {0}. Turn another filter off to make room."
+ },
+ "popup_cancel": {
+  "description": "popup.json",
+  "message": "Cancel"
+ },
+ "popup_chip_1_hour": {
+  "description": "popup.json",
+  "message": "1 hour"
+ },
+ "popup_chip_2_hours": {
+  "description": "popup.json",
+  "message": "2 hours"
+ },
+ "popup_chip_30_min": {
+  "description": "popup.json",
+  "message": "30 min"
+ },
+ "popup_chip_tomorrow": {
+  "description": "popup.json",
+  "message": "Until tomorrow"
+ },
+ "popup_count_paused_all": {
+  "description": "popup.json",
+  "message": "Paused everywhere."
+ },
+ "popup_count_paused_all_until": {
+  "description": "popup.json",
+  "message": "Paused everywhere until {0}."
+ },
+ "popup_count_paused_site": {
+  "description": "popup.json",
+  "message": "Paused on this site. Ads and trackers load normally."
+ },
+ "popup_count_paused_site_until": {
+  "description": "popup.json",
+  "message": "Paused on this site until {0}."
+ },
+ "popup_ctl_comments": {
+  "description": "popup.json",
+  "message": "Hide comments"
+ },
+ "popup_ctl_comments_desc": {
+  "description": "popup.json",
+  "message": "Hides comment sections on this site"
+ },
+ "popup_ctl_fonts": {
+  "description": "popup.json",
+  "message": "Block web fonts"
+ },
+ "popup_ctl_fonts_desc": {
+  "description": "popup.json",
+  "message": "Faster pages; some icons may turn into squares"
+ },
+ "popup_ctl_scripts3p": {
+  "description": "popup.json",
+  "message": "Block scripts from other sites"
+ },
+ "popup_ctl_scripts3p_desc": {
+  "description": "popup.json",
+  "message": "Strict: stops most widgets and players too"
+ },
+ "popup_done": {
+  "description": "popup.json",
+  "message": "Done."
+ },
+ "popup_done_reloaded": {
+  "description": "popup.json",
+  "message": "Done. Page reloaded."
+ },
+ "popup_error": {
+  "description": "popup.json",
+  "message": "Something went wrong: {0}"
+ },
+ "popup_filters": {
+  "description": "popup.json",
+  "message": "Filters"
+ },
+ "popup_for": {
+  "description": "popup.json",
+  "message": "For"
+ },
+ "popup_hidden_one": {
+  "description": "popup.json",
+  "message": "{0} element hidden by you"
+ },
+ "popup_hidden_other": {
+  "description": "popup.json",
+  "message": "{0} elements hidden by you"
+ },
+ "popup_hide_element": {
+  "description": "popup.json",
+  "message": "Hide an element"
+ },
+ "popup_hide_shorts": {
+  "description": "popup.json",
+  "message": "Hide YouTube Shorts"
+ },
+ "popup_hide_shorts_desc": {
+  "description": "popup.json",
+  "message": "Shorts shelves, tabs and results"
+ },
+ "popup_hint_click": {
+  "description": "popup.json",
+  "message": "Page broken? Click an address to allow it on this site."
+ },
+ "popup_hint_tap": {
+  "description": "popup.json",
+  "message": "Page broken? Tap an address to allow it on this site."
+ },
+ "popup_last_change_failed": {
+  "description": "popup.json",
+  "message": "Last change failed: {0}"
+ },
+ "popup_links_one": {
+  "description": "popup.json",
+  "message": "Tracking tags removed from this page’s address."
+ },
+ "popup_links_other": {
+  "description": "popup.json",
+  "message": "Tracking tags removed from {0} addresses."
+ },
+ "popup_load_failed": {
+  "description": "popup.json",
+  "message": "Could not load: {0}"
+ },
+ "popup_more_filters": {
+  "description": "popup.json",
+  "message": "More filters"
+ },
+ "popup_no_website": {
+  "description": "popup.json",
+  "message": "No website in this tab"
+ },
+ "popup_not_possible": {
+  "description": "popup.json",
+  "message": "not possible here"
+ },
+ "popup_pause_all": {
+  "description": "popup.json",
+  "message": "Pause everywhere"
+ },
+ "popup_pause_all_desc": {
+  "description": "popup.json",
+  "message": "Turns off all blocking until you switch it back on."
+ },
+ "popup_pause_site_for": {
+  "description": "popup.json",
+  "message": "Pause on this site for"
+ },
+ "popup_paused_banner": {
+  "description": "popup.json",
+  "message": "Protection is paused everywhere."
+ },
+ "popup_paused_banner_until": {
+  "description": "popup.json",
+  "message": "Protection is paused everywhere until {0}."
+ },
+ "popup_pausing_all": {
+  "description": "popup.json",
+  "message": "Pausing everywhere…"
+ },
+ "popup_pausing_all_for": {
+  "description": "popup.json",
+  "message": "Pausing everywhere {0}…"
+ },
+ "popup_pausing_all_tomorrow": {
+  "description": "popup.json",
+  "message": "Pausing everywhere until tomorrow…"
+ },
+ "popup_pausing_site": {
+  "description": "popup.json",
+  "message": "Pausing on {0}…"
+ },
+ "popup_pausing_site_for": {
+  "description": "popup.json",
+  "message": "Pausing on {0} for {1}…"
+ },
+ "popup_pausing_site_tomorrow": {
+  "description": "popup.json",
+  "message": "Pausing on {0} until tomorrow morning…"
+ },
+ "popup_picker_failed": {
+  "description": "popup.json",
+  "message": "Could not start the picker on this page."
+ },
+ "popup_popup_ads": {
+  "description": "popup.json",
+  "message": "Pop-up ads"
+ },
+ "popup_popup_ads_desc": {
+  "description": "popup.json",
+  "message": "Closes ad tabs that pages open"
+ },
+ "popup_protecting_again": {
+  "description": "popup.json",
+  "message": "Protecting {0} again…"
+ },
+ "popup_protection_on": {
+  "description": "popup.json",
+  "message": "Protection is on."
+ },
+ "popup_recompile": {
+  "description": "popup.json",
+  "message": "Safari recompiles its rules, this can take up to half a minute."
+ },
+ "popup_recompile_reload": {
+  "description": "popup.json",
+  "message": "Safari recompiles its rules (up to half a minute), then the page reloads by itself."
+ },
+ "popup_requests_blocked_one": {
+  "description": "popup.json",
+  "message": "request blocked on this page"
+ },
+ "popup_requests_blocked_other": {
+  "description": "popup.json",
+  "message": "requests blocked on this page"
+ },
+ "popup_resume": {
+  "description": "popup.json",
+  "message": "Resume"
+ },
+ "popup_resuming": {
+  "description": "popup.json",
+  "message": "Resuming protection…"
+ },
+ "popup_settings": {
+  "description": "popup.json",
+  "message": "Settings and statistics"
+ },
+ "popup_setup_check": {
+  "description": "popup.json",
+  "message": "Setup check"
+ },
+ "popup_short_ads": {
+  "description": "popup.json",
+  "message": "Ad networks, banners and pop-ups"
+ },
+ "popup_short_annoyances": {
+  "description": "popup.json",
+  "message": "Newsletter and “open in app” pop-ups"
+ },
+ "popup_short_antiadblock": {
+  "description": "popup.json",
+  "message": "“Turn off your ad blocker” walls"
+ },
+ "popup_short_cookies": {
+  "description": "popup.json",
+  "message": "Consent pop-ups (can break some sites)"
+ },
+ "popup_short_french": {
+  "description": "popup.json",
+  "message": "Liste FR, for French sites"
+ },
+ "popup_short_privacy": {
+  "description": "popup.json",
+  "message": "Analytics and tracking scripts"
+ },
+ "popup_short_safety": {
+  "description": "popup.json",
+  "message": "Known malware sites"
+ },
+ "popup_short_social": {
+  "description": "popup.json",
+  "message": "Like and share buttons, social embeds"
+ },
+ "popup_short_urlclean": {
+  "description": "popup.json",
+  "message": "Strips utm_, fbclid, gclid… from links"
+ },
+ "popup_show_again": {
+  "description": "popup.json",
+  "message": "Show them again"
+ },
+ "popup_site_controls": {
+  "description": "popup.json",
+  "message": "Site controls"
+ },
+ "popup_site_controls_on_one": {
+  "description": "popup.json",
+  "message": "Site controls ({0} on)"
+ },
+ "popup_site_controls_on_other": {
+  "description": "popup.json",
+  "message": "Site controls ({0} on)"
+ },
+ "popup_site_protection": {
+  "description": "popup.json",
+  "message": "Protection on this site"
+ },
+ "popup_tag_title": {
+  "description": "popup.json",
+  "message": "Something broken? Allow {0} on {1}"
+ },
+ "popup_thanks": {
+  "description": "popup.json",
+  "message": "Thanks! Reload pages to apply."
+ },
+ "popup_this_site": {
+  "description": "popup.json",
+  "message": "This site"
+ },
+ "popup_today_blocked_one": {
+  "description": "popup.json",
+  "message": "{0} blocked today"
+ },
+ "popup_today_blocked_other": {
+  "description": "popup.json",
+  "message": "{0} blocked today"
+ },
+ "popup_today_popups_one": {
+  "description": "popup.json",
+  "message": "{0} pop-up closed"
+ },
+ "popup_today_popups_other": {
+  "description": "popup.json",
+  "message": "{0} pop-ups closed"
+ },
+ "popup_turning_off": {
+  "description": "popup.json",
+  "message": "Turning off {0}…"
+ },
+ "popup_turning_off_site": {
+  "description": "popup.json",
+  "message": "Turning off “{0}” for {1}…"
+ },
+ "popup_turning_on": {
+  "description": "popup.json",
+  "message": "Turning on {0}…"
+ },
+ "popup_turning_on_site": {
+  "description": "popup.json",
+  "message": "Turning on “{0}” for {1}…"
+ },
+ "popup_unhiding": {
+  "description": "popup.json",
+  "message": "Showing hidden elements on {0} again…"
+ },
+ "popup_version": {
+  "description": "popup.json",
+  "message": "Version {0}"
+ },
+ "popup_waiting_room": {
+  "description": "popup.json",
+  "message": "Waiting for room under Safari's rule limit"
+ },
+ "popup_youtube_ads": {
+  "description": "popup.json",
+  "message": "YouTube ads"
+ },
+ "popup_youtube_ads_desc": {
+  "description": "popup.json",
+  "message": "Video ads and ad banners"
+ },
+ "popup_youtube_off": {
+  "description": "popup.json",
+  "message": "Turning YouTube ad removal off…"
+ },
+ "popup_youtube_on": {
+  "description": "popup.json",
+  "message": "Turning YouTube ad removal on…"
+ },
+ "welcome_access_button": {
+  "description": "welcome.json",
+  "message": "Allow on every website"
+ },
+ "welcome_access_ok_desc": {
+  "description": "welcome.json",
+  "message": "Ad spaces are hidden, pop-ups closed and YouTube ads removed on every site."
+ },
+ "welcome_access_ok_title": {
+  "description": "welcome.json",
+  "message": "Allowed on every website"
+ },
+ "welcome_access_todo_desc": {
+  "description": "welcome.json",
+  "message": "Blocking already works, but hiding ad spaces, closing pop-ups and YouTube ad removal need access to websites."
+ },
+ "welcome_access_todo_title": {
+  "description": "welcome.json",
+  "message": "Not allowed on every website yet"
+ },
+ "welcome_access_when_asked": {
+  "description": "welcome.json",
+  "message": "Choose \"Always Allow on Every Website\" when Safari asks. If it does not ask: {0}"
+ },
+ "welcome_built_days": {
+  "description": "welcome.json",
+  "message": "Built {0} days ago."
+ },
+ "welcome_built_today": {
+  "description": "welcome.json",
+  "message": "Built today."
+ },
+ "welcome_built_yesterday": {
+  "description": "welcome.json",
+  "message": "Built yesterday."
+ },
+ "welcome_check_again": {
+  "description": "welcome.json",
+  "message": "Check again"
+ },
+ "welcome_check_failed": {
+  "description": "welcome.json",
+  "message": "Could not run the check: {0}"
+ },
+ "welcome_fresh_title": {
+  "description": "welcome.json",
+  "message": "Filter lists are recent"
+ },
+ "welcome_heading": {
+  "description": "welcome.json",
+  "message": "Bouclier is on"
+ },
+ "welcome_lists_desc": {
+  "description": "welcome.json",
+  "message": "{0}. {1} of Safari's 150,000 rules in use."
+ },
+ "welcome_lists_none_desc": {
+  "description": "welcome.json",
+  "message": "Open the toolbar shield and turn on Ads and Trackers."
+ },
+ "welcome_lists_none_title": {
+  "description": "welcome.json",
+  "message": "No filter list is active"
+ },
+ "welcome_lists_title": {
+  "description": "welcome.json",
+  "message": "{0} filter lists active"
+ },
+ "welcome_on_desc": {
+  "description": "welcome.json",
+  "message": "You are reading a page that only exists inside the extension, so Safari is running it."
+ },
+ "welcome_on_title": {
+  "description": "welcome.json",
+  "message": "Bouclier is turned on in Safari"
+ },
+ "welcome_page_title": {
+  "description": "welcome.json",
+  "message": "Welcome to Bouclier"
+ },
+ "welcome_private_off_desc_ios": {
+  "description": "welcome.json",
+  "message": "To protect Private Browsing: {0} → turn on \"Allow in Private Browsing\"."
+ },
+ "welcome_private_off_desc_mac": {
+  "description": "welcome.json",
+  "message": "To protect Private Browsing: {0} → tick \"Allow in Private Browsing\"."
+ },
+ "welcome_private_off_title": {
+  "description": "welcome.json",
+  "message": "Off in Private Browsing"
+ },
+ "welcome_private_ok_desc": {
+  "description": "welcome.json",
+  "message": "Private Browsing is protected too."
+ },
+ "welcome_private_ok_title": {
+  "description": "welcome.json",
+  "message": "Works in Private Browsing"
+ },
+ "welcome_setup_check": {
+  "description": "welcome.json",
+  "message": "Setup check"
+ },
+ "welcome_setup_intro": {
+  "description": "welcome.json",
+  "message": "Bouclier checks its own setup. Anything marked with an orange dot needs one click from you."
+ },
+ "welcome_stale_desc": {
+  "description": "welcome.json",
+  "message": "Check the App Store for a Bouclier update: each one brings fresh lists."
+ },
+ "welcome_stale_title": {
+  "description": "welcome.json",
+  "message": "Filter lists are {0} days old"
+ },
+ "welcome_state_attention": {
+  "description": "welcome.json",
+  "message": "Needs attention"
+ },
+ "welcome_state_done": {
+  "description": "welcome.json",
+  "message": "Done"
+ },
+ "welcome_state_unknown": {
+  "description": "welcome.json",
+  "message": "Unknown"
+ },
+ "welcome_tip_hide_ios": {
+  "description": "welcome.json",
+  "message": "<strong>Hide an element</strong> in Bouclier's menu, then tap the thing you want gone. It stays hidden on that site."
+ },
+ "welcome_tip_rightclick_mac": {
+  "description": "welcome.json",
+  "message": "<strong>Right-click anything</strong> and choose <em>Hide This Element…</em> to make it disappear for good, or <em>Pause Bouclier on this site</em>."
+ },
+ "welcome_tip_shortcuts_change": {
+  "description": "welcome.json",
+  "message": "Change them in Safari Settings → Extensions."
+ },
+ "welcome_tip_shortcuts_default": {
+  "description": "welcome.json",
+  "message": "Option-Shift-B opens Bouclier, Option-Shift-P pauses the current site, Option-Shift-H hides an element."
+ },
+ "welcome_tip_shortcuts_label": {
+  "description": "welcome.json",
+  "message": "Shortcuts"
+ },
+ "welcome_tip_toolbar_ios": {
+  "description": "welcome.json",
+  "message": "<strong>Bouclier in Safari's page menu</strong> (in the address bar) shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for 1 hour, 2 hours or until tomorrow."
+ },
+ "welcome_tip_toolbar_mac": {
+  "description": "welcome.json",
+  "message": "<strong>The shield in the toolbar</strong> shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for 1 hour, 2 hours or until tomorrow."
+ },
+ "welcome_try_intro": {
+  "description": "welcome.json",
+  "message": "This independent test page loads real ad and tracker addresses and shows what got through. With Bouclier on and allowed on all websites, it should show 100%."
+ },
+ "welcome_try_it": {
+  "description": "welcome.json",
+  "message": "Try it"
+ },
+ "welcome_try_link": {
+  "description": "welcome.json",
+  "message": "Open the ad blocker test"
+ },
+ "welcome_version_line": {
+  "description": "welcome.json",
+  "message": "Version {0} · filter lists built {1}"
+ },
+ "welcome_worth_knowing": {
+  "description": "welcome.json",
+  "message": "Worth knowing"
+ }
+}

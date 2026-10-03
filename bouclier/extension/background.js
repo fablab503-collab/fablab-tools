@@ -19,6 +19,27 @@
 const api = globalThis.browser ?? globalThis.chrome;
 const menus = api.contextMenus || api.menus || null;
 
+/*
+ * What people see from here (the right-click menu, notices shown on pages, messages for the menu and
+ * the settings page) is in the device's language: French on a device set to French, English
+ * otherwise. The texts are in i18n/background.json (tools/i18n.py builds _locales from it).
+ * common/i18n.js touches the page, so the worker has its own t(), which works the same way:
+ * t(key, a, b) is the text with {0}, {1}… replaced by a, b (a missing text shows its key).
+ */
+function t(key, ...subs) {
+  let s = '';
+  try { s = api.i18n.getMessage(key) || ''; } catch { /* no i18n */ }
+  if (!s) return key;
+  return subs.length ? s.replace(/\{(\d)\}/g, (m, i) => (subs[i] !== undefined ? String(subs[i]) : m)) : s;
+}
+
+/** A number as the device writes it: "5 000" in French; in English the device's own format ("5,000"). */
+function formatNumber(n) {
+  let lang;
+  try { if (/^fr(?![a-z])/i.test(api.i18n.getUILanguage() || '')) lang = 'fr'; } catch { /* English */ }
+  return n.toLocaleString(lang);
+}
+
 const WEBKIT_BUDGET = 147000;           // Safari's hard cap is 150,000
 const PRIORITY_SITE_ALLOW = 100;        // beats every list rule
 const PRIORITY_SITE_CONTROL = 5;        // per-site "block fonts / scripts"
@@ -67,11 +88,15 @@ const CATEGORY_OF_LIST = {
   ads: 'ads', french: 'ads', antiadblock: 'ads', privacy: 'trackers', safety: 'malware',
   urlclean: 'links', cookies: 'annoyances', social: 'annoyances', annoyances: 'annoyances',
 };
-const CATEGORY_LABELS = {
-  ads: 'Ads', trackers: 'Trackers', malware: 'Malware', annoyances: 'Annoyances',
-  custom: 'Your filters', site: 'Site controls', links: 'Links cleaned', popups: 'Pop-ups closed', other: 'Other',
-  blocked: 'Blocked',
-};
+/** What the menu and the settings page call each kind of blocked load, in the device's language. */
+function categoryLabels() {
+  return {
+    ads: t('bg_category_ads'), trackers: t('bg_category_trackers'), malware: t('bg_category_malware'),
+    annoyances: t('bg_category_annoyances'), custom: t('bg_category_custom'), site: t('bg_category_site'),
+    links: t('bg_category_links'), popups: t('bg_category_popups'), other: t('bg_category_other'),
+    blocked: t('bg_category_blocked'),
+  };
+}
 
 /* ------------------------------------------------------------------ utils */
 
@@ -84,7 +109,10 @@ async function getCatalogue() {
   return catalogueCache;
 }
 
-/** Rejects selectors that could break the stylesheet they are injected into. */
+// A selector that matches the whole page would blank every site it applies to.
+const WHOLE_PAGE_SELECTOR = /^\s*(\*|html|body|:root)(\s*>?\s*(body|\*))?\s*$/i;
+
+/** Rejects selectors that could break the stylesheet they are injected into, or hide the whole page. */
 function isSafeSelector(sel) {
   if (typeof sel !== 'string' || !sel.trim() || sel.length > 1000) return false;
   if (/[{}]|\/\*|\*\/|\\$/.test(sel)) return false;
@@ -99,10 +127,12 @@ function isSafeSelector(sel) {
     }
     if (ch === '"' || ch === "'") quote = ch;
     else if (ch === '\\') i++;
+    else if (ch === ';' || ch === '@') return false;     // would end the rule or start an at-rule
     else if (ch === '[' || ch === '(') stack.push(ch === '[' ? ']' : ')');
     else if (ch === ']' || ch === ')') { if (stack.pop() !== ch) return false; }
   }
-  return !quote && stack.length === 0;
+  if (quote || stack.length) return false;
+  return !sel.split(',').some(part => WHOLE_PAGE_SELECTOR.test(part));
 }
 
 function isHostname(value) {
@@ -119,7 +149,10 @@ async function getSettings() {
     // "Clean links" arrived in version 1.1 and is on by default
     s.enabledLists = s.enabledLists.concat('urlclean');
   }
+  // a list id twice would register its content script twice, which Safari refuses
+  s.enabledLists = [...new Set(s.enabledLists.filter(id => typeof id === 'string'))];
   if (!Array.isArray(s.pausedSites)) s.pausedSites = [];
+  if (typeof s.customFilters !== 'string') s.customFilters = '';
   for (const key of ['pickedHides', 'siteControls', 'sitePauseUntil']) {
     if (!s[key] || typeof s[key] !== 'object' || Array.isArray(s[key])) s[key] = {};
   }
@@ -141,9 +174,15 @@ function hostnameOf(url) {
   }
 }
 
+// "www.gov.uk" must stay itself: without "www." it would be a public suffix shared by many sites.
+const PUBLIC_SECOND_LEVEL = /^(?:co|com|net|org|gov|gouv|edu|ac|nhs|police|ltd|plc|sch|ne|or|go|mil|nic|asso)\.[a-z]{2}$/;
+
 /** The hostname we store for a site-level choice. */
 function siteKey(host) {
-  return host ? host.replace(/^www\d*\./, '') : host;
+  if (!host) return host;
+  const rest = host.replace(/^www\d*\./, '');
+  if (rest === host || !rest.includes('.') || PUBLIC_SECOND_LEVEL.test(rest)) return host;
+  return rest;
 }
 
 function isSitePaused(host, pausedSites) {
@@ -199,8 +238,8 @@ function hostMatches(host, domain) {
 /** WebKit rules Safari generates for one DNR rule (mirrors tools/convert.py). */
 function webkitCount(rule) {
   const c = rule.condition || {};
-  const t = rule.action.type;
-  const allowAll = t === 'allowAllRequests';
+  const actionType = rule.action.type;
+  const allowAll = actionType === 'allowAllRequests';
   const rd = c.regexFilter ? null : c.requestDomains;
   const rm = allowAll ? null : c.requestMethods;
   const mainUnits = (rd ? rd.length : 1) * (rm ? rm.length : 1);
@@ -209,7 +248,7 @@ function webkitCount(rule) {
   const exclUnits = erd ? erd.length * (erm ? erm.length : 1) : (erm ? erm.length : 0);
   let perUnit = 1;
   if (c.initiatorDomains && c.excludedInitiatorDomains && !allowAll) perUnit += 1;
-  if (t === 'upgradeScheme') perUnit += 1;
+  if (actionType === 'upgradeScheme') perUnit += 1;
   return (mainUnits + exclUnits) * perUnit;
 }
 
@@ -271,34 +310,70 @@ function parseDomainOption(value) {
  *   ##.sponsored               hide .sponsored everywhere
  *   example.com#@#.promo       don't hide .promo on example.com
  */
+/** A site written in front of ## -> the hostname pages report ("bücher.de" -> "xn--bcher-kva.de"), or null. */
+function cosmeticHost(d) {
+  const neg = d.startsWith('~') ? '~' : '';
+  const h = d.slice(neg.length);
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)*\.\*$/.test(h)) return d;           // example.* (any ending)
+  if (!h || /[:/\s\\@?#]/.test(h)) return null;                          // ports, paths, spaces
+  try {
+    const host = new URL(`http://${h}/`).hostname.replace(/\.$/, '');
+    return isHostname(host) ? neg + host : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseCustomFilters(text) {
   const network = [];
-  const cosmetic = { specific: {}, generic: [], exceptions: {} };
+  const cosmetic = { specific: {}, generic: [], genericExcluded: {}, exceptions: {} };
   const errors = [];
   const lines = String(text || '').split(/\r?\n/);
   lines.forEach((raw, index) => {
-    const line = raw.trim();
-    if (!line || line.startsWith('!') || line.startsWith('[')) return;
-    const where = `Line ${index + 1}`;
+    let line = raw.trim();
+    // comments: "! …" (Adblock Plus), "[Adblock Plus 2.0]" headers, "# …" (hosts files)
+    if (!line || line.startsWith('!') || line.startsWith('[') || /^#(\s|$)/.test(line)) return;
+    const lineNo = index + 1;   // the messages start with it: "Line 3: …"
+    // hosts-file lines ("0.0.0.0 ads.example.com") block that host
+    const hostsLine = line.match(/^(?:0\.0\.0\.0|127\.0\.0\.1|::1?|::)\s+([a-z0-9.-]+)(\s+#.*)?$/i);
+    if (hostsLine) {
+      if (/^(localhost|localhost\.localdomain|local|broadcasthost|0\.0\.0\.0)$/i.test(hostsLine[1])) return;
+      line = `||${hostsLine[1]}^`;
+    }
 
     const cm = line.match(/^([^\s#/|$]*?)(#@?#)(.+)$/);
     if (cm) {
-      const [, domains, sep, selector] = cm;
-      if (!isSafeSelector(selector.trim()) || selector.startsWith('+js(')) {
-        errors.push(`${where}: only plain, complete CSS selectors are supported`);
+      const [, domains, sep, rawSelector] = cm;
+      const selector = rawSelector.trim();
+      if (!isSafeSelector(selector) || selector.startsWith('+js(')) {
+        errors.push(t('bg_filter_bad_selector', lineNo));
         return;
       }
-      const hosts = domains.split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
+      const hosts = domains.split(',').map(d => d.trim().toLowerCase()).filter(Boolean).map(cosmeticHost);
+      if (hosts.includes(null)) {
+        errors.push(t('bg_filter_plain_sites', lineNo));
+        return;
+      }
       if (sep === '#@#') {
-        for (const h of hosts) (cosmetic.exceptions[h] ||= []).push(selector.trim());
-        if (!hosts.length) errors.push(`${where}: an exception (#@#) needs a site in front`);
+        for (const h of hosts) (cosmetic.exceptions[h.replace(/^~/, '')] ||= []).push(selector);
+        if (!hosts.length) errors.push(t('bg_filter_exception_site', lineNo));
         return;
       }
-      if (!hosts.length) cosmetic.generic.push(selector.trim());
-      for (const h of hosts) {
-        if (h.startsWith('~')) continue;
-        (cosmetic.specific[h] ||= []).push(selector.trim());
+      const include = hosts.filter(h => !h.startsWith('~'));
+      const exclude = hosts.filter(h => h.startsWith('~')).map(h => h.slice(1));
+      if (!include.length) {
+        // "##.promo" everywhere, or "~site.com##.promo" everywhere except those sites
+        cosmetic.generic.push(selector);
+        if (exclude.length) (cosmetic.genericExcluded[selector] ||= []).push(...exclude);
+        return;
       }
+      for (const h of include) (cosmetic.specific[h] ||= []).push(selector);
+      for (const h of exclude) (cosmetic.exceptions[h] ||= []).push(selector);  // "site.com,~sub.site.com##…"
+      return;
+    }
+    if (/#@?#/.test(line)) {
+      // "https://example.org/##.ad": an element-hiding filter with an address in front
+      errors.push(t('bg_filter_plain_sites', lineNo));
       return;
     }
 
@@ -328,28 +403,34 @@ function parseCustomFilters(text) {
       if (name in TYPE_OPTIONS) (neg ? notTypes : types).add(TYPE_OPTIONS[name]);
       else if (name === 'third-party' || name === '3p') cond.domainType = neg ? 'firstParty' : 'thirdParty';
       else if (name === 'first-party' || name === '1p') cond.domainType = neg ? 'thirdParty' : 'firstParty';
-      else if (name === 'all') SAFARI_TYPES.forEach(t => types.add(t));
+      else if (name === 'all') SAFARI_TYPES.forEach(type => types.add(type));
       else if (name === 'domain' && value) {
         const parsed = parseDomainOption(value);
-        if (!parsed) { errors.push(`${where}: unsupported domain list`); return; }
+        if (!parsed) { errors.push(t('bg_filter_bad_domains', lineNo)); return; }
         if (parsed.inc.length) cond.initiatorDomains = parsed.inc;
         if (parsed.exc.length) cond.excludedInitiatorDomains = parsed.exc;
       } else if (name === 'match-case') cond.isUrlFilterCaseSensitive = true;
       else if (name === 'important') { /* custom rules already win */ }
-      else { errors.push(`${where}: option "${name}" is not supported`); return; }
+      else { errors.push(t('bg_filter_bad_option', lineNo, name)); return; }
     }
     const pure = pattern.match(/^\|\|([a-z0-9.-]+)\^$/i);
     if (pure) {
-      cond.requestDomains = [pure[1].toLowerCase()];
+      // a whole domain: written as urlFilter, which every Safari applies (Safari before 26 skips
+      // requestDomains; tools/convert.py writes the lists' domains the same way)
+      cond.urlFilter = '||' + pure[1].toLowerCase() + '^';
     } else {
       let p = pattern.trim();
       if (p.startsWith('||*')) p = p.slice(2);
-      if (!/^[\x20-\x7e]+$/.test(p) || p.length < 3) {
-        errors.push(`${where}: pattern is too short or not ASCII`);
+      if (/\s/.test(p)) {
+        errors.push(t('bg_filter_spaces', lineNo));
+        return;
+      }
+      if (!/^[\x21-\x7e]+$/.test(p) || p.length < 3) {
+        errors.push(t('bg_filter_short', lineNo));
         return;
       }
       if (p.startsWith('/') && p.endsWith('/') && p.length > 2) {
-        errors.push(`${where}: regular expressions are not supported`);
+        errors.push(t('bg_filter_regex', lineNo));
         return;
       }
       cond.urlFilter = p;
@@ -375,25 +456,70 @@ function parseCustomFilters(text) {
 
 /* ------------------------------------------------------ dynamic rules */
 
-// Safari applies an allow rule's initiatorDomains nowhere: "allow this address on this site"
-// would allow it on every site. The older "domains" keys keep it on its site (tested in Safari,
-// macOS 27, 2026-09-23). Chromium gets the standard keys.
+// Safari only knows initiatorDomains / excludedInitiatorDomains from Safari 26, and even there it
+// applies an allow rule's initiatorDomains nowhere ("allow this address on this site" would allow it
+// on every site; tested in Safari, macOS 27, 2026-09-23). The older "domains" / "excludedDomains"
+// keys work from Safari 15 to 27, so every rule Safari gets uses them (tools/xcode_setup.py does the
+// same for the lists). Chromium, used by the tests, gets the standard keys.
 const IS_SAFARI = (() => { try { return api.runtime.getURL('').startsWith('safari-web-extension:'); } catch { return false; } })();
 function forSafari(rule) {
-  const t = rule.action && rule.action.type;
-  if (!IS_SAFARI || (t !== 'allow' && t !== 'allowAllRequests')) return rule;
+  if (!IS_SAFARI) return rule;
   const c = Object.assign({}, rule.condition);
   if (c.initiatorDomains) { c.domains = c.initiatorDomains; delete c.initiatorDomains; }
   if (c.excludedInitiatorDomains) { c.excludedDomains = c.excludedInitiatorDomains; delete c.excludedInitiatorDomains; }
   return Object.assign({}, rule, { condition: c });
 }
 
-function buildDynamicRules(settings, custom) {
+// Safari before 26 (iOS 18, macOS 15 and older) does not apply requestDomains and counts a rule that
+// covers frames and other loads twice, so each list also comes as "<id>_compat": every domain as its own
+// rule, block rules without types limited to everything but frames (tools/convert.py, compat_rules;
+// measured on iOS 18.5: 16 % of the test page blocked with the regular rules, 100 % with these).
+// Safari 26 and later, and Chromium (the tests), get the regular rulesets.
+const SAFARI_MAJOR = (() => {
+  if (!IS_SAFARI) return 0;
+  const m = /Version\/(\d+)/.exec((globalThis.navigator && navigator.userAgent) || '');
+  return m ? Number(m[1]) : 0;
+})();
+let compatOverride = null;   // the tests switch the compat rulesets on in Chromium (message debug:compat)
+// Safari 17 and older: a listener that returns true and answers later with sendResponse leaves the page
+// with undefined (iOS 17.5 simulator, 3 Oct 2026: the menu said "Could not load"). There the answer is
+// the promise the listener returns, as the WebExtension standard has it; Safari 18 and later, and
+// Chromium, keep sendResponse, as measured on iOS 18.5 to 27.
+const PROMISE_REPLIES = SAFARI_MAJOR > 0 && SAFARI_MAJOR < 18;
+function useCompat(cat) {
+  const below = (cat && cat.compatBelowSafari) || 26;
+  return compatOverride !== null ? compatOverride : (SAFARI_MAJOR > 0 && SAFARI_MAJOR < below);
+}
+/** The ruleset that holds a list's rules in this browser. */
+function rulesetIdOf(list, cat) {
+  return useCompat(cat) && list.compatRules ? list.id + '_compat' : list.id;
+}
+/** The list a ruleset belongs to. */
+function listIdOf(rulesetId) {
+  return typeof rulesetId === 'string' && rulesetId.endsWith('_compat') ? rulesetId.slice(0, -7) : rulesetId;
+}
+/** WebKit rules a list costs in this browser. */
+function listCost(list, cat) {
+  return useCompat(cat) && list.compatRules ? list.compatWebkitRules : list.webkitRules;
+}
+
+// How many dynamic rules the browser accepts (Safari 16.4+: MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES,
+// Chromium: MAX_NUMBER_OF_DYNAMIC_RULES). Going over makes updateDynamicRules() fail as a whole.
+const MAX_DYNAMIC_RULES = (() => {
+  const d = api.declarativeNetRequest || {};
+  const n = Number(d.MAX_NUMBER_OF_DYNAMIC_RULES || d.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES);
+  return n > 0 ? n : 5000;
+})();
+
+function buildDynamicRules(settings, custom, max = MAX_DYNAMIC_RULES) {
   const rules = [];
+  let dropped = 0;
+  const add = rule => { if (rules.length < max) rules.push(rule); else dropped++; };
+  // paused sites first: pausing must keep working whatever else the user added
   let pauseId = ID_SITE_PAUSE;
   for (const site of settings.pausedSites) {
-    if (!isHostname(site)) continue;
-    rules.push({
+    if (!isHostname(site) || pauseId >= ID_CUSTOM_ALLOW) continue;
+    add({
       id: pauseId++,
       priority: PRIORITY_SITE_ALLOW,
       action: { type: 'allowAllRequests' },
@@ -402,29 +528,31 @@ function buildDynamicRules(settings, custom) {
   }
   let allowId = ID_CUSTOM_ALLOW;
   let blockId = ID_CUSTOM_BLOCK;
+  let tooMany = false;
   for (const r of custom.network) {
     const isAllow = r.action.type === 'allow' || r.action.type === 'allowAllRequests';
-    if (isAllow ? allowId >= ID_CUSTOM_BLOCK : blockId >= ID_SITE_CONTROL) {
-      custom.errors.push('Too many filters: only the first 10,000 blocking and 10,000 allowing filters are used.');
-      break;
-    }
-    rules.push(Object.assign({ id: isAllow ? allowId++ : blockId++ }, r));
+    if (isAllow ? allowId >= ID_CUSTOM_BLOCK : blockId >= ID_SITE_CONTROL) { tooMany = true; continue; }
+    add(Object.assign({ id: isAllow ? allowId++ : blockId++ }, r));
   }
+  if (tooMany) custom.errors.push(t('bg_filter_too_many', formatNumber(10000), formatNumber(10000)));
   let controlId = ID_SITE_CONTROL;
   for (const [site, c] of Object.entries(settings.siteControls || {})) {
     if (!isHostname(site) || !c) continue;
     if (c.fonts) {
-      rules.push({
+      add({
         id: controlId++, priority: PRIORITY_SITE_CONTROL, action: { type: 'block' },
         condition: { initiatorDomains: [site], resourceTypes: ['font'] },
       });
     }
     if (c.scripts3p) {
-      rules.push({
+      add({
         id: controlId++, priority: PRIORITY_SITE_CONTROL, action: { type: 'block' },
         condition: { initiatorDomains: [site], domainType: 'thirdParty', resourceTypes: ['script'] },
       });
     }
+  }
+  if (dropped) {
+    custom.errors.push(t('bg_rule_limit', formatNumber(max), formatNumber(dropped)));
   }
   return rules;
 }
@@ -434,19 +562,38 @@ function buildDynamicRules(settings, custom) {
 let applyChain = Promise.resolve();
 let applying = false;
 
+/** Applies the saved settings to Safari. Resolves to { ok: true } or { ok: false, error }. */
 function applySettings(options = {}) {
-  applyChain = applyChain.then(async () => {
+  const job = applyChain.then(async () => {
     applying = true;
     try {
-      return await doApply(options);
+      await doApply(options);
+      await api.storage.local.remove('lastError');
+      return { ok: true };
     } finally {
       applying = false;
     }
-  }).catch(err => {
-    console.error('Bouclier: applying settings failed', err);
-    return api.storage.local.set({ lastError: { at: Date.now(), message: String(err && err.message || err) } });
+  }).catch(async err => {
+    const message = String(err && err.message || err);
+    console.warn('Bouclier: applying settings failed', message);
+    try { await api.storage.local.set({ lastError: { at: Date.now(), message } }); } catch { /* storage full */ }
+    return { ok: false, error: message };
   });
-  return applyChain;
+  applyChain = job;
+  return job;
+}
+
+// Settings are read, changed and saved one change at a time, so two quick taps never undo each other.
+let settingsChain = Promise.resolve();
+function mutateSettings(fn) {
+  const job = settingsChain.then(async () => {
+    const s = await getSettings();
+    const result = await fn(s);
+    if (result !== false) await saveSettings(s);   // fn returns false: nothing to save
+    return s;
+  });
+  settingsChain = job.catch(() => {});
+  return job;
 }
 
 /** Ends timed pauses that are over. Returns true when something changed. */
@@ -487,17 +634,25 @@ async function scheduleAlarms(s) {
   }
   for (const [name, when] of want) {
     const current = existing.find(a => a.name === name);
-    if (!current || current.scheduledTime !== when) api.alarms.create(name, { when: Math.max(when, Date.now() + 1000) });
+    if (!current || current.scheduledTime !== when) await api.alarms.create(name, { when: Math.max(when, Date.now() + 1000) });
   }
-  if (!existing.some(a => a.name === 'stats-flush')) api.alarms.create('stats-flush', { periodInMinutes: 5 });
+  if (!existing.some(a => a.name === 'stats-flush')) await api.alarms.create('stats-flush', { periodInMinutes: 5 });
+}
+
+// Bumped whenever the rules change, so a cache built from older settings is never kept.
+let cacheGeneration = 0;
+function dropCaches() {
+  cacheGeneration++;
+  cosmeticCache = null;
+  popupMatcher = null;
 }
 
 async function doApply({ force = false } = {}) {
-  const s = await getSettings();
-  if (purgeExpired(s)) await saveSettings(s);
+  const s = await mutateSettings(x => purgeExpired(x));
   const cat = await getCatalogue();
   const custom = parseCustomFilters(s.customFilters);
   const byId = Object.fromEntries(cat.lists.map(l => [l.id, l]));
+  const problems = [];
 
   // 1. which rulesets fit in Safari's budget
   const dynamic = s.paused ? [] : buildDynamicRules(s, custom);
@@ -507,45 +662,56 @@ async function doApply({ force = false } = {}) {
   for (const id of s.paused ? [] : s.enabledLists) {
     const list = byId[id];
     if (!list) continue;
-    if (cost + list.webkitRules > WEBKIT_BUDGET) {
+    if (cost + listCost(list, cat) > WEBKIT_BUDGET) {
       overBudget.push(id);
       continue;
     }
-    cost += list.webkitRules;
+    cost += listCost(list, cat);
     enabled.push(id);
   }
 
+  // Each step runs even when an earlier one failed, so one problem (for example too many rules of
+  // the user's own) never leaves content scripts, alarms or the saved state behind.
+  // problem(detail) is what the menu and the settings page show when the step fails ("your rules: …").
+  const step = async (problem, fn) => {
+    try { await fn(); } catch (err) { problems.push(problem(String(err && err.message || err))); }
+  };
+
   // 2. static rulesets
-  const current = await api.declarativeNetRequest.getEnabledRulesets();
-  const enable = enabled.filter(id => !current.includes(id));
-  const disable = current.filter(id => !enabled.includes(id));
-  if (enable.length || disable.length) {
-    await api.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: enable, disableRulesetIds: disable });
-  }
+  await step(detail => t('bg_problem_lists', detail), async () => {
+    const want = enabled.map(id => rulesetIdOf(byId[id], cat));
+    const current = await api.declarativeNetRequest.getEnabledRulesets();
+    const enable = want.filter(id => !current.includes(id));
+    const disable = current.filter(id => !want.includes(id));
+    if (enable.length || disable.length) {
+      await api.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: enable, disableRulesetIds: disable });
+    }
+  });
 
   // 3. dynamic rules (paused sites + custom filters + site controls)
-  const signature = JSON.stringify(dynamic);
-  const { dnrSignature } = await api.storage.local.get('dnrSignature');
-  const existing = await api.declarativeNetRequest.getDynamicRules();
-  if (force || dnrSignature !== signature || existing.length !== dynamic.length) {
-    await api.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: existing.map(r => r.id),
-      addRules: dynamic.map(forSafari),
-    });
-    await api.storage.local.set({ dnrSignature: signature });
-  }
+  await step(detail => t('bg_problem_rules', detail), async () => {
+    const signature = JSON.stringify(dynamic);
+    const { dnrSignature } = await api.storage.local.get('dnrSignature');
+    const existing = await api.declarativeNetRequest.getDynamicRules();
+    if (force || dnrSignature !== signature || existing.length !== dynamic.length) {
+      await api.storage.local.remove('dnrSignature');   // a failed update below must be retried next time
+      await api.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: existing.map(r => r.id),
+        addRules: dynamic.map(forSafari),
+      });
+      await api.storage.local.set({ dnrSignature: signature });
+    }
+  });
 
   // 4. content scripts
-  await syncContentScripts(s, cat, enabled, force);
+  await step(detail => t('bg_problem_hiding', detail), () => syncContentScripts(s, cat, enabled, force));
 
   // 5. toolbar count, alarms, menu
   try {
     await api.declarativeNetRequest.setExtensionActionOptions({ displayActionCountAsBadgeText: !!s.showBadge && !s.paused });
-  } catch { /* older Safari */ }
+  } catch { /* Safari before 16.4 */ }
   await scheduleAlarms(s).catch(() => {});
 
-  cosmeticCache = null;
-  popupMatcher = null;
   await api.storage.local.set({
     state: {
       appliedAt: Date.now(),
@@ -554,26 +720,48 @@ async function doApply({ force = false } = {}) {
       webkitRules: cost,
       customErrors: custom.errors,
       listsBuilt: cat.generated,
+      problems,
     },
   });
+  dropCaches();   // after the new state is saved, so a page loading meanwhile cannot rebuild an old cache
   await refreshAllTabIcons(s);
   await refreshSiteMenu(null, s);
+  if (problems.length) throw new Error(problems.join('; '));
+}
+
+/** Removes the keys older Safari versions do not know, one at a time, until Safari accepts the call. */
+function withoutNewerKeys(items, keys) {
+  return items.map(item => {
+    const copy = Object.assign({}, item);
+    for (const k of keys) delete copy[k];
+    return copy;
+  });
 }
 
 async function registerScripts(scripts) {
-  try {
-    await api.scripting.registerContentScripts(scripts);
-  } catch (err) {
-    // Chromium (used for automated tests) has no cssOrigin; Safari 18+ does.
-    if (/cssOrigin/i.test(String(err && err.message))) {
-      await api.scripting.registerContentScripts(scripts.map(sc => {
-        const copy = Object.assign({}, sc);
-        delete copy.cssOrigin;
-        return copy;
-      }));
-    } else {
-      throw err;
+  // cssOrigin needs Safari 18 (Chromium, used by the tests, has none): without it the element-hiding
+  // style sheets are ordinary page style sheets, which still hide with !important.
+  const attempts = [[], ['cssOrigin']];
+  let lastErr = null;
+  for (const drop of attempts) {
+    try {
+      await api.scripting.registerContentScripts(drop.length ? withoutNewerKeys(scripts, drop) : scripts);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (/duplicate/i.test(String(err && err.message))) break;   // retrying without keys cannot help
     }
+  }
+  throw lastErr;
+}
+
+/** insertCSS as a user style sheet (Safari 18+), or as a page style sheet on older Safari. */
+async function insertUserCSS(details) {
+  try {
+    await api.scripting.insertCSS(Object.assign({ origin: 'USER' }, details));
+  } catch (err) {
+    if (/no tab|not found|closed|frame/i.test(String(err && err.message))) throw err;
+    await api.scripting.insertCSS(details);
   }
 }
 
@@ -646,6 +834,7 @@ async function loadJSON(path) {
 
 async function getCosmeticData(s) {
   if (cosmeticCache) return cosmeticCache;
+  const generation = cacheGeneration;
   const { state } = await api.storage.local.get('state');
   const enabled = (state && state.enabledLists) || s.enabledLists;
   const sources = await Promise.all(enabled.map(id => loadJSON(`cosmetic/${id}.json`).catch(() => null)));
@@ -657,6 +846,7 @@ async function getCosmeticData(s) {
     specific: Object.assign({}, custom.specific),
     exceptions: custom.exceptions,
     genericDynamic: custom.generic,
+    genericExcluded: custom.genericExcluded,
   });
   const picked = {};
   for (const [host, sels] of Object.entries(s.pickedHides || {})) picked[host] = sels;
@@ -664,8 +854,9 @@ async function getCosmeticData(s) {
   for (const [site, c] of Object.entries(s.siteControls || {})) if (c && c.comments) comments[site] = COMMENT_SELECTORS;
   lists.push({ specific: picked });
   lists.push({ specific: comments });
-  cosmeticCache = { lists };
-  return cosmeticCache;
+  const data = { lists };
+  if (generation === cacheGeneration) cosmeticCache = data;   // settings changed meanwhile: don't keep it
+  return data;
 }
 
 function selectorsFor(host, data) {
@@ -720,11 +911,7 @@ async function injectCosmetics(msg, sender) {
   if (selectors.length) {
     // one rule per selector: a selector Safari does not understand only drops itself
     const css = selectors.map(sel => `${sel}{display:none!important}`).join('\n');
-    await api.scripting.insertCSS({
-      target: { tabId, frameIds: [sender.frameId || 0] },
-      css,
-      origin: 'USER',
-    });
+    await insertUserCSS({ target: { tabId, frameIds: [sender.frameId || 0] }, css });
   }
   return { ok: true, count: selectors.length };
 }
@@ -737,28 +924,17 @@ async function injectCosmetics(msg, sender) {
  * instead, allow rules included. Both shapes are handled.
  */
 
-let trackingParams = null;
-async function getTrackingParams() {
-  if (!trackingParams) {
-    try {
-      const d = await loadJSON('data/tracking-params.json');
-      trackingParams = new Set([...(d.global || []), ...(d.sites || []).flatMap(x => x.params || [])]);
-    } catch {
-      trackingParams = new Set();
-    }
-  }
-  return trackingParams;
-}
-
 function isAllowRule(rule, cat) {
   if (rule.rulesetId === '_dynamic' || rule.rulesetId === '_session') return rule.ruleId < ID_CUSTOM_BLOCK;
-  const list = cat.lists.find(l => l.id === rule.rulesetId);
-  return !!list && rule.ruleId <= (list.allowIdMax || 0);
+  const id = listIdOf(rule.rulesetId);
+  const list = cat.lists.find(l => l.id === id);
+  if (!list) return false;
+  return rule.ruleId <= ((id === rule.rulesetId ? list.allowIdMax : list.compatAllowIdMax) || 0);
 }
 
 function categoryOf(rule) {
   if (rule.rulesetId === '_dynamic' || rule.rulesetId === '_session') return rule.ruleId >= ID_SITE_CONTROL ? 'site' : 'custom';
-  return CATEGORY_OF_LIST[rule.rulesetId] || 'other';
+  return CATEGORY_OF_LIST[listIdOf(rule.rulesetId)] || 'other';
 }
 
 /** One matched load -> { ts, host, category }, or null for allow-rule matches. */
@@ -833,10 +1009,10 @@ async function allMatched(maxAgeMs = 0) {
   }
 }
 
-function siteAt(t, ts) {
-  const history = t.history || [];
+function siteAt(tabInfo, ts) {
+  const history = tabInfo.history || [];
   for (let i = history.length - 1; i >= 0; i--) if (ts >= history[i].from) return history[i].site;
-  return history.length ? history[0].site : t.site;
+  return history.length ? history[0].site : tabInfo.site;
 }
 
 /** Moves new matches of every tab into the saved statistics, credited to the site shown at the time. */
@@ -853,15 +1029,15 @@ function flushAll() {
     const newLast = {};
     for (const raw of info) {
       if (raw.tabId == null || raw.tabId < 0) continue;
-      const t = tabs[raw.tabId] || (tabs[raw.tabId] = {});
+      const tabInfo = tabs[raw.tabId] || (tabs[raw.tabId] = {});
       const ts = msTime(raw.timeStamp);
-      if (!(ts > (t.last || 0))) continue;
+      if (!(ts > (tabInfo.last || 0))) continue;
       newLast[raw.tabId] = Math.max(newLast[raw.tabId] || 0, ts);
       const m = normalizeMatch(raw, cat, params);
       if (!m) continue;
       counts[m.category] = (counts[m.category] || 0) + 1;
-      if (!NOT_BLOCKS.has(m.category) && !t.incognito) {
-        const site = siteAt(t, ts);
+      if (!NOT_BLOCKS.has(m.category) && !tabInfo.incognito) {
+        const site = siteAt(tabInfo, ts);
         if (site) sites[site] = (sites[site] || 0) + 1;
         if (m.host) {
           const d = baseDomain(m.host);
@@ -874,8 +1050,8 @@ function flushAll() {
       tabs[id].last = ts;
       changed = true;
     }
-    for (const [id, t] of Object.entries(tabs)) {
-      if (t.closedAt && Date.now() - t.closedAt > 10 * 60000) {
+    for (const [id, tabInfo] of Object.entries(tabs)) {
+      if (tabInfo.closedAt && Date.now() - tabInfo.closedAt > 10 * 60000) {
         delete tabs[id];
         changed = true;
       }
@@ -900,13 +1076,13 @@ function noteNavigation(tabId, url, when) {
     let incognito = false;
     try { incognito = !!(await api.tabs.get(tabId)).incognito; } catch { /* tab gone */ }
     const tabs = await getTabState();
-    const t = tabs[tabId] || {};
+    const tabInfo = tabs[tabId] || {};
     const host = incognito ? null : hostnameOf(url || '');
-    t.incognito = incognito;
-    t.nav = when || Date.now();
-    t.site = host ? siteKey(host) : undefined;
-    t.history = (t.history || []).concat({ from: t.nav, site: t.site }).slice(-6);
-    tabs[tabId] = t;
+    tabInfo.incognito = incognito;
+    tabInfo.nav = when || Date.now();
+    tabInfo.site = host ? siteKey(host) : undefined;
+    tabInfo.history = (tabInfo.history || []).concat({ from: tabInfo.nav, site: tabInfo.site }).slice(-6);
+    tabs[tabId] = tabInfo;
     await session.set('tabState', tabs);
   });
 }
@@ -976,7 +1152,7 @@ function summarizeStats(stats) {
     topDomains: top(stats.domains),
     bytesSaved: all * BYTES_PER_BLOCK,
     bytesPerBlock: BYTES_PER_BLOCK,
-    labels: CATEGORY_LABELS,
+    labels: categoryLabels(),
   };
 }
 
@@ -986,6 +1162,7 @@ let popupMatcher = null;
 
 async function getPopupMatcher() {
   if (popupMatcher) return popupMatcher;
+  const generation = cacheGeneration;
   const { state } = await api.storage.local.get('state');
   const enabled = (state && state.enabledLists) || [];
   let data = {};
@@ -1008,8 +1185,9 @@ async function getPopupMatcher() {
     (d.block || []).forEach(e => add(block, e));
     (d.allow || []).forEach(e => add(allow, e));
   }
-  popupMatcher = { block, allow };
-  return popupMatcher;
+  const matcher = { block, allow };
+  if (generation === cacheGeneration) popupMatcher = matcher;
+  return matcher;
 }
 
 function popupEntryApplies(e, popupHost, openerHost) {
@@ -1068,7 +1246,7 @@ async function checkPopup(tabId, url) {
   }
   await statsTask(() => addToStats({ popups: 1 }, null, null));
   try {
-    await api.tabs.sendMessage(w.opener, { type: 'toast', text: `Bouclier closed a pop-up ad (${hostnameOf(url)})` }, { frameId: 0 });
+    await api.tabs.sendMessage(w.opener, { type: 'toast', text: t('bg_toast_popup_closed', hostnameOf(url)) }, { frameId: 0 });
   } catch { /* page without helper */ }
 }
 
@@ -1104,22 +1282,31 @@ async function refreshTabIcon(tab, s) {
 async function refreshAllTabIcons(s) {
   try {
     const tabs = await api.tabs.query({});
-    await Promise.all(tabs.map(t => refreshTabIcon(t, s)));
+    await Promise.all(tabs.map(tab => refreshTabIcon(tab, s)));
   } catch { /* no tabs permission yet */ }
 }
 
 /* ------------------------------------------------ right-click menu */
 
-async function setupMenus() {
-  if (!menus) return;
-  try {
-    await menus.removeAll();
-    const contexts = ['page', 'frame', 'image', 'link', 'video', 'audio', 'selection'];
-    menus.create({ id: 'bouclier-hide', title: 'Hide This Element…', contexts });
-    menus.create({ id: 'bouclier-site', title: 'Pause Bouclier on This Site', contexts });
-  } catch (err) {
-    console.warn('Bouclier menus', err);
-  }
+let menusChain = Promise.resolve();
+function setupMenus() {
+  if (!menus) return Promise.resolve();
+  menusChain = menusChain.then(async () => {
+    try {
+      await menus.removeAll();
+      const contexts = ['page', 'frame', 'image', 'link', 'video', 'audio', 'selection'];
+      const create = props => new Promise(resolve => {
+        try {
+          menus.create(props, () => { void (api.runtime.lastError); resolve(); });
+        } catch { resolve(); }
+      });
+      await create({ id: 'bouclier-hide', title: t('bg_menu_hide'), contexts });
+      await create({ id: 'bouclier-site', title: t('bg_menu_pause_this_site'), contexts });
+    } catch (err) {
+      console.warn('Bouclier menus', err);
+    }
+  });
+  return menusChain;
 }
 
 async function refreshSiteMenu(tab, s) {
@@ -1131,7 +1318,7 @@ async function refreshSiteMenu(tab, s) {
     const site = host ? siteKey(host) : null;
     const paused = isSitePaused(host, s.pausedSites);
     await menus.update('bouclier-site', {
-      title: !site ? 'Pause Bouclier on This Site' : paused ? `Resume Bouclier on ${site}` : `Pause Bouclier on ${site}`,
+      title: !site ? t('bg_menu_pause_this_site') : paused ? t('bg_menu_resume_site', site) : t('bg_menu_pause_site', site),
       enabled: !!site && !s.paused,
     });
   } catch { /* menu not created yet */ }
@@ -1184,29 +1371,41 @@ async function runCommand(command) {
 }
 
 if (api.commands && api.commands.onCommand) {
-  api.commands.onCommand.addListener(command => { runCommand(command); });
+  api.commands.onCommand.addListener(command => { runCommand(command).catch(() => {}); });
 }
 
 /* ------------------------------------------------------------ messages */
 
+/** Changes the settings (one change at a time) and applies them. Resolves to { ok } or { ok: false, error }. */
 async function update(mutator, opts) {
-  const s = await getSettings();
-  mutator(s);
-  await saveSettings(s);
-  await applySettings(opts);
-  return { ok: true };
+  await mutateSettings(mutator);
+  return applySettings(opts);
+}
+
+/** Why a pause was refused ("Bouclier cannot pause this address…"), for the menu. */
+const cannotPause = () => t('bg_cannot_pause');
+
+/** Pauses (paused = true), resumes (false) or flips (undefined) protection on a site. */
+function setSitePaused(host, paused) {
+  host = String(host || '').toLowerCase();
+  const key = siteKey(host);
+  if (!isHostname(host) || !isHostname(key)) return Promise.resolve({ ok: false, error: cannotPause() });
+  return update(s => {
+    const site = pausedSiteFor(host, s.pausedSites);
+    const want = typeof paused === 'boolean' ? paused : !site;
+    if (!want && site) {
+      s.pausedSites = s.pausedSites.filter(x => !(host === x || host.endsWith('.' + x)));
+      delete s.sitePauseUntil[site];
+    } else if (want && !site) {
+      s.pausedSites = s.pausedSites.concat(key);
+    } else {
+      return false;   // already as asked
+    }
+  });
 }
 
 function toggleSite(host) {
-  return update(s => {
-    const site = pausedSiteFor(host, s.pausedSites);
-    if (site) {
-      s.pausedSites = s.pausedSites.filter(x => !(host === x || host.endsWith('.' + x)));
-      delete s.sitePauseUntil[site];
-    } else {
-      s.pausedSites = s.pausedSites.concat(siteKey(host));
-    }
-  });
+  return setSitePaused(host, undefined);
 }
 
 function tomorrowMorning() {
@@ -1216,22 +1415,32 @@ function tomorrowMorning() {
   return d.getTime();
 }
 
+const MAX_PAUSE_MINUTES = 7 * 24 * 60;
+
+/** When a timed pause asked by the popup ends: { minutes } or { until: 'tomorrow' }; 0 when the request makes no sense. */
+function pauseEnd(msg) {
+  if (msg && msg.until === 'tomorrow') return tomorrowMorning();
+  const minutes = Number(msg && msg.minutes);
+  if (!(minutes > 0 && minutes <= MAX_PAUSE_MINUTES)) return 0;
+  return Date.now() + minutes * 60000;
+}
+
 async function addPicked(msg, sender) {
   const host = hostnameOf(msg.url || (sender.tab && sender.tab.url) || '');
   const selector = String(msg.selector || '').trim();
   if (!host || !isSafeSelector(selector)) return { ok: false };
   const key = siteKey(host);
-  const s = await getSettings();
-  const list = s.pickedHides[key] || [];
-  if (!list.includes(selector)) list.push(selector);
-  s.pickedHides[key] = list;
-  await saveSettings(s);
-  cosmeticCache = null;
+  await mutateSettings(s => {
+    const list = s.pickedHides[key] || [];
+    if (list.includes(selector)) return false;
+    list.push(selector);
+    s.pickedHides[key] = list.slice(-500);
+  });
+  dropCaches();
   if (sender.tab && sender.tab.id != null) {
-    await api.scripting.insertCSS({
+    await insertUserCSS({
       target: { tabId: sender.tab.id, frameIds: [sender.frameId || 0] },
       css: `${selector}{display:none!important}`,
-      origin: 'USER',
     }).catch(() => {});
   }
   return { ok: true };
@@ -1264,8 +1473,25 @@ async function blockedCount(tabId) {
   }
 }
 
+// Safari keeps "Always Allow on Every Website" (or "Other websites: Allow") as *://*/*, every site
+// over http and https. WebKit does not count that as <all_urls>, which also covers file: and other
+// schemes, so checking <all_urls> showed the "Allow" banner for good on a Mac already allowed
+// everywhere, and the Allow button could not make it go away (tests/webkit-bench/PermissionProbe.swift).
+const EVERY_WEBSITE = '*://*/*';
+
 async function hasAllSitesAccess() {
-  try { return await api.permissions.contains({ origins: ['<all_urls>'] }); } catch { return true; }
+  try { return await api.permissions.contains({ origins: [EVERY_WEBSITE] }); } catch { return true; }
+}
+
+/** Access to this page's site only ("Always Allow on This Website"): enough for hiding an element there. */
+async function hasSiteAccess(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+    return await api.permissions.contains({ origins: [`${u.protocol}//${u.hostname}/*`] });
+  } catch {
+    return false;
+  }
 }
 
 async function popupState(tabId) {
@@ -1294,7 +1520,7 @@ async function popupState(tabId) {
     blocked: breakdown ? breakdown.blocked : await blockedCount(tabId),
     breakdown: breakdown ? breakdown.counts : null,
     topHosts: breakdown ? breakdown.topHosts : [],
-    labels: CATEGORY_LABELS,
+    labels: categoryLabels(),
     today: summary.today,
     todayPopups: (summary.todayCounts && summary.todayCounts.popups) || 0,
     hiddenCount: site && s.pickedHides[site] ? s.pickedHides[site].length : 0,
@@ -1307,6 +1533,7 @@ async function popupState(tabId) {
     overBudget: (state && state.overBudget) || [],
     applying,
     hostAccess: await hasAllSitesAccess(),
+    siteAccess: host ? await hasSiteAccess(tab.url) : false,
     lastError: lastError || null,
   };
 }
@@ -1314,7 +1541,7 @@ async function popupState(tabId) {
 async function commandList() {
   try {
     const all = await api.commands.getAll();
-    return all.map(c => ({ name: c.name, description: c.description || (c.name === '_execute_action' ? 'Open Bouclier' : c.name), shortcut: c.shortcut || '' }));
+    return all.map(c => ({ name: c.name, description: c.description || (c.name === '_execute_action' ? t('cmd_open') : c.name), shortcut: c.shortcut || '' }));
   } catch {
     return [];
   }
@@ -1366,6 +1593,16 @@ function exportSettings(s) {
   return { format: 'bouclier-settings', version: 1, app: api.runtime.getManifest().version, exportedAt: new Date().toISOString(), settings: copy };
 }
 
+const MAX_FILTER_CHARS = 200000;
+
+/** Keeps the user's filters under the size limit, cut at the end of a line, never inside a filter. */
+function capFilters(text) {
+  text = String(text || '');
+  if (text.length <= MAX_FILTER_CHARS) return { text, cut: false };
+  const end = text.lastIndexOf('\n', MAX_FILTER_CHARS);
+  return { text: text.slice(0, end > 0 ? end : 0), cut: true };
+}
+
 /** Keeps only known settings with the right types; returns null when the file is not a Bouclier backup. */
 function sanitizeImport(data, cat) {
   const src = data && data.format === 'bouclier-settings' ? data.settings : null;
@@ -1375,9 +1612,9 @@ function sanitizeImport(data, cat) {
   ['paused', 'youtube', 'youtubeHideShorts', 'popupBlocker', 'showBadge'].forEach(bool);
   if (out.paused) out.pausedUntil = 0;
   const ids = cat.lists.map(l => l.id);
-  if (Array.isArray(src.enabledLists)) out.enabledLists = src.enabledLists.filter(id => ids.includes(id));
+  if (Array.isArray(src.enabledLists)) out.enabledLists = [...new Set(src.enabledLists.filter(id => ids.includes(id)))];
   if (Array.isArray(src.pausedSites)) out.pausedSites = [...new Set(src.pausedSites.filter(isHostname))].slice(0, 5000);
-  if (typeof src.customFilters === 'string') out.customFilters = src.customFilters.slice(0, 200000);
+  if (typeof src.customFilters === 'string') out.customFilters = capFilters(src.customFilters).text;
   const cleanMap = (value, fn) => {
     const res = {};
     if (!value || typeof value !== 'object' || Array.isArray(value)) return res;
@@ -1417,14 +1654,20 @@ async function handleMessage(msg, sender) {
       if (!msg.host) return { ok: false };
       return toggleSite(msg.host);
     }
+    case 'popup:setSitePaused': {
+      if (!msg.host || typeof msg.paused !== 'boolean') return { ok: false };
+      return setSitePaused(msg.host, msg.paused);
+    }
     case 'popup:pauseSiteFor': {
-      const host = String(msg.host || '');
-      const minutes = Number(msg.minutes);
-      if (!hostnameOf('https://' + host) || !(minutes > 0)) return { ok: false };
+      // "Pause on this site for 1 hour / 2 hours / until tomorrow": the site is allowed, every other site stays blocked
+      const host = String(msg.host || '').toLowerCase();
+      const until = pauseEnd(msg);
+      if (!hostnameOf('https://' + host) || !until) return { ok: false };
+      if (!isHostname(host) || !isHostname(siteKey(host))) return { ok: false, error: cannotPause() };
       return update(s => {
         const site = pausedSiteFor(host, s.pausedSites) || siteKey(host);
         if (!s.pausedSites.includes(site)) s.pausedSites = s.pausedSites.concat(site);
-        s.sitePauseUntil[site] = Date.now() + minutes * 60000;
+        s.sitePauseUntil[site] = until;
       });
     }
     case 'popup:togglePause':
@@ -1432,9 +1675,17 @@ async function handleMessage(msg, sender) {
         s.paused = !s.paused;
         s.pausedUntil = 0;
       });
+    case 'popup:setPause':
+      // the popup says what the user chose, so a pause that ended while it was open is never flipped back on
+      if (typeof msg.paused !== 'boolean') return { ok: false };
+      return update(s => {
+        if (s.paused === msg.paused && !s.pausedUntil) return false;
+        s.paused = msg.paused;
+        s.pausedUntil = 0;
+      });
     case 'popup:pauseAllFor': {
-      const until = msg.until === 'tomorrow' ? tomorrowMorning() : Date.now() + Number(msg.minutes) * 60000;
-      if (!(until > Date.now())) return { ok: false };
+      const until = pauseEnd(msg);
+      if (!until) return { ok: false };
       return update(s => {
         s.paused = true;
         s.pausedUntil = until;
@@ -1487,9 +1738,12 @@ async function handleMessage(msg, sender) {
     case 'options:state':
       return optionsState();
     case 'options:saveCustom': {
-      const parsed = parseCustomFilters(msg.text);
-      await update(s => { s.customFilters = String(msg.text || ''); });
-      return { ok: true, errors: parsed.errors };
+      const { text, cut } = capFilters(msg.text);
+      const res = await update(s => { s.customFilters = text; });
+      const { state } = await api.storage.local.get('state');
+      const errors = ((state && state.customErrors) || parseCustomFilters(text).errors).slice();
+      if (cut) errors.unshift(t('bg_filter_cut', formatNumber(MAX_FILTER_CHARS)));
+      return Object.assign({}, res, { errors, kept: text.length });
     }
     case 'options:removeSite':
       return update(s => {
@@ -1509,26 +1763,31 @@ async function handleMessage(msg, sender) {
     case 'options:import': {
       const cat = await getCatalogue();
       const clean = sanitizeImport(msg.data, cat);
-      if (!clean) return { ok: false, error: 'This file is not a Bouclier settings backup.' };
-      await update(s => { Object.assign(s, clean); });
-      return { ok: true, imported: Object.keys(clean) };
+      if (!clean) return { ok: false, error: t('bg_import_not_backup') };
+      const res = await update(s => { Object.assign(s, clean); });
+      return Object.assign({}, res, { imported: Object.keys(clean) });
     }
     case 'options:resetStats':
-      await api.storage.local.set({ stats: { since: Date.now(), days: {}, sites: {} } });
+      await statsTask(() => api.storage.local.set({ stats: { since: Date.now(), days: {}, sites: {} } }));
       return { ok: true };
     case 'options:reset':
-      await api.storage.local.remove(['settings', 'dnrSignature', 'csSignature']);
-      await applySettings({ force: true });
-      return { ok: true };
+      // inside the settings queue, so a change arriving at the same moment cannot write old settings back
+      await mutateSettings(async () => {
+        await api.storage.local.remove(['settings', 'dnrSignature', 'csSignature']);
+        return false;
+      });
+      return applySettings({ force: true });
     case 'welcome:state':
       return welcomeState();
+    case 'debug:compat':
+      // lets the test-suite check the Safari-before-26 rulesets in Chromium
+      compatOverride = typeof msg.on === 'boolean' ? msg.on : null;
+      return applySettings({ force: true });
     case 'debug:purge': {
       // lets the test-suite fast-forward timed pauses
-      const s = await getSettings();
-      if (purgeExpired(s, Number(msg.now) || Date.now())) {
-        await saveSettings(s);
-        await applySettings();
-      }
+      let changed = false;
+      await mutateSettings(s => (changed = purgeExpired(s, Number(msg.now) || Date.now())));
+      if (changed) await applySettings();
       return { ok: true, settings: await getSettings() };
     }
     default:
@@ -1539,11 +1798,23 @@ async function handleMessage(msg, sender) {
 const EXTENSION_ORIGIN = api.runtime.getURL('');
 const PAGE_MESSAGES = new Set(['cosmetic', 'picker:add']);
 
+/**
+ * A message from one of Bouclier's own pages (the menu, the settings, the welcome page)? Safari 16.4-17
+ * leaves the address out of the menu's messages (iOS 17.5 simulator, 3 Oct 2026: no url, origin "null",
+ * no tab), and the menu then got no answer at all. Without an address, the tab decides: none is the menu,
+ * a tab showing one of Bouclier's pages is that page. Web pages cannot write to Bouclier (no
+ * externally_connectable), and the content script always sends from a tab with a web address.
+ */
+const isExtensionPage = sender => {
+  const url = typeof sender.url === 'string' && sender.url ? sender.url
+    : (sender.tab && typeof sender.tab.url === 'string' ? sender.tab.url : '');
+  return url ? url.startsWith(EXTENSION_ORIGIN) : !sender.tab;
+};
+
 /** Returns the message to handle, or null when this sender may not send it. */
 function gateMessage(msg, sender) {
   if (sender.id && sender.id !== api.runtime.id) return null;
-  const fromExtensionPage = typeof sender.url === 'string' && sender.url.startsWith(EXTENSION_ORIGIN);
-  if (fromExtensionPage) return msg;
+  if (isExtensionPage(sender)) return msg;
   // web pages only reach us through our content script: allow just what it needs,
   // and trust the frame's real address over anything in the message
   if (!msg || !PAGE_MESSAGES.has(msg.type)) return null;
@@ -1553,7 +1824,19 @@ function gateMessage(msg, sender) {
 api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const allowed = gateMessage(msg, sender);
   if (!allowed) return false;
-  handleMessage(allowed, sender).then(sendResponse, err => sendResponse({ ok: false, error: String(err && err.message || err) }));
+  // The menu asks for its page to be reloaded once a change is applied. Done here rather than in the
+  // menu: Safari recompiles every rule for a change (several seconds), and the menu may be closed by then.
+  const reloadTabId = isExtensionPage(sender) && Number.isInteger(allowed.reloadTabId) ? allowed.reloadTabId : null;
+  const reply = handleMessage(allowed, sender)
+    .then(async res => {
+      if (reloadTabId !== null && !(res && res.ok === false)) {
+        try { await api.tabs.reload(reloadTabId); } catch { /* the tab was closed */ }
+      }
+      return res;
+    })
+    .catch(err => ({ ok: false, error: String(err && err.message || err) }));
+  if (PROMISE_REPLIES) return reply;
+  reply.then(sendResponse);
   return true;
 });
 
@@ -1567,9 +1850,11 @@ api.tabs.onUpdated.addListener(async (tabId, info, tab) => {
     scheduleFlush();
   }
   if (info.url || info.status === 'loading') {
-    const s = await getSettings();
-    refreshTabIcon(tab, s);
-    if (tab.active) refreshSiteMenu(tab, s);
+    try {
+      const s = await getSettings();
+      refreshTabIcon(tab, s);
+      if (tab && tab.active) refreshSiteMenu(tab, s);
+    } catch { /* worker shutting down */ }
   }
 });
 
@@ -1591,8 +1876,8 @@ api.tabs.onRemoved.addListener(tabId => {
   flushAll().then(() => statsTask(async () => {
     // keep the high-water mark: Safari and Chromium report a closed tab's blocks for a while
     const tabs = await getTabState();
-    const t = tabs[tabId] || {};
-    tabs[tabId] = { last: Math.max(t.last || 0, Date.now()), closedAt: Date.now() };
+    const tabInfo = tabs[tabId] || {};
+    tabs[tabId] = { last: Math.max(tabInfo.last || 0, Date.now()), closedAt: Date.now() };
     await session.set('tabState', tabs);
   }));
 });
@@ -1604,14 +1889,14 @@ if (api.alarms) {
       return;
     }
     if (alarm.name === 'resume-all' || alarm.name.startsWith('resume-site|')) {
-      const s = await getSettings();
-      if (purgeExpired(s, Date.now() + 1000)) {
-        await saveSettings(s);
+      let changed = false;
+      await mutateSettings(s => (changed = purgeExpired(s, Date.now() + 1000)));
+      if (changed) {
         await applySettings();
         const tab = await activeTab().catch(() => null);
         if (tab && hostnameOf(tab.url || '')) {
           try {
-            await api.tabs.sendMessage(tab.id, { type: 'toast', text: 'Bouclier is protecting this page again. Reload to block everything.' }, { frameId: 0 });
+            await api.tabs.sendMessage(tab.id, { type: 'toast', text: t('bg_toast_protecting_again') }, { frameId: 0 });
           } catch { /* ignore */ }
         }
       }
@@ -1621,15 +1906,25 @@ if (api.alarms) {
 
 /* ---------------------------------------------------------- lifecycle */
 
-async function init(reason) {
-  await setupMenus();
-  await applySettings({ force: reason === 'install' || reason === 'update' });
-  if (reason === 'install') {
-    try { await api.tabs.create({ url: api.runtime.getURL('pages/welcome.html') }); } catch { /* ignore */ }
-  }
+let initChain = Promise.resolve();
+let installed = false;
+function init(reason) {
+  if (reason === 'install' || reason === 'update') installed = true;
+  initChain = initChain.then(async () => {
+    if (reason === 'first-wake' && installed) return;   // onInstalled already did everything
+    await setupMenus();
+    await applySettings({ force: reason === 'install' || reason === 'update' });
+    if (reason === 'install') {
+      try { await api.tabs.create({ url: api.runtime.getURL('pages/welcome.html') }); } catch { /* ignore */ }
+    }
+  }).catch(err => console.warn('Bouclier init', err));
+  return initChain;
 }
 
 api.runtime.onInstalled.addListener(details => { init(details.reason); });
 api.runtime.onStartup.addListener(() => { init('startup'); });
 // The worker is also woken by page messages; only do the full sync if it never ran.
-api.storage.local.get('state').then(({ state }) => { if (!state) init('first-wake'); });
+api.storage.local.get('state').then(({ state }) => {
+  // give onInstalled (fired right after a first install) a moment to claim the first run
+  if (!state) setTimeout(() => init('first-wake'), 250);
+}).catch(() => {});

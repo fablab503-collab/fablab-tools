@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bouclier settings</title>
+  <title data-i18n="options_page_title">Bouclier settings</title>
   <link rel="stylesheet" href="options.css">
+  <script src="../common/i18n.js"></script>
   <script src="../common/platform.js"></script>
 </head>
 <body>
@@ -20,25 +21,25 @@
 
     <section id="stats-section">
       <div class="section-head">
-        <h2>Statistics</h2>
-        <button class="small" id="reset-stats">Reset</button>
+        <h2 data-i18n="options_stats_heading">Statistics</h2>
+        <button class="small" id="reset-stats" data-i18n="options_stats_reset">Reset</button>
       </div>
       <div class="tiles">
-        <div class="tile"><div class="tile-label">Today</div><div class="tile-value" id="stat-today">0</div></div>
-        <div class="tile"><div class="tile-label">Last 7 days</div><div class="tile-value" id="stat-week">0</div></div>
-        <div class="tile"><div class="tile-label">All time</div><div class="tile-value" id="stat-all">0</div></div>
-        <div class="tile"><div class="tile-label">Data not downloaded</div><div class="tile-value" id="stat-bytes">0 MB</div><div class="tile-note" id="stat-bytes-note"></div></div>
+        <div class="tile"><div class="tile-label" data-i18n="options_tile_today">Today</div><div class="tile-value" id="stat-today">0</div></div>
+        <div class="tile"><div class="tile-label" data-i18n="options_tile_week">Last 7 days</div><div class="tile-value" id="stat-week">0</div></div>
+        <div class="tile"><div class="tile-label" data-i18n="options_tile_all">All time</div><div class="tile-value" id="stat-all">0</div></div>
+        <div class="tile"><div class="tile-label" data-i18n="options_tile_bytes">Data not downloaded</div><div class="tile-value" id="stat-bytes" data-i18n="options_size_zero">0 MB</div><div class="tile-note" id="stat-bytes-note"></div></div>
       </div>
-      <div class="chart" id="chart" role="img" aria-label="Blocked requests per day, last 14 days"></div>
+      <div class="chart" id="chart" role="img" aria-label="Blocked requests per day, last 14 days" data-i18n-attr="aria-label:options_chart_label"></div>
       <div class="legend" id="legend"></div>
       <div id="chart-table"></div>
       <div class="two-col">
         <div>
-          <h3>Most blocked addresses</h3>
+          <h3 data-i18n="options_top_domains">Most blocked addresses</h3>
           <ol class="ranking" id="top-domains"></ol>
         </div>
         <div>
-          <h3>Sites with the most blocking</h3>
+          <h3 data-i18n="options_top_sites">Sites with the most blocking</h3>
           <ol class="ranking" id="top-sites"></ol>
         </div>
       </div>
@@ -46,18 +47,18 @@
     </section>
 
     <section>
-      <h2>General</h2>
+      <h2 data-i18n="options_general_heading">General</h2>
       <ul class="toggles" id="general"></ul>
     </section>
 
     <section>
-      <h2>Filter lists</h2>
-      <p class="muted">Safari compiles every enabled list into one set of rules with a hard limit of 150,000 rules.</p>
+      <h2 data-i18n="options_lists_heading">Filter lists</h2>
+      <p class="muted" data-i18n="options_lists_intro">Safari compiles every enabled list into one set of rules with a hard limit of 150,000 rules.</p>
       <div class="meter" aria-hidden="true"><div class="fill" id="meter-fill"></div></div>
       <p class="muted small" id="meter-text"></p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>List</th><th>Status</th><th class="num">Safari rules</th><th class="num">Hiding rules</th><th>Source</th></tr></thead>
+          <thead><tr><th data-i18n="options_th_list">List</th><th data-i18n="options_th_status">Status</th><th class="num" data-i18n="options_th_safari_rules">Safari rules</th><th class="num" data-i18n="options_th_hiding_rules">Hiding rules</th><th data-i18n="options_th_source">Source</th></tr></thead>
           <tbody id="lists"></tbody>
         </table>
       </div>
@@ -65,75 +66,76 @@
     </section>
 
     <section>
-      <h2>Paused sites</h2>
-      <p class="muted">Bouclier doesn't block anything on these sites. <span data-only="mac">Add a site from the toolbar button or by right-clicking a page.</span><span data-only="ios">Add a site from Bouclier in Safari's page menu.</span></p>
+      <h2 data-i18n="options_paused_heading">Paused sites</h2>
+      <p class="muted" data-i18n-html="options_paused_intro">Bouclier doesn't block anything on these sites. <span data-only="mac">Add a site from the toolbar button or by right-clicking a page.</span><span data-only="ios">Add a site from Bouclier in Safari's page menu.</span></p>
       <ul class="chips" id="sites"></ul>
     </section>
 
     <section>
-      <h2>Site controls</h2>
-      <p class="muted">Extra blocking you switched on for single sites (<span data-only="mac">toolbar button</span><span data-only="ios">Bouclier in Safari's page menu</span> → Site controls).</p>
+      <h2 data-i18n="options_controls_heading">Site controls</h2>
+      <p class="muted" data-i18n-html="options_controls_intro">Extra blocking you switched on for single sites (<span data-only="mac">toolbar button</span><span data-only="ios">Bouclier in Safari's page menu</span> → Site controls).</p>
       <ul class="picked" id="controls"></ul>
     </section>
 
     <section>
-      <h2>Hidden elements</h2>
-      <p class="muted">Things you hid with <em>Hide an element</em><span data-only="mac"> or the right-click menu</span>.</p>
+      <h2 data-i18n="options_hidden_heading">Hidden elements</h2>
+      <p class="muted" data-i18n-html="options_hidden_intro">Things you hid with <em>Hide an element</em><span data-only="mac"> or the right-click menu</span>.</p>
       <ul class="picked" id="picked"></ul>
     </section>
 
     <section>
-      <h2>My filters</h2>
-      <p class="muted">One per line, in Adblock Plus syntax. Examples:</p>
-      <pre class="examples">example.com              block everything from example.com
-||ads.example.net^       same, explicit form
-/sponsor/*$image         block images whose address contains /sponsor/
-@@||example.org^         never block example.org
-lemonde.fr##.promo       hide .promo on lemonde.fr
-##.sponsored-post        hide .sponsored-post everywhere
-! lines starting with ! are comments</pre>
-      <textarea id="custom" spellcheck="false" rows="10" placeholder="Your filters…"></textarea>
+      <h2 data-i18n="options_custom_heading">My filters</h2>
+      <p class="muted" data-i18n="options_custom_intro">One per line, in Adblock Plus syntax. Examples:</p>
+      <pre class="examples">example.com              <span data-i18n="options_example_domain">block everything from example.com</span>
+||ads.example.net^       <span data-i18n="options_example_explicit">same, explicit form</span>
+/sponsor/*$image         <span data-i18n="options_example_images">block images whose address contains /sponsor/</span>
+@@||example.org^         <span data-i18n="options_example_allow">never block example.org</span>
+lemonde.fr##.promo       <span data-i18n="options_example_hide_site">hide .promo on lemonde.fr</span>
+##.sponsored-post        <span data-i18n="options_example_hide_all">hide .sponsored-post everywhere</span>
+<span data-i18n="options_example_comment">! lines starting with ! are comments</span></pre>
+      <textarea id="custom" spellcheck="false" rows="10" placeholder="Your filters…" aria-label="My filters" data-i18n-attr="placeholder:options_custom_placeholder,aria-label:options_custom_heading"></textarea>
       <div class="row">
-        <button class="primary" id="save-custom">Save filters</button>
+        <button class="primary" id="save-custom" data-i18n="options_save_filters">Save filters</button>
         <span class="muted small" id="custom-status"></span>
       </div>
       <ul class="errors" id="custom-errors"></ul>
     </section>
 
     <section data-only="mac">
-      <h2>Keyboard shortcuts</h2>
-      <p class="muted">Change them in Safari Settings → Extensions → Bouclier.</p>
+      <h2 data-i18n="options_shortcuts_heading">Keyboard shortcuts</h2>
+      <p class="muted" data-i18n="options_shortcuts_intro">Change them in Safari Settings → Extensions → Bouclier.</p>
       <ul class="picked" id="shortcuts"></ul>
     </section>
 
     <section>
-      <h2>Backup</h2>
-      <p class="muted">Save your paused sites, hidden elements, site controls, filters and switches to a file, or bring them back from one.</p>
+      <h2 data-i18n="options_backup_heading">Backup</h2>
+      <p class="muted" data-i18n="options_backup_intro">Save your paused sites, hidden elements, site controls, filters and switches to a file, or bring them back from one.</p>
       <div class="row">
-        <button class="primary" id="export">Export settings</button>
-        <label class="button" for="import-file">Import settings…</label>
+        <button class="primary" id="export" data-i18n="options_export">Export settings</button>
+        <button type="button" class="button" id="import-button" data-i18n="options_import">Import settings…</button>
         <input type="file" id="import-file" accept="application/json,.json" hidden>
         <span class="muted small" id="backup-status"></span>
       </div>
     </section>
 
     <section>
-      <h2>How it works</h2>
+      <h2 data-i18n="options_how_heading">How it works</h2>
       <ul class="about">
-        <li><strong>Network blocking.</strong> Filter lists are compiled into Safari's <em>declarativeNetRequest</em> rules. Safari applies them itself, so Bouclier never sees the pages you visit.</li>
-        <li><strong>Element hiding.</strong> Leftover ad spaces are hidden with a stylesheet, injected only on sites you allowed Bouclier to access.</li>
-        <li><strong>Pop-ups.</strong> When a page opens a new tab to an address on the lists' pop-up filters, Bouclier closes it and tells you.</li>
-        <li><strong>Clean links.</strong> Tracking tags such as utm_source or fbclid are removed from a page's address before it loads.</li>
-        <li><strong>YouTube.</strong> A small script removes ads from YouTube's player data before the player sees them, and skips any ad that still slips through.</li>
-        <li><strong>Statistics</strong> stay on <span class="device">this Mac</span>. "Data not downloaded" is an estimate that assumes about 20 KB per blocked request.</li>
-        <li><strong>Updates.</strong> The filter lists come with the app. Each Bouclier update from the App Store brings fresh lists.</li>
+        <li data-i18n-html="options_how_network"><strong>Network blocking.</strong> Filter lists are compiled into Safari's <em>declarativeNetRequest</em> rules. Safari applies them itself, so Bouclier never sees the pages you visit.</li>
+        <li data-i18n-html="options_how_hiding"><strong>Element hiding.</strong> Leftover ad spaces are hidden with a stylesheet, injected only on sites you allowed Bouclier to access.</li>
+        <li data-i18n-html="options_how_popups"><strong>Pop-ups.</strong> When a page opens a new tab to an address on the lists' pop-up filters, Bouclier closes it and tells you.</li>
+        <li data-i18n-html="options_how_links"><strong>Clean links.</strong> Tracking tags such as utm_source or fbclid are removed from a page's address before it loads.</li>
+        <li data-i18n-html="options_how_youtube"><strong>YouTube.</strong> A small script removes ads from YouTube's player data before the player sees them, and skips any ad that still slips through.</li>
+        <li data-i18n-html="options_how_stats"><strong>Statistics</strong> stay on <span class="device">this Mac</span>. "Data not downloaded" is an estimate that assumes about 20 KB per blocked request.</li>
+        <li data-i18n-html="options_how_updates"><strong>Updates.</strong> The filter lists come with the app. Each Bouclier update from the App Store brings fresh lists.</li>
       </ul>
-      <h3>Credits</h3>
-      <p class="muted small">Bouclier's blocking rules are adapted from these filter lists and are shared under the same licences. Pop-up filters come from the same lists. The YouTube ad removal is Bouclier's own code; its approach follows the uBlock Origin project.</p>
+      <h3 data-i18n="options_credits_heading">Credits</h3>
+      <p class="muted small" data-i18n="options_credits_intro">Bouclier's blocking rules are adapted from these filter lists and are shared under the same licences. Pop-up filters come from the same lists. The YouTube ad removal is Bouclier's own code; its approach follows the uBlock Origin project.</p>
       <ul class="credits small" id="credits"></ul>
       <div class="row">
-        <button id="open-welcome">Run the setup check</button>
-        <button id="reset" class="danger">Reset all settings</button>
+        <button id="open-welcome" data-i18n="options_open_welcome">Run the setup check</button>
+        <a class="button" id="test-bouclier" href="https://adblock.turtlecute.org/" target="_blank" rel="noopener" data-i18n="options_test_bouclier" data-i18n-attr="title:options_test_bouclier_hint" title="Opens an independent test page that loads real ad and tracker addresses, in a new tab.">Test Bouclier</a>
+        <button id="reset" class="danger" data-i18n="options_reset_all">Reset all settings</button>
       </div>
     </section>
   </main>
