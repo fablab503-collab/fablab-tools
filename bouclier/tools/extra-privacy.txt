@@ -1,0 +1,62 @@
+! Bouclier additions to the Trackers list (EasyPrivacy). Analytics, telemetry and error-tracking
+! hosts that EasyPrivacy does not block by host, found with the public ad-block tests
+! (d3ward / adblock.turtlecute.org) and Bouclier's own Safari site tests. Third-party only.
+! Licence: part of Bouclier (MIT).
+||analyticsengine.s3.amazonaws.com^$third-party
+||analytics.s3.amazonaws.com^$third-party
+||click.googleanalytics.com^$third-party
+||analytics.pinterest.com^$third-party
+||log.byteoversea.com^$third-party
+||udc.yahoo.com^$third-party
+||udcm.yahoo.com^$third-party
+||analytics.query.yahoo.com^$third-party
+||log.fc.yahoo.com^$third-party
+||appmetrica.yandex.ru^$third-party
+||adfstat.yandex.ru^$third-party
+||metrika.yandex.ru^$third-party
+||iot-eu-logser.realme.com^$third-party
+||iot-logser.realme.com^$third-party
+||data.mistat.xiaomi.com^$third-party
+||data.mistat.india.xiaomi.com^$third-party
+||data.mistat.rus.xiaomi.com^$third-party
+||tracking.rus.miui.com^$third-party
+||grs.hicloud.com^$third-party
+||open.oneplus.net^$third-party
+||books-analytics-events.apple.com^$third-party
+||weather-analytics-events.apple.com^$third-party
+||notes-analytics-events.apple.com^$third-party
+! Found by Bouclier's 100-site Safari test (Sept 2026): trackers the lists only block in part.
+||p1.parsely.com^$third-party
+||pixel.parsely.com^$third-party
+||api.parsely.com/v2/profile$third-party
+||gimii.fr^$third-party
+! Found by Bouclier's 100-site Safari test (Sept 2026), continued.
+||opecloud.com^$third-party
+! Found with a 100-site benchmark in WebKit (consent accepted, Sept 2026): trackers the lists let through.
+! Quantcast pixels (EasyPrivacy only blocks its scripts).
+||quantserve.com^$third-party
+! LiveRamp identity (the consent manager on privacymanager.io keeps working).
+||launchpad-wrapper.privacymanager.io^$third-party
+||launchpad.privacymanager.io^$third-party
+! Utiq telecom-based tracking ID (EasyPrivacy blocks its loader, not its content host).
+||utiqcontent.com^$third-party
+||rtb.mx^$third-party
+! Web push SDK that also reports analytics (Batch), newsletter pop-up and personalisation trackers,
+! and VWO A/B testing (its page-hiding snippet shows the page at once when the script is blocked).
+||via.batch.com^$third-party
+||lightboxcdn.com^$third-party
+||sail-horizon.com/spm/$third-party
+||visualwebsiteoptimizer.com^$third-party
+! LiveRamp identity loader, an obfuscated tracking host, Qiota's event collector.
+||ats-wrapper.privacymanager.io^$third-party
+||powerstarsbuilding.com^$third-party
+||data.qiota.com^$third-party
+
+! Found with Bouclier's WebKit benchmark (tests/webkit-bench, 28 Sept 2026): trackers that got through.
+||xpln.tech^$third-party
+||futureplc.engineering^$third-party
+||static-rmr.reworldmediafactory.com/cwv/
+||tracking.miui.com^$third-party
+! Sites' own tracking endpoints (first-party, so no $third-party here).
+||ted.dailymail.co.uk^
+||log.espn.com^

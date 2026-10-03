@@ -13,31 +13,37 @@
     <img src="../Icon.png" width="72" height="72" alt="">
     <div>
       <h1>Bouclier</h1>
-      <p class="tagline">Ad blocker for Safari</p>
+      <p class="tagline" data-i18n="tagline">Ad blocker for Safari</p>
     </div>
   </header>
 
-  <p class="status platform-mac state-on"><span class="dot on"></span>Bouclier is on in Safari.</p>
-  <p class="status platform-mac state-off"><span class="dot off"></span>Bouclier is off. Turn it on in Safari's settings.</p>
-  <p class="status platform-mac state-unknown">Turn on Bouclier in Safari's settings to start blocking.</p>
-  <p class="status platform-ios">Turn on Bouclier in Settings to start blocking.</p>
+  <p class="status platform-mac state-on"><span class="dot on"></span><span data-i18n="mac_on">Bouclier is on in Safari.</span></p>
+  <p class="status platform-mac state-off"><span class="dot off"></span><span data-i18n="mac_off">Bouclier is off. Turn it on in Safari's settings.</span></p>
+  <p class="status platform-mac state-unknown" data-i18n="mac_unknown">Turn on Bouclier in Safari's settings to start blocking.</p>
+  <p class="status platform-ios" data-i18n="ios_status">Turn on Bouclier in Settings to start blocking.</p>
 
   <ol class="steps platform-mac">
-    <li>Open <strong>Safari → Settings → Extensions</strong>.</li>
-    <li>Tick <strong>Bouclier</strong>.</li>
-    <li>Click <strong>Edit Websites…</strong> and choose <strong>Allow</strong> for other websites, or answer <strong>Always Allow on Every Website</strong> when Safari asks. Bouclier then also hides empty ad spaces, closes pop-up ads and removes video ads.</li>
+    <li data-i18n-html="mac_step1">Open <strong>Safari → Settings → Extensions</strong>.</li>
+    <li data-i18n-html="mac_step2">Tick <strong>Bouclier</strong>.</li>
+    <li data-i18n-html="mac_step3">Click <strong>Always Allow on Every Website…</strong> (or <strong>Edit Websites…</strong>, then <strong>Allow</strong> for other websites). Bouclier then also hides empty ad spaces, closes pop-up ads and removes video ads.</li>
   </ol>
-  <button class="platform-mac open-preferences" type="button">Quit and Open Safari Settings…</button>
+  <button class="platform-mac open-preferences" type="button" data-i18n="mac_button">Quit and Open Safari Settings…</button>
 
   <ol class="steps platform-ios">
-    <li>Open <strong>Settings → Apps → Safari → Extensions</strong>.</li>
-    <li>Turn on <strong>Bouclier</strong>, then set <strong>All Websites</strong> to <strong>Allow</strong>, so Bouclier can also hide empty ad spaces, close pop-up ads and remove video ads.</li>
-    <li>In Safari, open the page menu in the address bar and tap <strong>Bouclier</strong> to see what was blocked, pause a site or hide an element.</li>
+    <li data-i18n-html="ios_step1">Open <strong class="ios-settings-path">Settings → Apps → Safari → Extensions</strong>.</li>
+    <li data-i18n-html="ios_step2">Turn on <strong>Bouclier</strong>, then set <strong>All Websites</strong> to <strong>Allow</strong>, so Bouclier can also hide empty ad spaces, close pop-up ads and remove video ads.</li>
+    <li data-i18n-html="ios_step3">In Safari, open the page menu in the address bar and tap <strong>Bouclier</strong> to see what was blocked, pause a site or hide an element.</li>
   </ol>
+  <button class="platform-ios open-preferences ios-direct" type="button" data-i18n="ios_button">Open Bouclier in Settings</button>
+
+  <p class="test">
+    <a class="test-link" href="https://adblock.turtlecute.org/" data-i18n="test_link">Test Bouclier in Safari</a>
+    <span class="test-desc" data-i18n="test_desc">An independent test page loads real ad and tracker addresses and shows what got through.</span>
+  </p>
 
   <footer>
-    <p>Bouclier keeps no account and collects no data: statistics stay on this device.</p>
-    <p>Filter lists: EasyList, EasyPrivacy, Liste FR, the Adblock Warning Removal List, EasyList Social and Annoyances by the EasyList authors (CC BY-SA 3.0), the EasyList Cookie List (CC BY 3.0) and the Online Malicious URL Blocklist by malware-filter with abuse.ch URLhaus data (CC0). Bouclier's rules are adapted from them and shared under the same licences. Full credits are in Bouclier's settings.</p>
+    <p data-i18n="privacy">Bouclier keeps no account and collects no data: statistics stay on this device.</p>
+    <p data-i18n="credits">Filter lists: EasyList, EasyPrivacy, Liste FR, the Adblock Warning Removal List, EasyList Social and Annoyances by the EasyList authors (CC BY-SA 3.0), the EasyList Cookie List (CC BY 3.0) and the Online Malicious URL Blocklist by malware-filter with abuse.ch URLhaus data (CC0). Bouclier's rules are adapted from them and shared under the same licences. Full credits are in Bouclier's settings.</p>
   </footer>
 </body>
 </html>

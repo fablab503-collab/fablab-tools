@@ -10,6 +10,15 @@
 
   const api = globalThis.browser ?? globalThis.chrome;
 
+  // Bouclier's texts in the device's language (i18n/picker.json), with {0}, {1}… replaced by subs.
+  // Pages have common/i18n.js; this script runs inside web pages, so it has its own copy.
+  function t(key, ...subs) {
+    let s = '';
+    try { s = api.i18n.getMessage(key) || ''; } catch { /* no i18n */ }
+    if (!s) return key;
+    return subs.length ? s.replace(/\{(\d)\}/g, (m, i) => (subs[i] !== undefined ? String(subs[i]) : m)) : s;
+  }
+
   const request = () => {
     try {
       const p = api.runtime.sendMessage({ type: 'cosmetic', url: location.href });
@@ -149,10 +158,10 @@
       </style>
       <div class="box"></div>
       <div class="bar">
-        <div class="msg"><span class="title">Click the thing you want to hide</span><span class="sel"></span></div>
-        <button class="wider" disabled title="Select the surrounding block">Wider</button>
-        <button class="hide primary" disabled>Hide</button>
-        <button class="cancel">Cancel</button>
+        <div class="msg"><span class="title"></span><span class="sel"></span></div>
+        <button class="wider" disabled></button>
+        <button class="hide primary" disabled></button>
+        <button class="cancel"></button>
       </div>`;
     document.documentElement.appendChild(host);
     const box = root.querySelector('.box');
@@ -161,6 +170,11 @@
     const btnWider = root.querySelector('.wider');
     const btnHide = root.querySelector('.hide');
     const btnCancel = root.querySelector('.cancel');
+    title.textContent = t('picker_click_to_hide');
+    btnWider.textContent = t('picker_wider');
+    btnWider.title = t('picker_wider_hint');
+    btnHide.textContent = t('picker_hide');
+    btnCancel.textContent = t('picker_cancel');
     let hovered = null;
     let chosen = null;
 
@@ -177,7 +191,7 @@
       outline(el);
       const sel = selectorFor(el);
       chosen.__sel = sel;
-      title.textContent = `Hide this ${el.localName} on ${location.hostname}?`;
+      title.textContent = t('picker_hide_this', el.localName, location.hostname);
       selText.textContent = sel;
       btnHide.disabled = false;
       btnWider.disabled = !el.parentElement || el.parentElement === document.body;
@@ -202,18 +216,18 @@
     // from the touch events (a finger that moved is scrolling, not choosing).
     let touchStart = null;
     const onTouchStart = e => {
-      const t = e.touches[0];
-      touchStart = e.touches.length === 1 && !e.composedPath().includes(host) ? { x: t.clientX, y: t.clientY } : null;
+      const touch = e.touches[0];
+      touchStart = e.touches.length === 1 && !e.composedPath().includes(host) ? { x: touch.clientX, y: touch.clientY } : null;
     };
     const onTouchEnd = e => {
       const start = touchStart;
       touchStart = null;
-      const t = e.changedTouches[0];
-      if (!start || !t || e.composedPath().includes(host)) return;
-      if (Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) return;
+      const touch = e.changedTouches[0];
+      if (!start || !touch || e.composedPath().includes(host)) return;
+      if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 10) return;
       e.preventDefault(); // no click follows, so links and buttons under the finger stay put
       e.stopPropagation();
-      const el = document.elementFromPoint(t.clientX, t.clientY);
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
       if (pickable(el)) choose(el);
     };
     const onKey = e => {

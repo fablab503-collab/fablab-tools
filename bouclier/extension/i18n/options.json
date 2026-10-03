@@ -1,0 +1,200 @@
+{
+  "options_page_title": { "en": "Bouclier settings", "fr": "Réglages de Bouclier" },
+  "options_stats_heading": { "en": "Statistics", "fr": "Statistiques" },
+  "options_stats_reset": { "en": "Reset", "fr": "Réinitialiser" },
+  "options_tile_today": { "en": "Today", "fr": "Aujourd’hui" },
+  "options_tile_week": { "en": "Last 7 days", "fr": "7 derniers jours" },
+  "options_tile_all": { "en": "All time", "fr": "Depuis le début" },
+  "options_tile_bytes": { "en": "Data not downloaded", "fr": "Données non téléchargées" },
+  "options_size_zero": { "en": "0 MB", "fr": "0 Mo" },
+  "options_chart_label": { "en": "Blocked requests per day, last 14 days", "fr": "Requêtes bloquées par jour, 14 derniers jours" },
+  "options_top_domains": { "en": "Most blocked addresses", "fr": "Adresses les plus bloquées" },
+  "options_top_sites": { "en": "Sites with the most blocking", "fr": "Sites avec le plus de blocages" },
+  "options_general_heading": { "en": "General", "fr": "Général" },
+  "options_lists_heading": { "en": "Filter lists", "fr": "Listes de filtres" },
+  "options_lists_intro": {
+    "en": "Safari compiles every enabled list into one set of rules with a hard limit of 150,000 rules.",
+    "fr": "Safari compile toutes les listes activées en un seul ensemble de règles, avec une limite stricte de 150 000 règles."
+  },
+  "options_th_list": { "en": "List", "fr": "Liste" },
+  "options_th_status": { "en": "Status", "fr": "État" },
+  "options_th_safari_rules": { "en": "Safari rules", "fr": "Règles Safari" },
+  "options_th_hiding_rules": { "en": "Hiding rules", "fr": "Règles de masquage" },
+  "options_th_source": { "en": "Source", "fr": "Source" },
+  "options_paused_heading": { "en": "Paused sites", "fr": "Sites en pause" },
+  "options_paused_intro": {
+    "en": "Bouclier doesn't block anything on these sites. <span data-only=\"mac\">Add a site from the toolbar button or by right-clicking a page.</span><span data-only=\"ios\">Add a site from Bouclier in Safari's page menu.</span>",
+    "fr": "Bouclier ne bloque rien sur ces sites. <span data-only=\"mac\">Ajoutez un site depuis le bouton de la barre d’outils ou en faisant un clic droit sur une page.</span><span data-only=\"ios\">Ajoutez un site depuis Bouclier dans le menu de la page de Safari.</span>"
+  },
+  "options_controls_heading": { "en": "Site controls", "fr": "Réglages par site" },
+  "options_controls_intro": {
+    "en": "Extra blocking you switched on for single sites (<span data-only=\"mac\">toolbar button</span><span data-only=\"ios\">Bouclier in Safari's page menu</span> → Site controls).",
+    "fr": "Blocages supplémentaires que vous avez activés pour certains sites (<span data-only=\"mac\">bouton de la barre d’outils</span><span data-only=\"ios\">Bouclier dans le menu de la page de Safari</span> → Réglages par site)."
+  },
+  "options_hidden_heading": { "en": "Hidden elements", "fr": "Éléments masqués" },
+  "options_hidden_intro": {
+    "en": "Things you hid with <em>Hide an element</em><span data-only=\"mac\"> or the right-click menu</span>.",
+    "fr": "Ce que vous avez masqué avec <em>Masquer un élément</em><span data-only=\"mac\"> ou le menu contextuel</span>."
+  },
+  "options_custom_heading": { "en": "My filters", "fr": "Mes filtres" },
+  "options_custom_intro": { "en": "One per line, in Adblock Plus syntax. Examples:", "fr": "Un par ligne, en syntaxe Adblock Plus. Exemples :" },
+  "options_example_domain": { "en": "block everything from example.com", "fr": "bloque tout ce qui vient d’example.com" },
+  "options_example_explicit": { "en": "same, explicit form", "fr": "idem, forme explicite" },
+  "options_example_images": { "en": "block images whose address contains /sponsor/", "fr": "bloque les images dont l’adresse contient /sponsor/" },
+  "options_example_allow": { "en": "never block example.org", "fr": "ne bloque jamais example.org" },
+  "options_example_hide_site": { "en": "hide .promo on lemonde.fr", "fr": "masque .promo sur lemonde.fr" },
+  "options_example_hide_all": { "en": "hide .sponsored-post everywhere", "fr": "masque .sponsored-post partout" },
+  "options_example_comment": { "en": "! lines starting with ! are comments", "fr": "! les lignes qui commencent par ! sont des commentaires" },
+  "options_custom_placeholder": { "en": "Your filters…", "fr": "Vos filtres…" },
+  "options_save_filters": { "en": "Save filters", "fr": "Enregistrer les filtres" },
+  "options_shortcuts_heading": { "en": "Keyboard shortcuts", "fr": "Raccourcis clavier" },
+  "options_shortcuts_intro": {
+    "en": "Change them in Safari Settings → Extensions → Bouclier.",
+    "fr": "Modifiez-les dans Réglages de Safari → Extensions → Bouclier."
+  },
+  "options_backup_heading": { "en": "Backup", "fr": "Sauvegarde" },
+  "options_backup_intro": {
+    "en": "Save your paused sites, hidden elements, site controls, filters and switches to a file, or bring them back from one.",
+    "fr": "Enregistrez dans un fichier vos sites en pause, éléments masqués, réglages par site, filtres et options, ou restaurez-les depuis un fichier."
+  },
+  "options_export": { "en": "Export settings", "fr": "Exporter les réglages" },
+  "options_import": { "en": "Import settings…", "fr": "Importer les réglages…" },
+  "options_how_heading": { "en": "How it works", "fr": "Fonctionnement" },
+  "options_how_network": {
+    "en": "<strong>Network blocking.</strong> Filter lists are compiled into Safari's <em>declarativeNetRequest</em> rules. Safari applies them itself, so Bouclier never sees the pages you visit.",
+    "fr": "<strong>Blocage réseau.</strong> Les listes de filtres sont compilées en règles <em>declarativeNetRequest</em> de Safari. Safari les applique lui-même : Bouclier ne voit donc jamais les pages que vous consultez."
+  },
+  "options_how_hiding": {
+    "en": "<strong>Element hiding.</strong> Leftover ad spaces are hidden with a stylesheet, injected only on sites you allowed Bouclier to access.",
+    "fr": "<strong>Masquage d’éléments.</strong> Les espaces publicitaires restants sont masqués par une feuille de style, injectée uniquement sur les sites auxquels vous avez autorisé Bouclier à accéder."
+  },
+  "options_how_popups": {
+    "en": "<strong>Pop-ups.</strong> When a page opens a new tab to an address on the lists' pop-up filters, Bouclier closes it and tells you.",
+    "fr": "<strong>Pop-ups.</strong> Quand une page ouvre un nouvel onglet vers une adresse présente dans les filtres de pop-ups des listes, Bouclier le ferme et vous prévient."
+  },
+  "options_how_links": {
+    "en": "<strong>Clean links.</strong> Tracking tags such as utm_source or fbclid are removed from a page's address before it loads.",
+    "fr": "<strong>Liens nettoyés.</strong> Les balises de suivi comme utm_source ou fbclid sont retirées de l’adresse d’une page avant son chargement."
+  },
+  "options_how_youtube": {
+    "en": "<strong>YouTube.</strong> A small script removes ads from YouTube's player data before the player sees them, and skips any ad that still slips through.",
+    "fr": "<strong>YouTube.</strong> Un petit script retire les publicités des données du lecteur YouTube avant que le lecteur ne les voie, et saute toute publicité qui passerait encore."
+  },
+  "options_how_stats": {
+    "en": "<strong>Statistics</strong> stay on <span class=\"device\">this Mac</span>. \"Data not downloaded\" is an estimate that assumes about 20 KB per blocked request.",
+    "fr": "<strong>Les statistiques</strong> restent sur <span class=\"device\">ce Mac</span>. « Données non téléchargées » est une estimation qui compte environ 20 Ko par requête bloquée."
+  },
+  "options_how_updates": {
+    "en": "<strong>Updates.</strong> The filter lists come with the app. Each Bouclier update from the App Store brings fresh lists.",
+    "fr": "<strong>Mises à jour.</strong> Les listes de filtres sont fournies avec l’app. Chaque mise à jour de Bouclier sur l’App Store apporte des listes fraîches."
+  },
+  "options_credits_heading": { "en": "Credits", "fr": "Crédits" },
+  "options_credits_intro": {
+    "en": "Bouclier's blocking rules are adapted from these filter lists and are shared under the same licences. Pop-up filters come from the same lists. The YouTube ad removal is Bouclier's own code; its approach follows the uBlock Origin project.",
+    "fr": "Les règles de blocage de Bouclier sont adaptées de ces listes de filtres et partagées sous les mêmes licences. Les filtres de pop-ups proviennent des mêmes listes. Le retrait des publicités YouTube est du code propre à Bouclier ; son approche suit celle du projet uBlock Origin."
+  },
+  "options_open_welcome": { "en": "Run the setup check", "fr": "Lancer la vérification de l’installation" },
+  "options_reset_all": { "en": "Reset all settings", "fr": "Rétablir les réglages par défaut" },
+  "options_test_bouclier": { "en": "Test Bouclier", "fr": "Tester Bouclier" },
+  "options_test_bouclier_hint": {
+    "en": "Opens an independent test page that loads real ad and tracker addresses, in a new tab.",
+    "fr": "Ouvre dans un nouvel onglet une page de test indépendante qui charge de vraies adresses de pubs et de traqueurs."
+  },
+  "options_size_kb": { "en": "{0} KB", "fr": "{0} Ko" },
+  "options_size_mb": { "en": "{0} MB", "fr": "{0} Mo" },
+  "options_size_gb": { "en": "{0} GB", "fr": "{0} Go" },
+  "options_bytes_note": { "en": "estimate, ~{0} KB per blocked request", "fr": "estimation, environ {0} Ko par requête bloquée" },
+  "options_popups_closed_one": { "en": "{0} pop-ups closed", "fr": "{0} pop-up fermé" },
+  "options_popups_closed": { "en": "{0} pop-ups closed", "fr": "{0} pop-ups fermés" },
+  "options_links_cleaned_one": { "en": "{0} links cleaned", "fr": "{0} lien nettoyé" },
+  "options_links_cleaned": { "en": "{0} links cleaned", "fr": "{0} liens nettoyés" },
+  "options_counting_since": { "en": "Counting since {0}", "fr": "Décompte depuis le {0}" },
+  "options_stats_stay": { "en": "Statistics never leave {0}.", "fr": "Les statistiques ne quittent jamais {0}." },
+  "options_nothing_yet": { "en": "Nothing yet", "fr": "Rien pour l’instant" },
+  "options_axis_thousands": { "en": "{0}k", "fr": "{0}k" },
+  "options_chart_today": { "en": "Today", "fr": "Auj." },
+  "options_tip_blocked_one": { "en": "{0} blocked", "fr": "{0} bloqué" },
+  "options_tip_blocked": { "en": "{0} blocked", "fr": "{0} bloqués" },
+  "options_tip_series": { "en": "{0}: {1}", "fr": "{0} : {1}" },
+  "options_table_day": { "en": "Day", "fr": "Jour" },
+  "options_table_total": { "en": "Total", "fr": "Total" },
+  "options_table_show": { "en": "Show as table", "fr": "Afficher sous forme de tableau" },
+  "options_popup_blocker": { "en": "Close pop-up ads", "fr": "Fermer les pop-ups publicitaires" },
+  "options_popup_blocker_desc": {
+    "en": "When a page opens an ad in a new tab or window, Bouclier closes it and shows a short notice.",
+    "fr": "Quand une page ouvre une publicité dans un nouvel onglet ou une nouvelle fenêtre, Bouclier la ferme et affiche un court message."
+  },
+  "options_badge": { "en": "Show the count on the toolbar icon", "fr": "Afficher le nombre sur l’icône de la barre d’outils" },
+  "options_badge_desc": { "en": "The number of requests blocked on the current page.", "fr": "Le nombre de requêtes bloquées sur la page affichée." },
+  "options_youtube": { "en": "Remove YouTube ads", "fr": "Retirer les publicités YouTube" },
+  "options_youtube_desc": {
+    "en": "Video ads, ad banners and the “ad blockers are not allowed” pop-up.",
+    "fr": "Publicités vidéo, bannières publicitaires et le pop-up « les bloqueurs de publicité ne sont pas autorisés »."
+  },
+  "options_shorts": { "en": "Hide YouTube Shorts", "fr": "Masquer les Shorts YouTube" },
+  "options_shorts_desc": {
+    "en": "Removes Shorts shelves, the Shorts tab and Shorts in search results.",
+    "fr": "Retire les étagères Shorts, l’onglet Shorts et les Shorts des résultats de recherche."
+  },
+  "options_load_failed": { "en": "Could not load settings: {0}", "fr": "Impossible de charger les réglages : {0}" },
+  "options_version_line": { "en": "Version {0} · filter lists built {1}", "fr": "Version {0} · listes de filtres du {1}" },
+  "options_stale": {
+    "en": "The filter lists are {0} days old, and new ads slip through as lists age. Check the App Store for a Bouclier update.",
+    "fr": "Les listes de filtres datent de {0} jours : plus elles vieillissent, plus de nouvelles publicités passent au travers. Cherchez une mise à jour de Bouclier sur l’App Store."
+  },
+  "options_meter": { "en": "{0} of 150,000 Safari rules in use.", "fr": "Règles Safari utilisées : {0} sur 150 000." },
+  "options_status_paused": { "en": "Paused", "fr": "En pause" },
+  "options_status_on": { "en": "On", "fr": "Activée" },
+  "options_status_waiting": { "en": "Waiting (rule limit)", "fr": "En attente (limite de règles)" },
+  "options_status_off": { "en": "Off", "fr": "Désactivée" },
+  "options_hiding_sites_one": { "en": "{0} + {1} sites", "fr": "{0} + {1} site" },
+  "options_hiding_sites": { "en": "{0} + {1} sites", "fr": "{0} + {1} sites" },
+  "options_license_own": { "en": "Part of Bouclier", "fr": "Fait partie de Bouclier" },
+  "options_lists_hint": {
+    "en": "Turn lists on or off from the toolbar button.",
+    "fr": "Activez ou désactivez les listes depuis le bouton de la barre d’outils."
+  },
+  "options_none": { "en": "None", "fr": "Aucun" },
+  "options_paused_until": { "en": "{0} (until {1})", "fr": "{0} (jusqu’à {1})" },
+  "options_protect_again": { "en": "Protect {0} again", "fr": "Protéger à nouveau {0}" },
+  "options_control_fonts": { "en": "web fonts blocked", "fr": "polices web bloquées" },
+  "options_control_scripts": { "en": "scripts from other sites blocked", "fr": "scripts d’autres sites bloqués" },
+  "options_control_comments": { "en": "comments hidden", "fr": "commentaires masqués" },
+  "options_controls_remove": { "en": "Remove these controls", "fr": "Retirer ces réglages" },
+  "options_controls_remove_for": { "en": "Remove site controls for {0}", "fr": "Retirer les réglages par site de {0}" },
+  "options_none_yet": { "en": "None yet", "fr": "Aucun pour l’instant" },
+  "options_show_again": { "en": "Show it again", "fr": "Afficher à nouveau" },
+  "options_show_again_on": { "en": "Show {0} on {1} again", "fr": "Afficher à nouveau {0} sur {1}" },
+  "options_shortcuts_unavailable": { "en": "Not available in this browser", "fr": "Non disponible dans ce navigateur" },
+  "options_no_shortcut": { "en": "no shortcut set", "fr": "aucun raccourci défini" },
+  "options_credit_by": { "en": "{0} by {1} · {2}", "fr": "{0} par {1} · {2}" },
+  "options_saving": {
+    "en": "Saving… Safari recompiles its rules, this can take up to half a minute.",
+    "fr": "Enregistrement… Safari recompile ses règles, ce qui peut prendre jusqu’à 30 secondes."
+  },
+  "options_not_saved": { "en": "Not saved: {0}", "fr": "Non enregistré : {0}" },
+  "options_unknown_error": { "en": "unknown error", "fr": "erreur inconnue" },
+  "options_saved_skipped": { "en": "Saved, but some lines were skipped:", "fr": "Enregistré, mais certaines lignes ont été ignorées :" },
+  "options_saved": { "en": "Saved.", "fr": "Enregistré." },
+  "options_reset_stats_confirm": {
+    "en": "Reset all statistics? This cannot be undone.",
+    "fr": "Réinitialiser toutes les statistiques ? Cette action est irréversible."
+  },
+  "options_exported": { "en": "Saved to your Downloads folder.", "fr": "Enregistré dans votre dossier Téléchargements." },
+  "options_import_too_large": {
+    "en": "That file is too large to be a Bouclier backup (over 5 MB).",
+    "fr": "Ce fichier est trop volumineux pour être une sauvegarde de Bouclier (plus de 5 Mo)."
+  },
+  "options_import_partial": { "en": "Imported, but Safari refused part of it: {0}", "fr": "Importé, mais Safari en a refusé une partie : {0}" },
+  "options_imported_one": { "en": "Imported {0} settings.", "fr": "{0} réglage importé." },
+  "options_imported": { "en": "Imported {0} settings.", "fr": "{0} réglages importés." },
+  "options_import_failed": { "en": "Import failed.", "fr": "L’importation a échoué." },
+  "options_import_unreadable": {
+    "en": "That file could not be read as a Bouclier backup.",
+    "fr": "Impossible de lire ce fichier comme une sauvegarde de Bouclier."
+  },
+  "options_reset_confirm": {
+    "en": "Reset Bouclier to its default settings? Paused sites, hidden elements, site controls and your filters will be removed.",
+    "fr": "Rétablir les réglages par défaut de Bouclier ? Les sites en pause, les éléments masqués, les réglages par site et vos filtres seront supprimés."
+  }
+}

@@ -4,7 +4,7 @@
     {
       "id": "ads",
       "name": "Ads",
-      "description": "Banners, pop-ups and ad networks (EasyList)",
+      "description": "Banners, pop-ups and ad networks (EasyList, plus Bouclier's additions)",
       "source": "EasyList",
       "homepage": "https://easylist.to/",
       "license": "CC BY-SA 3.0",
@@ -15,12 +15,15 @@
         "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easylist.txt"
       ],
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "authors": "The EasyList authors"
+      "authors": "The EasyList authors",
+      "extra": [
+        "extra-ads.txt"
+      ]
     },
     {
       "id": "privacy",
       "name": "Trackers",
-      "description": "Analytics, tracking pixels and fingerprinting scripts (EasyPrivacy)",
+      "description": "Analytics, tracking pixels and fingerprinting scripts (EasyPrivacy, plus Bouclier's additions)",
       "source": "EasyPrivacy",
       "homepage": "https://easylist.to/",
       "license": "CC BY-SA 3.0",
@@ -31,12 +34,15 @@
         "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easyprivacy.txt"
       ],
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "authors": "The EasyList authors"
+      "authors": "The EasyList authors",
+      "extra": [
+        "extra-privacy.txt"
+      ]
     },
     {
       "id": "french",
       "name": "French sites",
-      "description": "Ads on French-language sites (Liste FR)",
+      "description": "Ads on French-language sites (Liste FR, plus Bouclier's additions)",
       "source": "Liste FR",
       "homepage": "https://github.com/easylist/listefr",
       "license": "CC BY-SA 3.0",
@@ -47,7 +53,10 @@
         "https://raw.githubusercontent.com/easylist/listefr/master/liste_fr.txt"
       ],
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "authors": "The Liste FR authors"
+      "authors": "The Liste FR authors",
+      "extra": [
+        "extra-french.txt"
+      ]
     },
     {
       "id": "safety",

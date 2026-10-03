@@ -21,3 +21,7 @@ tests/safari-sites/results/
 tools/screenshots/raw/
 tools/screenshots/out/
 tools/screenshots/_slide.html
+# WebKit benchmark output and the reference lists it downloads (tests/webkit-bench/fetch_refs.sh)
+tests/webkit-bench/results/
+tests/webkit-bench/build/
+tests/webkit-bench/ref/

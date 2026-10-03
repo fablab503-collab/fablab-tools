@@ -1,0 +1,8 @@
+{
+  "picker_click_to_hide": { "en": "Click the thing you want to hide", "fr": "Cliquez sur ce que vous voulez masquer" },
+  "picker_hide_this": { "en": "Hide this {0} on {1}?", "fr": "Masquer cet élément ({0}) sur {1} ?" },
+  "picker_wider": { "en": "Wider", "fr": "Élargir" },
+  "picker_wider_hint": { "en": "Select the surrounding block", "fr": "Sélectionner le bloc qui l’entoure" },
+  "picker_hide": { "en": "Hide", "fr": "Masquer" },
+  "picker_cancel": { "en": "Cancel", "fr": "Annuler" }
+}

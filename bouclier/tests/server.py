@@ -25,6 +25,13 @@ PAGES = {
 window.openAd = () => { window.__ad = window.open('http://11x11.com/landing'); return 'opened'; };
 window.openOk = () => { window.__ok = window.open('http://docs.test/page'); return 'opened'; };
 </script></body></html>'''),
+ ('www.billetreduc.com', '/'): ('text/html', '''<!doctype html><html><body>
+<div class="page-content">
+<div class="maxget initialized" emp="7:1" region="1" page="home" id="br-top"><div class="desktop"><img src="http://www.billetreduc.com/zi/max/3016/22848/banner.jpg"><span class="pub__notifier">Sponsoris\u00e9</span></div></div>
+<div class="home-hero"><div id="br-slider">slider</div><div class="home-pub-square" id="br-square"><div class="maxget"><img src="http://www.billetreduc.com/zi/max/838/22895/square.jpg"></div></div></div>
+<div class="rail-with-ads"><div id="br-rail">shows</div><div class="rail-ads-slot ads-desktop-only" id="br-tile"><div class="maxget"><img src="http://www.billetreduc.com/cgi/max.aspx?p=home&amp;b=1"></div></div></div>
+<img id="br-show" src="http://www.billetreduc.com/zg/n250/show.jpeg">
+</div></body></html>'''),
  ('1001games.com', '/'): ('text/html', '''<!doctype html><html><body>
 <div class="gc-leaderboard" id="specific-hide">specific ad</div><div class="game" id="game">game</div>
 </body></html>'''),

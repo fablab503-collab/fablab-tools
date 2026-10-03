@@ -3,9 +3,9 @@
 
     tools/asc.py status          read-only: what App Store Connect has (versions, builds, listing, price...)
     tools/asc.py fill            write the listing from appstore/listing.json: categories, names, texts,
-                                 age rating, versions 1.2.0, review details, screenshots, price, availability
+                                 age rating, the version in extension/manifest.json, review details, screenshots, price, availability
     tools/asc.py fill --only screenshots,price    run only some steps (see STEPS)
-    tools/asc.py attach          attach the newest processed 1.2.0 build to the iOS and macOS versions
+    tools/asc.py attach          attach the newest processed build of that version to the iOS and macOS versions
 
 Key: an App Store Connect API key (Users and Access > Integrations > Team Keys, access App Manager).
 The .p8 file lives in ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 (chmod 600) and
@@ -29,7 +29,8 @@ CONF_PATH = os.path.expanduser("~/.appstoreconnect/bouclier.json")
 KEY_DIR = os.path.expanduser("~/.appstoreconnect/private_keys")
 API = "https://api.appstoreconnect.apple.com"
 BUNDLE_ID = "com.danielmadac.Bouclier"
-VERSION = "1.2.0"
+# the version being prepared is the extension's (extension/manifest.json), so a release only bumps it there
+VERSION = json.load(open(os.path.join(ROOT, "extension", "manifest.json")))["version"]
 LOCALES = {"en-US": "en", "fr-FR": "fr"}
 EDITABLE = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED",
             "INVALID_BINARY", "WAITING_FOR_REVIEW"}

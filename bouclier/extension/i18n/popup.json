@@ -1,0 +1,149 @@
+{
+  "popup_settings": { "en": "Settings and statistics", "fr": "Réglages et statistiques" },
+  "popup_this_site": { "en": "This site", "fr": "Ce site" },
+  "popup_site_protection": { "en": "Protection on this site", "fr": "Protection sur ce site" },
+  "popup_allow": { "en": "Allow", "fr": "Autoriser" },
+  "popup_cancel": { "en": "Cancel", "fr": "Annuler" },
+  "popup_pause_site_for": { "en": "Pause on this site for", "fr": "Mettre en pause sur ce site pendant" },
+  "popup_chip_30_min": { "en": "30 min", "fr": "30 min" },
+  "popup_chip_1_hour": { "en": "1 hour", "fr": "1 heure" },
+  "popup_chip_2_hours": { "en": "2 hours", "fr": "2 heures" },
+  "popup_chip_tomorrow": { "en": "Until tomorrow", "fr": "Jusqu’à demain" },
+  "popup_hide_element": { "en": "Hide an element", "fr": "Masquer un élément" },
+  "popup_show_again": { "en": "Show them again", "fr": "Réafficher" },
+  "popup_site_controls": { "en": "Site controls", "fr": "Réglages du site" },
+  "popup_access_text": {
+    "en": "Allow Bouclier on all websites so it can hide empty ad spaces, close pop-ups and remove YouTube ads.",
+    "fr": "Autorisez Bouclier sur tous les sites web pour qu’il puisse masquer les espaces publicitaires vides, fermer les pop-ups et retirer les publicités YouTube."
+  },
+  "popup_paused_banner": { "en": "Protection is paused everywhere.", "fr": "La protection est en pause partout." },
+  "popup_resume": { "en": "Resume", "fr": "Reprendre" },
+  "popup_filters": { "en": "Filters", "fr": "Filtres" },
+  "popup_more_filters": { "en": "More filters", "fr": "Plus de filtres" },
+  "popup_pause_all": { "en": "Pause everywhere", "fr": "Pause partout" },
+  "popup_pause_all_desc": {
+    "en": "Turns off all blocking until you switch it back on.",
+    "fr": "Désactive tout blocage jusqu’à ce que vous le réactiviez."
+  },
+  "popup_for": { "en": "For", "fr": "Pendant" },
+  "popup_setup_check": { "en": "Setup check", "fr": "Vérification de l’installation" },
+  "popup_today_blocked_one": { "en": "{0} blocked today", "fr": "{0} bloqué aujourd’hui" },
+  "popup_today_blocked_other": { "en": "{0} blocked today", "fr": "{0} bloqués aujourd’hui" },
+  "popup_today_popups_one": { "en": "{0} pop-up closed", "fr": "{0} pop-up fermé" },
+  "popup_today_popups_other": { "en": "{0} pop-ups closed", "fr": "{0} pop-ups fermés" },
+  "popup_version": { "en": "Version {0}", "fr": "Version {0}" },
+  "popup_no_website": { "en": "No website in this tab", "fr": "Aucun site web dans cet onglet" },
+  "popup_count_paused_all": { "en": "Paused everywhere.", "fr": "En pause partout." },
+  "popup_count_paused_all_until": { "en": "Paused everywhere until {0}.", "fr": "En pause partout jusqu’à {0}." },
+  "popup_count_paused_site": {
+    "en": "Paused on this site. Ads and trackers load normally.",
+    "fr": "En pause sur ce site. Les publicités et les traqueurs se chargent normalement."
+  },
+  "popup_count_paused_site_until": { "en": "Paused on this site until {0}.", "fr": "En pause sur ce site jusqu’à {0}." },
+  "popup_protection_on": { "en": "Protection is on.", "fr": "La protection est activée." },
+  "popup_requests_blocked_one": { "en": "request blocked on this page", "fr": "requête bloquée sur cette page" },
+  "popup_requests_blocked_other": { "en": "requests blocked on this page", "fr": "requêtes bloquées sur cette page" },
+  "popup_tag_title": { "en": "Something broken? Allow {0} on {1}", "fr": "Un problème ? Autoriser {0} sur {1}" },
+  "popup_hint_click": {
+    "en": "Page broken? Click an address to allow it on this site.",
+    "fr": "La page s’affiche mal ? Cliquez sur une adresse pour l’autoriser sur ce site."
+  },
+  "popup_hint_tap": {
+    "en": "Page broken? Tap an address to allow it on this site.",
+    "fr": "La page s’affiche mal ? Touchez une adresse pour l’autoriser sur ce site."
+  },
+  "popup_links_one": {
+    "en": "Tracking tags removed from this page’s address.",
+    "fr": "Balises de suivi retirées de l’adresse de cette page."
+  },
+  "popup_links_other": { "en": "Tracking tags removed from {0} addresses.", "fr": "Balises de suivi retirées de {0} adresses." },
+  "popup_allow_confirm": {
+    "en": "Allow {0} on {1}? Bouclier keeps blocking it everywhere else.",
+    "fr": "Autoriser {0} sur {1} ? Bouclier continue de bloquer cette adresse partout ailleurs."
+  },
+  "popup_allowing": { "en": "Allowing {0} on {1}…", "fr": "Autorisation de {0} sur {1}…" },
+  "popup_hidden_one": { "en": "{0} element hidden by you", "fr": "{0} élément masqué par vous" },
+  "popup_hidden_other": { "en": "{0} elements hidden by you", "fr": "{0} éléments masqués par vous" },
+  "popup_unhiding": { "en": "Showing hidden elements on {0} again…", "fr": "Réaffichage des éléments masqués sur {0}…" },
+  "popup_picker_failed": { "en": "Could not start the picker on this page.", "fr": "Impossible de sélectionner un élément sur cette page." },
+  "popup_site_controls_on_one": { "en": "Site controls ({0} on)", "fr": "Réglages du site ({0} activé)" },
+  "popup_site_controls_on_other": { "en": "Site controls ({0} on)", "fr": "Réglages du site ({0} activés)" },
+  "popup_ctl_fonts": { "en": "Block web fonts", "fr": "Bloquer les polices web" },
+  "popup_ctl_fonts_desc": {
+    "en": "Faster pages; some icons may turn into squares",
+    "fr": "Pages plus rapides ; certaines icônes peuvent devenir des carrés"
+  },
+  "popup_ctl_scripts3p": { "en": "Block scripts from other sites", "fr": "Bloquer les scripts d’autres sites" },
+  "popup_ctl_scripts3p_desc": {
+    "en": "Strict: stops most widgets and players too",
+    "fr": "Strict : bloque aussi la plupart des widgets et des lecteurs"
+  },
+  "popup_ctl_comments": { "en": "Hide comments", "fr": "Masquer les commentaires" },
+  "popup_ctl_comments_desc": { "en": "Hides comment sections on this site", "fr": "Masque les sections de commentaires sur ce site" },
+  "popup_turning_on_site": { "en": "Turning on “{0}” for {1}…", "fr": "Activation de « {0} » sur {1}…" },
+  "popup_turning_off_site": { "en": "Turning off “{0}” for {1}…", "fr": "Désactivation de « {0} » sur {1}…" },
+  "popup_pausing_site": { "en": "Pausing on {0}…", "fr": "Mise en pause sur {0}…" },
+  "popup_protecting_again": { "en": "Protecting {0} again…", "fr": "Réactivation de la protection sur {0}…" },
+  "popup_pausing_site_for": { "en": "Pausing on {0} for {1}…", "fr": "Mise en pause sur {0} pendant {1}…" },
+  "popup_pausing_site_tomorrow": { "en": "Pausing on {0} until tomorrow morning…", "fr": "Mise en pause sur {0} jusqu’à demain matin…" },
+  "popup_pausing_all": { "en": "Pausing everywhere…", "fr": "Mise en pause partout…" },
+  "popup_pausing_all_for": { "en": "Pausing everywhere {0}…", "fr": "Mise en pause partout pendant {0}…" },
+  "popup_pausing_all_tomorrow": { "en": "Pausing everywhere until tomorrow…", "fr": "Mise en pause partout jusqu’à demain…" },
+  "popup_resuming": { "en": "Resuming protection…", "fr": "Reprise de la protection…" },
+  "popup_paused_banner_until": {
+    "en": "Protection is paused everywhere until {0}.",
+    "fr": "La protection est en pause partout jusqu’à {0}."
+  },
+  "popup_back_on_at": { "en": "Back on automatically at {0}.", "fr": "Réactivation automatique à {0}." },
+  "popup_thanks": { "en": "Thanks! Reload pages to apply.", "fr": "Merci ! Rechargez les pages pour appliquer ce réglage." },
+  "popup_access_denied": {
+    "en": "Safari did not allow it on every website.",
+    "fr": "Safari n’a pas autorisé Bouclier sur tous les sites web."
+  },
+  "popup_access_open_settings": {
+    "en": "Open {0} and allow it on all websites.",
+    "fr": "Ouvrez {0} et autorisez-le sur tous les sites web."
+  },
+  "popup_short_ads": { "en": "Ad networks, banners and pop-ups", "fr": "Régies publicitaires, bannières et pop-ups" },
+  "popup_short_privacy": { "en": "Analytics and tracking scripts", "fr": "Statistiques et scripts de suivi" },
+  "popup_short_french": { "en": "Liste FR, for French sites", "fr": "Liste FR, pour les sites français" },
+  "popup_short_safety": { "en": "Known malware sites", "fr": "Sites malveillants connus" },
+  "popup_short_urlclean": { "en": "Strips utm_, fbclid, gclid… from links", "fr": "Retire utm_, fbclid, gclid… des liens" },
+  "popup_short_antiadblock": { "en": "“Turn off your ad blocker” walls", "fr": "Messages « Désactivez votre bloqueur de pub »" },
+  "popup_short_cookies": { "en": "Consent pop-ups (can break some sites)", "fr": "Pop-ups de consentement (peut gêner certains sites)" },
+  "popup_short_social": { "en": "Like and share buttons, social embeds", "fr": "Boutons J’aime et Partager, contenus sociaux intégrés" },
+  "popup_short_annoyances": { "en": "Newsletter and “open in app” pop-ups", "fr": "Pop-ups de newsletter et « ouvrir dans l’app »" },
+  "popup_youtube_ads": { "en": "YouTube ads", "fr": "Publicités YouTube" },
+  "popup_youtube_ads_desc": { "en": "Video ads and ad banners", "fr": "Publicités vidéo et bannières publicitaires" },
+  "popup_youtube_on": { "en": "Turning YouTube ad removal on…", "fr": "Activation du retrait des publicités YouTube…" },
+  "popup_youtube_off": { "en": "Turning YouTube ad removal off…", "fr": "Désactivation du retrait des publicités YouTube…" },
+  "popup_popup_ads": { "en": "Pop-up ads", "fr": "Pop-ups publicitaires" },
+  "popup_popup_ads_desc": { "en": "Closes ad tabs that pages open", "fr": "Ferme les onglets publicitaires ouverts par les pages" },
+  "popup_hide_shorts": { "en": "Hide YouTube Shorts", "fr": "Masquer les Shorts YouTube" },
+  "popup_hide_shorts_desc": { "en": "Shorts shelves, tabs and results", "fr": "Sections, onglets et résultats Shorts" },
+  "popup_turning_on": { "en": "Turning on {0}…", "fr": "Activation de « {0} »…" },
+  "popup_turning_off": { "en": "Turning off {0}…", "fr": "Désactivation de « {0} »…" },
+  "popup_waiting_room": {
+    "en": "Waiting for room under Safari's rule limit",
+    "fr": "En attente de place sous la limite de règles de Safari"
+  },
+  "popup_budget": {
+    "en": "Safari's rule limit is reached, so these filters are waiting: {0}. Turn another filter off to make room.",
+    "fr": "La limite de règles de Safari est atteinte, ces filtres sont donc en attente : {0}. Désactivez un autre filtre pour faire de la place."
+  },
+  "popup_recompile": {
+    "en": "Safari recompiles its rules, this can take up to half a minute.",
+    "fr": "Safari recompile ses règles, ce qui peut prendre jusqu’à une demi-minute."
+  },
+  "popup_recompile_reload": {
+    "en": "Safari recompiles its rules (up to half a minute), then the page reloads by itself.",
+    "fr": "Safari recompile ses règles (jusqu’à une demi-minute), puis la page se recharge d’elle-même."
+  },
+  "popup_applying": { "en": "Applying your last change…", "fr": "Application de votre dernière modification…" },
+  "popup_done": { "en": "Done.", "fr": "Terminé." },
+  "popup_done_reloaded": { "en": "Done. Page reloaded.", "fr": "Terminé. Page rechargée." },
+  "popup_not_possible": { "en": "not possible here", "fr": "impossible ici" },
+  "popup_error": { "en": "Something went wrong: {0}", "fr": "Une erreur s’est produite : {0}" },
+  "popup_last_change_failed": { "en": "Last change failed: {0}", "fr": "La dernière modification a échoué : {0}" },
+  "popup_load_failed": { "en": "Could not load: {0}", "fr": "Chargement impossible : {0}" }
+}

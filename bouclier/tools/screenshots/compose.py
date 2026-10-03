@@ -4,6 +4,9 @@ brand-blue studio background, a big caption, and realistic hardware drawn in CSS
 black glass, camera, buttons, glare, contact shadows): a phone, a tablet and a laptop with the
 capture on their screens. The earlier flat frames are kept in compose_flat.py.
 
+The captures are in the slide's language (raw/en/ and raw/fr/: Bouclier and the demo site in
+English or French; run capture.mjs --lang fr for the French ones).
+
 Output: out/<lang>/<device>/<n>-<slide>.png at Apple's sizes, RGB without alpha (App Store
 Connect refuses transparency): Mac 2880x1800, iPhone 6.9" 1320x2868, iPad 13" 2064x2752.
 
@@ -28,27 +31,31 @@ TEXT = {
     "en": {
         1: ("Ads and trackers, blocked", "Pages load faster and stop following you."),
         2: ("See what each page tried to load", "Every blocked request, counted on the spot."),
-        3: ("Pause a site in one {tap}", "Or pause Bouclier for an hour."),
+        3: ("Pause a site in one {tap}", "For 1 hour, 2 hours or until tomorrow."),
         4: ("Hide anything on a page", "{Tapit}, then Hide. It stays gone."),
         5: ("Your statistics, on your device", "Nothing is collected. Nothing leaves your device."),
         "with_ads": "With ads", "with_bouclier": "With Bouclier",
-        "ring_site": "Switch off for this site", "ring_pause": "Or just for an hour",
-        "settings": "Bouclier Settings",
+        "ring_site": "Switch off for this site",
+        "settings": "Bouclier Settings", "host": "daily.example",
+        "date_ipad": "9:41&nbsp; Wed 23 Sep", "date_mac": "Wed 23 Sep&nbsp; 9:41",
+        "menus": ("File", "Edit", "View", "History", "Bookmarks", "Window", "Help"),
     },
     "fr": {
         1: ("Pubs et traqueurs bloqués", "Des pages plus rapides, qui ne vous suivent plus."),
         2: ("Voyez ce que chaque page voulait charger", "Chaque requête bloquée, comptée en direct."),
-        3: ("Un site en pause {tap}", "Ou tout Bouclier en pause pendant une heure."),
-        4: ("Masquez n'importe quel élément", "{Tapit}, puis Hide : il ne revient plus."),
-        5: ("Vos statistiques, sur votre appareil", "Rien n'est collecté, rien ne quitte l'appareil."),
+        3: ("Un site en pause {tap}", "Pendant 1\u00a0heure, 2\u00a0heures ou jusqu’à demain."),
+        4: ("Masquez n’importe quel élément", "{Tapit}, puis «\u00a0Masquer\u00a0»\u00a0: il ne revient plus."),
+        5: ("Vos statistiques, sur votre appareil", "Rien n’est collecté, rien ne quitte l’appareil."),
         "with_ads": "Avec pubs", "with_bouclier": "Avec Bouclier",
-        "ring_site": "Désactiver sur ce site", "ring_pause": "Ou juste une heure",
-        "settings": "Réglages de Bouclier",
+        "ring_site": "Désactiver sur ce site",
+        "settings": "Réglages de Bouclier", "host": "quotidien.example",
+        "date_ipad": "9:41&nbsp; mer. 23 sept.", "date_mac": "mer. 23 sept.&nbsp; 9:41",
+        "menus": ("Fichier", "Édition", "Présentation", "Historique", "Signets", "Fenêtre", "Aide"),
     },
 }
 VERBS = {  # ({tap}, {Tapit}) by language and device
     "en": {"mac": ("click", "Click it"), "ipad": ("tap", "Tap it"), "iphone": ("tap", "Tap it")},
-    "fr": {"mac": ("en un clic", "Cliquez dessus"), "ipad": ("d'un geste", "Touchez-le"), "iphone": ("d'un geste", "Touchez-le")},
+    "fr": {"mac": ("en un clic", "Cliquez dessus"), "ipad": ("d’un geste", "Touchez-le"), "iphone": ("d’un geste", "Touchez-le")},
 }
 SLUG = {1: "blocked", 2: "report", 3: "pause", 4: "hide", 5: "stats"}
 BACKGROUND = {
@@ -165,18 +172,25 @@ h1 { font: 700 var(--h1)/1.02 Display, sans-serif; letter-spacing: -.025em; marg
 .card { position: absolute; border-radius: 28px; background: #f2f2f7; box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 40px 90px rgba(3,10,35,.55); }
 .card .clip { border-radius: 28px; }
 .ring { position: absolute; border: 4px solid #ffd33d; border-radius: 999px; box-shadow: 0 0 0 8px rgba(255,211,61,.28); z-index: 3; }
-.ring.soft { border-color: #fff; box-shadow: 0 0 0 8px rgba(255,255,255,.22); border-radius: 18px; }
+.ring.soft { border-color: #2f6fea; box-shadow: 0 0 0 7px rgba(47,111,234,.22); border-radius: 18px; }
 .note { position: absolute; z-index: 4; padding: 10px 16px; border-radius: 14px; font: 700 var(--note)/1.15 Body, sans-serif; color: #0b1535; background: #ffd33d; box-shadow: 0 10px 24px rgba(0,0,0,.25); white-space: nowrap; }
 .note.soft { background: #fff; }
 """
 
 
+LANG = {"now": "en"}   # the language being drawn: its captures are in raw/<lang>/
+
+
 def img(name):
-    return f"raw/{name}.png"
+    return f"raw/{LANG['now']}/{name}.png"
+
+
+def raw_json(name):
+    return json.loads((RAW / LANG["now"] / f"{name}.json").read_text())
 
 
 def menu_crop(dev):
-    return json.loads((RAW / f"{dev}-menu.json").read_text())
+    return raw_json(f"{dev}-menu")
 
 
 def text_block(t, n, device, x, y, width, center=False):
@@ -191,7 +205,7 @@ def text_block(t, n, device, x, y, width, center=False):
 
 def top_blank(name, scale):
     """CSS pixels of empty page above the first card in a settings capture."""
-    im = Image.open(RAW / f"{name}.png").convert("RGB")
+    im = Image.open(RAW / LANG["now"] / f"{name}.png").convert("RGB")
     bg = im.getpixel((im.width // 2, 2))
     for y in range(0, im.height, 2):
         if im.getpixel((im.width // 2, y)) != bg:
@@ -220,7 +234,7 @@ def web_content(dev, n, t, web_w, web_h, variant=None):
         shift = max(0, top_blank(name, scale) - 14) * web_w / css_w
         cover = ""
         if dev == "ipad":
-            r = json.loads((RAW / f"{name}.json").read_text())
+            r = raw_json(name)
             bottom = (r["y"] + r["h"] + 12) * web_w / css_w - shift
             cover = f'<div style="position:absolute;left:0;right:0;top:{bottom:.0f}px;bottom:0;background:#f2f2f7"></div>'
         return (f'<div class="web" style="width:{web_w}px;height:{web_h}px;background:#f2f2f7">'
@@ -248,7 +262,7 @@ def phone(n, t, x, y, variant=None, extra=''):
     sw, sh, bez, band = p["sw"], p["sh"], p["bez"], p["band"]
     ow, oh = phone_size()
     web_h = 808
-    address = t["settings"] if n == 5 else "daily.example"
+    address = t["settings"] if n == 5 else t["host"]
     sheet = ""
     if n == 2:
         s = menu_crop("iphone")
@@ -287,7 +301,7 @@ def tablet(n, t, x, y, variant=None, extra=''):
     web_h = round(1276 * sw / 1032)
     sh = 30 + 54 + web_h
     ow, oh = tablet_size()
-    address = t["settings"] if n == 5 else "daily.example"
+    address = t["settings"] if n == 5 else t["host"]
     pop = ""
     if n == 2:
         s = menu_crop("mac")
@@ -303,7 +317,7 @@ def tablet(n, t, x, y, variant=None, extra=''):
             f'<div class="bezel" style="border-radius:{44 - band}px;padding:{bez}px">'
             f'<div class="lens" style="left:50%;top:{bez / 2 - 3.5:.1f}px;width:7px;height:7px;margin-left:-3.5px"></div>'
             f'<div class="screen" style="width:{sw}px;height:{sh}px;border-radius:{44 - band - bez}px">'
-            f'<div class="statusbar" style="height:30px;padding:2px 26px 0;font-size:13px"><span>9:41&nbsp; Wed 23 Sep</span>{STATUS_ICONS}</div>'
+            f'<div class="statusbar" style="height:30px;padding:2px 26px 0;font-size:13px"><span>{t["date_ipad"]}</span>{STATUS_ICONS}</div>'
             f'<div class="toolbar" style="height:54px"><div class="glyph"></div><div class="addr"><span>{address}</span></div>'
             f'<div class="tb">{SHIELD_TB}<span class="badge">14</span></div></div>'
             + web_content("ipad", n, t, sw, web_h, variant) + pop + '<div class="glare"></div></div></div></div>' + extra + '</div>')
@@ -326,7 +340,7 @@ def laptop(n, t, x, y, extra=''):
     p = LAPTOP
     sw, sh, band = p["sw"], p["sh"], p["band"]
     bw, lw, th = laptop_size()
-    address = t["settings"] if n == 5 else "daily.example"
+    address = t["settings"] if n == 5 else t["host"]
     # the Safari window on the desktop, below the menu bar
     wx, wy, wr, wb = 20, 24 + 12, 20, 14
     ww, wh = sw - wx - wr, sh - wy - wb
@@ -338,13 +352,13 @@ def laptop(n, t, x, y, extra=''):
         w = 300
         h = s["bottom"] * w / s["width"]
         pop = f'<div class="popover" style="right:12px;top:{tb_h + 6}px;width:{w}px"><div class="clip" style="height:{h:.0f}px"><img src="{img("mac-menu")}"></div></div>'
-    menus = "".join(f"<span>{m}</span>" for m in ("File", "Edit", "View", "History", "Bookmarks", "Window", "Help"))
+    menus = "".join(f"<span>{m}</span>" for m in t["menus"])
     win = (f'<div class="win" style="left:{wx}px;top:{wy}px;width:{ww}px;height:{wh}px">'
            f'<div class="toolbar" style="height:{tb_h}px"><div class="lights"><i></i><i></i><i></i></div><div class="glyph"></div>'
            f'<div class="addr"><span>{address}</span></div><div class="tb">{SHIELD_TB}<span class="badge">14</span></div></div>'
            + web_content("mac", n, t, ww, web_h) + pop + '</div>')
     screen = (f'<div class="desktop" style="width:{sw}px;height:{sh}px;border-radius:6px 6px 2px 2px">'
-              f'<div class="menubar"><b>Safari</b>{menus}<span class="r"><span>Wed 23 Sep&nbsp; 9:41</span></span></div>'
+              f'<div class="menubar"><b>Safari</b>{menus}<span class="r"><span>{t["date_mac"]}</span></span></div>'
               f'{win}<div class="glare"></div></div>')
     lid = (f'<div class="lid metal dev-shadow" style="width:{lw}px;margin-left:{(bw - lw) / 2:.0f}px">'
            f'<div class="bezel" style="padding:{p["top"]}px {p["bez"]}px {p["bottom"]}px">'
@@ -368,8 +382,8 @@ def pair(device, t, front, back):
     return back_html + front_html
 
 
-def pause_card(dev, t, x, y, width, note_px):
-    """Slide 3: Bouclier's menu, large, with rings on the site switch and the pause button."""
+def pause_card(dev, t, x, y, width, note_px, gap=92):
+    """Slide 3: Bouclier's menu, large, with rings on the site switch and the timed pause (1 hour, 2 hours, until tomorrow)."""
     src = "iphone" if dev == "iphone" else "mac"
     s = menu_crop(src)
     k = width / s["width"]
@@ -378,13 +392,14 @@ def pause_card(dev, t, x, y, width, note_px):
     pad = 10
     ring1 = (f'<div class="ring" style="left:{tg["x"] * k - pad:.0f}px;top:{tg["y"] * k - pad:.0f}px;'
              f'width:{tg["w"] * k + 2 * pad:.0f}px;height:{tg["h"] * k + 2 * pad:.0f}px"></div>')
-    ring2 = (f'<div class="ring soft" style="left:{pz["x"] * k - pad:.0f}px;top:{pz["y"] * k - pad:.0f}px;'
-             f'width:{pz["w"] * k + 2 * pad:.0f}px;height:{pz["h"] * k + 2 * pad:.0f}px"></div>')
+    # the white ring goes round "Pause on this site for 1 hour · 2 hours · Until tomorrow": its own
+    # label says what it does, so only the switch gets a note
+    ring2 = (f'<div class="ring soft" style="left:{pz["x"] * k - pad:.0f}px;top:{pz["y"] * k - pad / 2:.0f}px;'
+             f'width:{pz["w"] * k + 2 * pad:.0f}px;height:{pz["h"] * k + pad:.0f}px"></div>')
     note1 = (f'<div class="note" style="right:{-8:.0f}px;top:{tg["y"] * k - note_px * 3.1:.0f}px">{t["ring_site"]}</div>')
-    note2 = (f'<div class="note soft" style="left:{pz["x"] * k:.0f}px;top:{(pz["y"] + pz["h"]) * k + pad + 14:.0f}px">{t["ring_pause"]}</div>')
-    pc = json.loads((RAW / f"{src}-pausecard.json").read_text())
+    note2 = ''
+    pc = raw_json(f"{src}-pausecard")
     ph = (pc["h"] + 24) * k
-    gap = 92
     card2 = (f'<div class="card" style="left:{x}px;top:{y + h + gap:.0f}px;width:{width:.0f}px;height:{ph:.0f}px">'
              f'<div class="clip" style="height:{ph:.0f}px;border-radius:28px"><img src="{img(src + "-pausecard")}" '
              f'style="width:{width:.0f}px;margin-top:{-(pc["y"] - 12) * k:.0f}px"></div></div>')
@@ -393,12 +408,12 @@ def pause_card(dev, t, x, y, width, note_px):
             + ring1 + ring2 + note1 + note2 + '</div>' + card2)
 
 
-def pause_height(dev, width):
+def pause_height(dev, width, gap=92):
     src = "iphone" if dev == "iphone" else "mac"
     s = menu_crop(src)
-    pc = json.loads((RAW / f"{src}-pausecard.json").read_text())
+    pc = raw_json(f"{src}-pausecard")
     k = width / s["width"]
-    return s["bottom"] * k + 92 + (pc["h"] + 24) * k
+    return s["bottom"] * k + gap + (pc["h"] + 24) * k
 
 
 def page(device, n, lang):
@@ -434,7 +449,7 @@ def page(device, n, lang):
         bw, lw, lh = laptop_size()
         if n == 3:
             text = text_block(t, n, device, 72, None, 440)
-            body = pause_card("mac", t, 720, (900 - pause_height("mac", 560)) / 2, 560, 22)
+            body = pause_card("mac", t, 740, (900 - pause_height("mac", 500, 64)) / 2, 500, 22, 64)
         else:
             text = text_block(t, n, device, 170, 30, 1100, center=True)
             x, y = (w - bw) / 2, h - lh - 26
@@ -460,6 +475,7 @@ def main():
                 if args.only and device != args.only:
                     continue
                 pg = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=2)
+                LANG["now"] = lang
                 for n in range(1, 6):
                     if args.slide and n != args.slide:
                         continue

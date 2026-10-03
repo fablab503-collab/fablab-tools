@@ -1,0 +1,19 @@
+! Bouclier additions to the French sites list (Liste FR). Licence: part of Bouclier (MIT).
+! Smart AdServer slots that stay visible (empty or with a "Publicité" label) on the BFM sites.
+bfmtv.com##div[id^="sas_"]
+! Leboncoin renamed its ad slots (Liste FR still hides "#home-top-banner"); the ads there are re-inserted
+! by an ad-recovery service when an ad blocker is on, inside these slots.
+leboncoin.fr##div[id^="home-top-banner"]
+leboncoin.fr##div[id^="home-left-atf"]
+leboncoin.fr##div[id^="home-right-atf"]
+leboncoin.fr##div[class*="teal-apn"]
+leboncoin.fr##div[id^="google_ads_iframe_"]
+! Prisma Media sites: re-inserted ads land in ".ads-core-placer" slots (seen on capital.fr and programme-tv.net).
+capital.fr,programme-tv.net,voici.fr,gala.fr,femmeactuelle.fr,cuisineactuelle.fr,geo.fr,caminteresse.fr,telestar.fr,tele-loisirs.fr##div.ads-core-placer
+! BilletReduc sells ad space on its own pages ("Sponsorisé" banners from its "max" ad server): the banner
+! above the home carousel, the square beside it, and a tile in several rows of shows (seen 2026-09-29).
+||billetreduc.com/zi/max/$image
+||billetreduc.com/cgi/max.aspx$image
+billetreduc.com##.maxget
+billetreduc.com##.home-pub-square
+billetreduc.com##.rail-ads-slot

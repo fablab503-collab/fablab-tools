@@ -14,10 +14,15 @@ What it changes, all inside the generated project (the repo is never touched):
   3. Info.plist: no custom encryption (skips the export compliance question on every upload),
      display name "Bouclier", Mac App Store category Utilities;
   4. entitlements: checks both Mac targets are sandboxed (the Mac App Store requires it);
-  5. rules: site-limited exceptions use the older "domains" key (see safari_allow_domains).
+  5. rules: site-limited rules use the older "domains" keys, which every Safari from 15 to 27
+     applies (see safari_domains);
+  6. the template's Swift: the iPhone window scrolls (the page is taller than a 4.7-inch screen),
+     links open in Safari instead of replacing the window, and from iOS 26.2 its button opens
+     Bouclier's switch in Settings directly (see patch_swift).
 Build settings (versions, deployment targets, team) are passed to xcodebuild by build.sh.
 """
 import json
+import re
 import plistlib
 import shutil
 import subprocess
@@ -146,6 +151,10 @@ def edit_plists(root):
             info = plistlib.load(f)
         is_extension = "NSExtension" in info
         info["CFBundleDisplayName"] = "Bouclier"
+        # English by default, French on a device set to French: the app window (and WKWebView's
+        # navigator.language) follows the language the system picks from this list
+        info["CFBundleDevelopmentRegion"] = "en"
+        info["CFBundleLocalizations"] = ["en", "fr"]
         if not is_extension:
             info["ITSAppUsesNonExemptEncryption"] = False
             if "macOS" in str(path):
@@ -153,6 +162,28 @@ def edit_plists(root):
         with open(path, "wb") as f:
             plistlib.dump(info, f)
         say(f"{path.relative_to(root)}: {'extension' if is_extension else 'app'} keys set")
+
+
+MAC_WINDOW = (500, 620)   # the app page in French needs about 593 points at this width (425 x 325 in Apple's template)
+
+
+def size_mac_window(root):
+    """Apple's template opens the Mac app in a 425 x 325 window that cannot be resized, so the page's
+    button ("Quit and Open Safari Settings…") sat below the fold, and further down in French."""
+    for board in find_one(root, "Main.storyboard", must=False):
+        if "macOS" not in str(board):
+            continue
+        text = board.read_text()
+        w, h = MAC_WINDOW
+        new, n = re.subn(r'(<rect key="(?:contentRect|frame)" x="[^"]*" y="[^"]*") width="425" height="325"/>',
+                         rf'\1 width="{w}" height="{h}"/>', text)
+        if n:
+            board.write_text(new)
+            say(f"{board.relative_to(root)}: Mac window {w} x {h} ({n} frames)")
+        elif f'width="{w}" height="{h}"' in text:
+            say(f"{board.relative_to(root)}: Mac window already {w} x {h}")
+        else:
+            say(f"{board.relative_to(root)}: template changed, Mac window size left as is")
 
 
 def check_sandbox(root):
@@ -168,12 +199,15 @@ def check_sandbox(root):
             say(f"{ent.name}: sandbox {'on' if data.get('com.apple.security.app-sandbox') else 'n/a (iOS)'}")
 
 
-def safari_allow_domains(root):
-    """Safari applies an allow rule's initiatorDomains nowhere, so "allow gpt.js on these 37 sites"
-    became "allow gpt.js everywhere" (tested 2026-09-23, Safari on macOS 27: Google's gpt.js and
-    adsbygoogle.js, Tag Manager, Criteo and Taboola all loaded on example.com). Written with the
-    older "domains" / "excludedDomains" keys, the same rules stay on their sites. Block rules keep
-    initiatorDomains, which Safari applies correctly. Only the copy inside the Xcode project changes."""
+def safari_domains(root):
+    """Two Safari limits, one fix. Safari applies an allow rule's initiatorDomains nowhere, so "allow
+    gpt.js on these 37 sites" became "allow gpt.js everywhere" (tested 2026-09-23, Safari on macOS 27:
+    Google's gpt.js and adsbygoogle.js, Tag Manager, Criteo and Taboola all loaded on example.com).
+    And Safari before 26 does not know initiatorDomains / excludedInitiatorDomains at all, so a block
+    rule limited to some sites would apply everywhere, and its exceptions nowhere. The older
+    "domains" / "excludedDomains" keys work in every Safari from 15 to 27, for allow and block rules
+    alike (checked with tests/webkit-bench on 2026-09-28). Only the copy inside the Xcode project
+    changes: Chromium, used by the tests, keeps the standard keys."""
     renamed = 0
     for path in find_one(root, "*.json", must=False):
         if path.parent.name != "rules" or "Extension" not in str(path):
@@ -181,8 +215,6 @@ def safari_allow_domains(root):
         rules = json.loads(path.read_text())
         changed = False
         for r in rules:
-            if r.get("action", {}).get("type") not in ("allow", "allowAllRequests"):
-                continue
             c = r.get("condition", {})
             for old, new in (("initiatorDomains", "domains"), ("excludedInitiatorDomains", "excludedDomains")):
                 if old in c:
@@ -191,9 +223,71 @@ def safari_allow_domains(root):
                     changed = True
         if changed:
             path.write_text(json.dumps(rules, separators=(",", ":")))
-    say(f"site-limited exceptions rewritten for Safari: {renamed}")
+    say(f"site-limited rules rewritten for every Safari version: {renamed}")
     if not renamed:
         sys.exit("xcode_setup: no rules found to rewrite (did the converter copy extension/rules?)")
+
+
+def patch_swift(root):
+    """Small changes to the template's ViewController.swift. Each one is skipped, with a notice, when
+    Apple's template no longer has the line it expects, so a new Xcode never breaks the build."""
+    paths = [p for p in find_one(root, "ViewController.swift", must=False) if "App" in str(p)]
+    if not paths:
+        say("no ViewController.swift: Swift left as generated")
+        return
+    for path in paths:
+        text = path.read_text()
+        edits = [
+            # iOS: SFSafariSettings lives in SafariServices
+            ("#if os(iOS)\nimport UIKit\n", "#if os(iOS)\nimport UIKit\nimport SafariServices\n", "import SafariServices on iOS"),
+            # the page is taller than an iPhone 8 / SE screen: let it scroll instead of cutting the end off
+            ("self.webView.scrollView.isScrollEnabled = false", "self.webView.scrollView.isScrollEnabled = true", "scrolling on iPhone"),
+            # iOS 26.2+: tell the page that its button can open Bouclier's switch in Settings
+            ('        webView.evaluateJavaScript("show(\'ios\')")\n',
+             '        if #available(iOS 26.2, *) {\n'
+             '            webView.evaluateJavaScript("show(\'ios\', undefined, true, true)")\n'
+             '        } else {\n'
+             '            webView.evaluateJavaScript("show(\'ios\')")\n'
+             '        }\n', "iOS page told about the Settings button"),
+            # a link (the ad-block test, or "abuse.ch" that iOS turns into one) opens in Safari, never inside the app window
+            ("    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {\n",
+             "    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {\n"
+             "        if let url = navigationAction.request.url, !url.isFileURL, url.scheme != \"about\" {\n"
+             "#if os(iOS)\n"
+             "            UIApplication.shared.open(url)\n"
+             "#elseif os(macOS)\n"
+             "            // Safari, not the default browser: the test link only means something where Bouclier runs\n"
+             "            if let safari = NSWorkspace.shared.urlForApplication(withBundleIdentifier: \"com.apple.Safari\") {\n"
+             "                NSWorkspace.shared.open([url], withApplicationAt: safari, configuration: NSWorkspace.OpenConfiguration())\n"
+             "            } else {\n"
+             "                NSWorkspace.shared.open(url)\n"
+             "            }\n"
+             "#endif\n"
+             "            decisionHandler(.cancel)\n"
+             "            return\n"
+             "        }\n"
+             "        decisionHandler(.allow)\n"
+             "    }\n\n"
+             "    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {\n",
+             "links open in Safari"),
+            # iOS 26.2+: the button opens Settings > Apps > Safari > Extensions > Bouclier
+            ("    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {\n",
+             "    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {\n"
+             "#if os(iOS)\n"
+             "        if #available(iOS 26.2, *) {\n"
+             "            if (message.body as? String) == \"open-preferences\" {\n"
+             "                SFSafariSettings.openExtensionsSettings(forIdentifiers: [extensionBundleIdentifier]) { _ in }\n"
+             "            }\n"
+             "        }\n"
+             "#endif\n", "iOS Settings button"),
+        ]
+        for old, new, what in edits:
+            if old in text and new not in text:
+                text = text.replace(old, new, 1)
+                say(f"{path.name}: {what}")
+            elif new not in text:
+                say(f"{path.name}: template changed, skipped: {what}")
+        path.write_text(text)
 
 
 def main():
@@ -204,10 +298,12 @@ def main():
     pbx = find_one(root, "project.pbxproj")[0]
     print(f"Preparing {pbx.parent.parent.name} for the App Store")
     replace_app_page(root)
+    patch_swift(root)
     install_icon(root, pbx, png_icon)
     edit_plists(root)
+    size_mac_window(root)
     check_sandbox(root)
-    safari_allow_domains(root)
+    safari_domains(root)
 
 
 if __name__ == "__main__":

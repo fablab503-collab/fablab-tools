@@ -1,0 +1,94 @@
+! Bouclier additions to the Ads list (EasyList). Ad servers that EasyList does not block by host,
+! found with the public ad-block tests (d3ward / adblock.turtlecute.org) and Bouclier's own Safari
+! site tests. Every entry is third-party only: the ad companies' own sites and dashboards keep working.
+! Licence: part of Bouclier (MIT).
+||adservice.google.com^$third-party
+||adservice.google.fr^$third-party
+||adservice.google.de^$third-party
+||adservice.google.co.uk^$third-party
+||adservice.google.es^$third-party
+||adservice.google.it^$third-party
+||adservice.google.be^$third-party
+||adservice.google.ch^$third-party
+||adservice.google.ca^$third-party
+||adservice.google.nl^$third-party
+||adservice.google.com.au^$third-party
+||afs.googlesyndication.com^$third-party
+||m.doubleclick.net^$third-party
+||mediavisor.doubleclick.net^$third-party
+||an.facebook.com^$third-party
+||ads-api.twitter.com^$third-party
+||ads.pinterest.com^$third-party
+||ads.youtube.com^$third-party
+||ads.tiktok.com^$third-party
+||ads-api.tiktok.com^$third-party
+||ads-sg.tiktok.com^$third-party
+||business-api.tiktok.com^$third-party
+||partnerads.ysm.yahoo.com^$third-party
+||gemini.yahoo.com^$third-party
+||adtech.yahooinc.com^$third-party
+||offerwall.yandex.net^$third-party
+||unityads.unity3d.com^$third-party
+||bdapi-ads.realmemobile.com^$third-party
+||bdapi-in-ads.realmemobile.com^$third-party
+||adsfs.oppomobile.com^$third-party
+||ck.ads.oppomobile.com^$third-party
+||data.ads.oppomobile.com^$third-party
+||iadsdk.apple.com^$third-party
+||api-adservices.apple.com^$third-party
+! The public ad-block test page loads its own "ad" scripts as bait (EasyList does the same for adblock-tester.com).
+||adblock.turtlecute.org/js/widget/ads.js
+||adblock.turtlecute.org/js/pagead.js
+! Pop-under network domain still loading on canyoublockit.com's "extreme" test (Sept 2026); these domains rotate.
+||kjfhenoqfyfljo.com^$third-party
+! Found with a 100-site benchmark in WebKit (consent accepted, Sept 2026): ad requests the lists let through.
+! Primis video ad units (EasyList only hides their containers).
+||primis.tech^$third-party
+! Ad creatives, native ads, header-bidding and ad cookie syncing.
+||adnxs-simple.com^$third-party
+||polarcdn-engine.com^$third-party
+||polarcdn.com^$third-party
+||ssp.disqus.com^$third-party
+||sync.inmobi.com^$third-party
+||api.w.inmobi.com^$third-party
+||pmbmonetize.live^$third-party
+||cdn.dv.tech^$third-party
+||t.co/1/i/adsctp$third-party
+! Twitter/X ad conversion pixel on its other path, Vox Media's ad library, Playwire, OpenWeb (Spot.IM) ad pixels.
+||t.co/i/adsctp$third-party
+||concert.io^$third-party
+||playwire.com^$third-party
+||api-ssp.spot.im^$third-party
+! Ad cookie syncing and tracking pixels of ad platforms (Tappx, Connatix; Connatix players are hidden by EasyList).
+||tappx.com^$third-party
+||capi.connatix.com^$third-party
+
+! Ad slots that stay visible in WebKit with consent accepted (Sept 2026): Future plc sites and weather.com.
+tomsguide.com,techradar.com,tomshardware.com,pcgamer.com,gamesradar.com##div[id^="bordeaux-ad-"]
+weather.com##div#WX_WindowShade
+weather.com##div#WX_MidLeader
+weather.com##div[id^="WX_Bot300"]
+weather.com##div[id^="WX_Top300"]
+! Found with Bouclier's WebKit benchmark (tests/webkit-bench: 100 sites, consent accepted, 28 Sept 2026).
+! Google's ad domains in full: EasyList only blocks parts of them, and everything served there is advertising.
+||doubleclick.net^$third-party
+||googlesyndication.com^$third-party
+||googleadservices.com^$third-party
+||2mdn.net^$third-party
+||adtrafficquality.google^$third-party
+! Not blocked on purpose (measured 28 Sept 2026, tests/webkit-bench): two "ad-recovery" services put ads
+! back once they see an ad blocker, and punish any blocking by breaking the page. Ad-Shield (html-load.com,
+! on Prisma Media and Future plc sites, bild.de...) blanks the whole page when its servers are blocked or its
+! re-inserted ads are hidden (it renames every element a filter would hide, to "harzsgqwhv..."); Admiral
+! (weather.com) puts a "disable your ad blocker" wall over the page when its current domains are blocked.
+! Beating them needs page scripts, not blocking rules: left for a later version.
+! Publishers' ad servers and ad formats that got through.
+||ak-ads-ns.prisasd.com^$third-party
+||adtcdn.unidadeditorial.es^$third-party
+||brightline.tv^$third-party
+||seenthis.io^$third-party
+||prod.pyxis.atp.fox^$third-party
+||ad-tech.nbcuni.com^$third-party
+! Google ad slots that still load (where EasyList allows Google's ad script so a site keeps working).
+##div[id^="google_ads_iframe_"]
+##iframe[id^="google_ads_iframe_"]

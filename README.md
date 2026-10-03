@@ -42,6 +42,8 @@ on your phone and open it. Full guide, screenshots, settings and how it is built
 - Per-site pause in one click, a report of what each page tried to load, "allow this address on
   this site" for broken pages, hide any element, your own filters in Adblock Plus syntax.
 - Statistics stay on the device. No account, no analytics, no data collected.
+- In English and French. Runs on Safari 16.4 or later: iPhone 8 and newer, iPads, and Macs with
+  macOS 12 or later, Apple silicon or Intel.
 
 **Use it for free:** build it yourself with `./build.sh` (Xcode 26 or later), or load `extension/`
 in Safari › Settings › Developer › *Add Temporary Extension…*. **Or support the work** by buying

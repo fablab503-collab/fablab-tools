@@ -1,0 +1,34 @@
+{
+  "platform_settings_mac": {
+    "en": "Safari Settings → Extensions → Bouclier",
+    "fr": "Réglages de Safari → Extensions → Bouclier"
+  },
+  "platform_settings_ios_18": {
+    "en": "Settings → Apps → Safari → Extensions → Bouclier",
+    "fr": "Réglages → Apps → Safari → Extensions → Bouclier"
+  },
+  "platform_settings_ios_16": {
+    "en": "Settings → Safari → Extensions → Bouclier",
+    "fr": "Réglages → Safari → Extensions → Bouclier"
+  },
+  "platform_steps_ios": {
+    "en": "In {0}, set All Websites to Allow.",
+    "fr": "Dans {0}, réglez Tous les sites web sur Autoriser."
+  },
+  "platform_steps_mac": {
+    "en": "In {0}, click “Always Allow on Every Website…” (or Edit Websites…, then Allow for other websites).",
+    "fr": "Dans {0}, cliquez sur « Toujours autoriser sur chaque site web… » (ou Modifier les sites web…, puis Autoriser pour les autres sites web)."
+  },
+  "platform_device_mac": {
+    "en": "this Mac",
+    "fr": "ce Mac"
+  },
+  "platform_device_iphone": {
+    "en": "this iPhone",
+    "fr": "cet iPhone"
+  },
+  "platform_device_ipad": {
+    "en": "this iPad",
+    "fr": "cet iPad"
+  }
+}

@@ -1,0 +1,42 @@
+# Bouclier on simulated iPhones (3 Oct 2026, Daniel: "try on at least 5 different iPhones, iOS as well").
+# A tiny host app and a UI test that drives Bouclier's app, the Settings app and Safari the way a person
+# does. Generate with XcodeGen, run with run.sh (one simulator after the other).
+name: BouclierIPhoneTests
+options:
+  bundleIdPrefix: com.danielmadac
+  deploymentTarget:
+    iOS: "16.4"
+settings:
+  base:
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    SWIFT_VERSION: "5.0"
+    GENERATE_INFOPLIST_FILE: YES
+targets:
+  UIHost:
+    type: application
+    platform: iOS
+    sources: [Host]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.danielmadac.BouclierUIHost
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+  BouclierUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: UIHost
+    settings:
+      base:
+        TEST_TARGET_NAME: UIHost
+        PRODUCT_BUNDLE_IDENTIFIER: com.danielmadac.BouclierUITests
+schemes:
+  BouclierIPhoneTests:
+    build:
+      targets:
+        UIHost: all
+        BouclierUITests: [test]
+    test:
+      targets: [BouclierUITests]

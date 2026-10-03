@@ -1,0 +1,26 @@
+{
+  "plugins": [
+    "stylelint-no-unsupported-browser-features"
+  ],
+  "rules": {
+    "plugin/no-unsupported-browser-features": [
+      true,
+      {
+        "severity": "error",
+        "ignorePartialSupport": true,
+        "ignore": [
+          "css-touch-action",
+          "css-appearance",
+          "text-size-adjust",
+          "user-select-none",
+          "css-scrollbar",
+          "css-resize"
+        ],
+        "browsers": [
+          "safari >= 16.4",
+          "ios_saf >= 16.4"
+        ]
+      }
+    ]
+  }
+}

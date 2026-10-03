@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Welcome to Bouclier</title>
+  <title data-i18n="welcome_page_title">Welcome to Bouclier</title>
   <link rel="stylesheet" href="../options/options.css">
   <link rel="stylesheet" href="welcome.css">
+  <script src="../common/i18n.js"></script>
   <script src="../common/platform.js"></script>
 </head>
 <body>
@@ -13,34 +14,34 @@
     <header class="hero">
       <img src="../icons/icon-128.png" alt="" width="64" height="64">
       <div>
-        <h1>Bouclier is on</h1>
-        <p class="muted" id="version-line">Setup check</p>
+        <h1 data-i18n="welcome_heading">Bouclier is on</h1>
+        <p class="muted" id="version-line" data-i18n="welcome_setup_check">Setup check</p>
       </div>
     </header>
 
     <section>
-      <h2>Setup check</h2>
-      <p class="muted">Bouclier checks its own setup. Anything marked with an orange dot needs one click from you.</p>
+      <h2 data-i18n="welcome_setup_check">Setup check</h2>
+      <p class="muted" data-i18n="welcome_setup_intro">Bouclier checks its own setup. Anything marked with an orange dot needs one click from you.</p>
       <ul class="checks" id="checks"></ul>
-      <button class="primary" id="recheck">Check again</button>
+      <button class="primary" id="recheck" data-i18n="welcome_check_again">Check again</button>
     </section>
 
     <section>
-      <h2>Worth knowing</h2>
+      <h2 data-i18n="welcome_worth_knowing">Worth knowing</h2>
       <ol class="steps">
-        <li data-only="mac"><strong>The shield in the toolbar</strong> shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for an hour.</li>
-        <li data-only="ios"><strong>Bouclier in Safari's page menu</strong> (in the address bar) shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for an hour.</li>
-        <li data-only="mac"><strong>Right-click anything</strong> and choose <em>Hide This Element…</em> to make it disappear for good, or <em>Pause Bouclier on this site</em>.</li>
-        <li data-only="ios"><strong>Hide an element</strong> in Bouclier's menu, then tap the thing you want gone. It stays hidden on that site.</li>
-        <li data-only="mac"><strong>Shortcuts</strong>: <span id="shortcuts">Option-Shift-B opens Bouclier, Option-Shift-P pauses the current site, Option-Shift-H hides an element.</span> Change them in Safari Settings → Extensions.</li>
+        <li data-only="mac" data-i18n-html="welcome_tip_toolbar_mac"><strong>The shield in the toolbar</strong> shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for 1 hour, 2 hours or until tomorrow.</li>
+        <li data-only="ios" data-i18n-html="welcome_tip_toolbar_ios"><strong>Bouclier in Safari's page menu</strong> (in the address bar) shows what was blocked on the page. Switch a site off there when it misbehaves, or pause it for 1 hour, 2 hours or until tomorrow.</li>
+        <li data-only="mac" data-i18n-html="welcome_tip_rightclick_mac"><strong>Right-click anything</strong> and choose <em>Hide This Element…</em> to make it disappear for good, or <em>Pause Bouclier on this site</em>.</li>
+        <li data-only="ios" data-i18n-html="welcome_tip_hide_ios"><strong>Hide an element</strong> in Bouclier's menu, then tap the thing you want gone. It stays hidden on that site.</li>
+        <li data-only="mac"><strong data-i18n="welcome_tip_shortcuts_label">Shortcuts</strong>: <span id="shortcuts" data-i18n="welcome_tip_shortcuts_default">Option-Shift-B opens Bouclier, Option-Shift-P pauses the current site, Option-Shift-H hides an element.</span> <span data-i18n="welcome_tip_shortcuts_change">Change them in Safari Settings → Extensions.</span></li>
       </ol>
     </section>
 
     <section>
-      <h2>Try it</h2>
-      <p class="muted">This independent test page loads real ad and tracker addresses and shows what got through. Expect about two thirds blocked: many of its addresses are used only by phone and TV apps, not by web pages, so web ad blockers leave them alone.</p>
+      <h2 data-i18n="welcome_try_it">Try it</h2>
+      <p class="muted" data-i18n="welcome_try_intro">This independent test page loads real ad and tracker addresses and shows what got through. With Bouclier on and allowed on all websites, it should show 100%.</p>
       <p class="links">
-        <a href="https://adblock.turtlecute.org/" target="_blank" rel="noopener">Open the ad blocker test</a>
+        <a href="https://adblock.turtlecute.org/" target="_blank" rel="noopener" data-i18n="welcome_try_link">Open the ad blocker test</a>
       </p>
     </section>
   </main>

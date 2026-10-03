@@ -44,3 +44,14 @@ body:not(.platform-ios) .platform-ios { display: none; }
 body.state-on :is(.state-off, .state-unknown),
 body.state-off :is(.state-on, .state-unknown),
 body:not(.state-on, .state-off) :is(.state-on, .state-off) { display: none; }
+/* the iPhone button opens Bouclier in Settings on iOS 26.2+ only (set by show()) */
+body:not(.can-open-settings) .ios-direct { display: none; }
+body.platform-ios button { min-height: 44px; padding: 10px 16px; }
+
+/* the independent ad-block test (2026-10-03): opens in Safari, where Bouclier works */
+.test { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.test-link { display: inline-flex; align-items: center; min-height: 30px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.test-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.test-desc { color: var(--muted); font-size: 12.5px; }
+body.platform-ios .test-link { min-height: 44px; }
+body.platform-ios .test-desc { font-size: 14px; }

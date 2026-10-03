@@ -40,10 +40,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .examples { background: var(--bg); border-radius: 10px; padding: 10px 12px; font: 12px/1.6 ui-monospace, Menlo, monospace; overflow-x: auto; margin: 0 0 10px; }
 textarea { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
            font: 13px/1.5 ui-monospace, Menlo, monospace; padding: 10px 12px; resize: vertical; }
-.row { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 10px; }
+a.button { display: inline-flex; align-items: center; border-radius: 10px; padding: 8px 14px; background: var(--bg); color: var(--text); text-decoration: none; }
 button { font: inherit; border-radius: 10px; border: 0; padding: 8px 14px; cursor: pointer; background: var(--bg); color: var(--text); }
 button.primary { background: var(--accent); color: #fff; }
 button.danger { color: var(--danger); margin-top: 12px; }
+.row button.danger { margin-top: 0; margin-left: auto; }   /* the destructive one apart, at the end of its row */
 .errors { color: var(--warn); margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
 .about { padding-left: 18px; margin: 8px 0; }
 .about li { margin-bottom: 6px; }
@@ -105,7 +107,16 @@ html.iphone section { padding: 16px; }
 html.ios .switch { width: 51px; height: 31px; }
 html.ios .switch span::before { width: 27px; height: 27px; }
 html.ios .switch input:checked + span::before { transform: translateX(20px); }
-html.ios button, html.ios label.button { min-height: 40px; }
-html.ios .chips button, html.ios .picked button { min-width: 36px; min-height: 36px; }
+html.ios button, html.ios label.button { min-height: 44px; }
+html.ios .chips button, html.ios .picked button { min-width: 44px; min-height: 44px; }
 .credits { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
 .credits li { margin-bottom: 3px; }
+
+/* --- QA 2026-09-28: readable chart labels and 44-point touch targets on iPhone and iPad --- */
+html.ios .chart .axis { font-size: 12px; }
+html.ios .table-view summary { min-height: 44px; display: flex; align-items: center; }
+html.ios .x, html.ios button.x, html.ios .remove { min-width: 44px; min-height: 44px; }
+
+/* --- 2026-10-03: a switch is drawn 51 x 31 like iOS's, but answers a finger over 59 x 45 (as in the menu) --- */
+html.ios .switch::after { content: ""; position: absolute; inset: -7px -4px; }
+html.ios a.button { min-height: 44px; }

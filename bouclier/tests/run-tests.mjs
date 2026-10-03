@@ -4,6 +4,8 @@ import fs from 'fs';
 // Chromium writes _metadata/ into unpacked extensions, so test a throwaway copy.
 const ext = fs.mkdtempSync('/tmp/bouclier-ext-');
 fs.cpSync(path.resolve(path.dirname(new URL(import.meta.url).pathname), '../extension'), ext, { recursive: true });
+// screenshots go next to this file (tests/*.png is ignored by git), wherever the suite is started from
+const shotPath = name => path.join(path.dirname(new URL(import.meta.url).pathname), name);
 const profile = fs.mkdtempSync('/tmp/bouclier-profile-');
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`); };
@@ -45,8 +47,38 @@ check('googletagservices blocked (EasyList)', !hits.some(h => h.includes('google
 check('google-analytics blocked (EasyPrivacy)', !hits.some(h => h.includes('google-analytics')));
 check('googlesyndication blocked', !hits.some(h => h.includes('googlesyndication')));
 const disp = async sel => page.$eval(sel, e => getComputedStyle(e).display);
+// What the blocker looked like when a timing-sensitive check failed (F2 and F7 each failed once in
+// Chromium on 3 Oct 2026 and never in a stress run): enabled lists, dynamic rules, the tab's
+// navigation time and its last matched rules (ms after it), and the ad/tracker requests the server saw.
+const why = async tabId => {
+  const d = await sw.evaluate(async tid => {
+    const r = await chrome.declarativeNetRequest.getMatchedRules(tid == null ? {} : { tabId: tid }).catch(e => ({ error: String(e) }));
+    const tabs = (await chrome.storage.session.get('tabState')).tabState || {};
+    const nav = tid != null && tabs[tid] ? tabs[tid].nav : null;
+    return {
+      enabled: await chrome.declarativeNetRequest.getEnabledRulesets(),
+      dynamic: (await chrome.declarativeNetRequest.getDynamicRules()).map(x => x.action.type + ':' + (x.condition.requestDomains || x.condition.initiatorDomains || [x.condition.urlFilter || x.condition.regexFilter || '']).join(',')),
+      nav,
+      matched: (r.rulesMatchedInfo || []).slice(-8).map(m => [m.rule.rulesetId, Math.round(m.timeStamp - (nav || 0))]),
+      error: r.error || null,
+    };
+  }, tabId).catch(e => ({ evalError: String(e) }));
+  const hits = (await log()).filter(h => /googletag|doubleclick|analytics|track/.test(h));
+  return JSON.stringify(d) + ' server: ' + (hits.join(' | ') || 'none');
+};
 check('generic element hidden (.sponsored-post)', (await disp('#generic-hide')) === 'none');
 check('normal element visible', (await disp('#keep')) !== 'none');
+
+// 1b. Bouclier's own additions (tools/extra-*.txt) block hosts the lists miss, third-party only
+await reset();
+await page.evaluate(async () => {
+  for (const h of ['an.facebook.com', 'auction.unityads.unity3d.com', 'metrika.yandex.ru', 'p1.parsely.com']) {
+    try { await fetch(`http://${h}/fakepage.html`, { mode: 'no-cors' }); } catch { /* blocked */ }
+  }
+});
+await page.waitForTimeout(400);
+hits = await log();
+check('Bouclier additions block missed trackers', !hits.some(h => /facebook|unityads|yandex|parsely/.test(h)), hits.join(' | '));
 
 // 2. site-specific hiding (dynamic path)
 await page.goto('http://1001games.com/', { waitUntil: 'load' });
@@ -137,7 +169,8 @@ await page.goto('http://news.test/', { waitUntil: 'load' });
 await page.waitForTimeout(900);
 const tabId = await newsTabId();
 let pst = await msg({ type: 'popup:state', tabId });
-check('F2 popup shows what was blocked on the page', pst.blocked >= 3 && pst.breakdown && pst.breakdown.ads >= 1 && pst.breakdown.trackers >= 1, JSON.stringify({ blocked: pst.blocked, breakdown: pst.breakdown }));
+const f2ok = pst.blocked >= 3 && pst.breakdown && pst.breakdown.ads >= 1 && pst.breakdown.trackers >= 1;
+check('F2 popup shows what was blocked on the page', f2ok, JSON.stringify({ blocked: pst.blocked, breakdown: pst.breakdown }) + (f2ok ? '' : ' ' + await why(tabId)));
 let ost = await msg({ type: 'options:state' });
 check('F3 statistics count today\'s blocks', ost.stats.today >= 3 && ost.stats.all >= ost.stats.today, JSON.stringify({ today: ost.stats.today, all: ost.stats.all }));
 check('F3 statistics rank sites', ost.stats.topSites.some(([site]) => site === 'news.test'), JSON.stringify(ost.stats.topSites));
@@ -195,7 +228,8 @@ await reset();
 await page.goto('http://news.test/', { waitUntil: 'load' });
 await page.waitForTimeout(700);
 hits = await log();
-check('F7 ads load while the site is paused', hits.some(h => h.includes('googletagservices')));
+const f7ok = hits.some(h => h.includes('googletagservices'));
+check('F7 ads load while the site is paused', f7ok, f7ok ? '' : await why(await newsTabId()));
 const alarms = await sw.evaluate(async () => (await chrome.alarms.getAll()).map(a => a.name));
 check('F7 resume alarm scheduled', alarms.includes('resume-site|news.test'), JSON.stringify(alarms));
 const purged = await msg({ type: 'debug:purge', now: Date.now() + 61 * 60000 });
@@ -361,7 +395,7 @@ check('I1 iPhone menu fills the sheet, with iOS-size switches', ip.cls.includes(
   // Playwright's own full-page capture resets the emulated device, so ask DevTools directly
   const h = await iphone.p.evaluate(() => document.documentElement.scrollHeight);
   const shot = await iphone.cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width: 390, height: h, scale: 1 } });
-  fs.writeFileSync('popup-iphone.png', Buffer.from(shot.data, 'base64'));
+  fs.writeFileSync(shotPath('popup-iphone.png'), Buffer.from(shot.data, 'base64'));
 }
 
 await iphone.p.goto(`chrome-extension://${extId}/options/options.html`);
@@ -454,9 +488,9 @@ check('no page console errors', errors.length === 0, errors.slice(0, 5).join(' |
 await popup.setViewportSize({ width: 360, height: 900 });
 await popup.goto(`chrome-extension://${extId}/popup/popup.html`);
 await popup.waitForTimeout(600);
-await popup.screenshot({ path: 'popup.png', fullPage: true });
+await popup.screenshot({ path: shotPath('popup.png'), fullPage: true });
 await popup.emulateMedia({ colorScheme: 'dark' });
-await popup.screenshot({ path: 'popup-dark.png', fullPage: true });
+await popup.screenshot({ path: shotPath('popup-dark.png'), fullPage: true });
 await popup.emulateMedia({ colorScheme: 'light' });
 const opt = await ctx.newPage();
 await opt.setViewportSize({ width: 1000, height: 900 });
@@ -467,9 +501,9 @@ await opt.goto(`chrome-extension://${extId}/options/options.html`);
 await opt.waitForTimeout(1200);
 check('settings page renders statistics without errors', optErrors.length === 0 && (await opt.$eval('#stat-all', e => e.textContent)) !== '0', optErrors.join(' | '));
 await opt.emulateMedia({ colorScheme: 'dark' });
-await opt.screenshot({ path: 'options-dark.png', fullPage: true });
+await opt.screenshot({ path: shotPath('options-dark.png'), fullPage: true });
 await opt.emulateMedia({ colorScheme: 'light' });
-await opt.screenshot({ path: 'options.png', fullPage: true });
+await opt.screenshot({ path: shotPath('options.png'), fullPage: true });
 
 await ctx.close();
 const failed = results.filter(r => !r.ok);
